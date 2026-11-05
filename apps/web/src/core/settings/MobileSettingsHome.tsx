@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight, Search, Settings2, X } from 'lucide-react';
 import SettingsNavigationIcon from './SettingsNavigationIcon';
 import { setupNavigation } from '../metadata/Definitions/metadata';
+import {canSeeSetupItem} from '../platform/Workspace/setupNavigationAccess';
 import './MobileSettingsHome.css';
 
 type Rights = {
@@ -16,48 +17,24 @@ type Rights = {
 type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
 type Group = {group: string; items: string[]};
 /** Navigation only: reuse the Setup registry and existing routes; APIs remain the RBAC authority. */
-export default function MobileSettingsHome({rights, request, loading, onOpen, onOpenOverview}:{
+export default function MobileSettingsHome({rights, permissions, loading, onOpen, onOpenOverview}:{
   rights: Rights;
   request: Request;
+  permissions: readonly string[];
   loading: boolean;
   onOpen: (label: string) => void;
   onOpenOverview:()=>void;
 }) {
   const [query, setQuery] = useState('');
-  const [credentialAccess, setCredentialAccess] = useState(false);
-  useEffect(() => {
-    if (!rights.viewMetadata) return;
-    let current = true;
-    // Check the optional integration permissions only when Settings is opened.
-    void Promise.allSettled([
-      request<{canManage: boolean}>('/named-credentials/readiness'),
-      request<{view: boolean}>('/connector-apps/capabilities')
-    ]).then(([credentials, connectors]) => {
-      if (current) setCredentialAccess(
-        (credentials.status === 'fulfilled' && credentials.value.canManage) ||
-        (connectors.status === 'fulfilled' && connectors.value.view)
-      );
-    });
-    return () => { current = false; };
-  }, [request, rights.viewMetadata]);
-
   const sections = useMemo(() => {
-    const allowed = (label: string, group: string): boolean => {
-      if (label === 'Setup Home') return false;
-      if (label === 'Tenant Management') return rights.manageTenants || rights.viewMetadata;
-      if (label === 'Named Devices') return rights.namedDevices;
-      if (label === 'Named Credentials' || label === 'Webhook Endpoints') return credentialAccess || rights.viewMetadata;
-      if (group === 'Security') return rights.viewSecurity;
-      if (group === 'Automation') return rights.viewMetadata || rights.manageFlows;
-      return rights.viewMetadata;
-    };
     const normalized = query.trim().toLocaleLowerCase();
     return (setupNavigation as Group[]).map(({group, items}) => ({
       group,
-      items: items.filter(item => allowed(item, group) &&
-        (!normalized || (item + ' ' + group).toLocaleLowerCase().includes(normalized)))
+      items: items.filter(label => label !== 'Setup Home' &&
+        canSeeSetupItem(label,permissions) &&
+        (!normalized || (label + ' ' + group).toLocaleLowerCase().includes(normalized)))
     })).filter(section => section.items.length);
-  }, [query, rights, credentialAccess]);
+  }, [query,permissions]);
 
   return <div className="mobile-settings-home" aria-label="Mobile Settings">
     <div className="mobile-settings-title">
