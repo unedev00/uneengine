@@ -116,28 +116,28 @@
   overflow: auto !important;
 }
 /* Insert and Advanced must use the same 114px lane as all property tabs. */
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+.office-builder-ribbon:not(.is-interactive-preview):not(.page-builder-design-dock-ribbon) #page-builder-tab-content.office-ribbon-content
   > .smart-insert-ribbon {
   box-sizing: border-box !important;
   height: var(--page-ribbon-content-height) !important;
   min-height: var(--page-ribbon-content-height) !important;
   max-height: var(--page-ribbon-content-height) !important;
 }
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+.office-builder-ribbon:not(.is-interactive-preview):not(.page-builder-design-dock-ribbon) #page-builder-tab-content.office-ribbon-content
   .smart-insert-gallery, 
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+.office-builder-ribbon:not(.is-interactive-preview):not(.page-builder-design-dock-ribbon) #page-builder-tab-content.office-ribbon-content
   .smart-insert-gallery-row,
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+.office-builder-ribbon:not(.is-interactive-preview):not(.page-builder-design-dock-ribbon) #page-builder-tab-content.office-ribbon-content
   .smart-insert-tiles {
   height: var(--page-ribbon-content-height) !important;
   min-height: 0 !important;
   max-height: var(--page-ribbon-content-height) !important;
 }
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+.office-builder-ribbon:not(.is-interactive-preview):not(.page-builder-design-dock-ribbon) #page-builder-tab-content.office-ribbon-content
   .smart-insert-tiles {
   grid-template-rows: repeat(2,55px) !important;
 }
-.office-builder-ribbon:not(.is-interactive-preview) #page-builder-tab-content.office-ribbon-content
+.office-builder-ribbon:not(.is-interactive-preview):not(.page-builder-design-dock-ribbon) #page-builder-tab-content.office-ribbon-content
   .smart-insert-tile { height: 55px !important; }
 /* Advanced ribbon: only the purposeful groups remain; all device flags live in Edit Page.
  * Fluid group widths replace the fixed 1641px scroll lane. The three property

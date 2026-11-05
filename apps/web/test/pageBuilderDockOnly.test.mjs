@@ -7,6 +7,7 @@ const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
 const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
 const insertCss=read('../src/core/builders/PageBuilder/SmartInsertRibbon.css');
 const dockCss=read('../src/core/builders/PageBuilder/PageBuilderDesignDock.css');
+const ribbonLayoutCss=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
 const formulaCss=read('../src/core/builders/PageBuilder/PageBuilderTopbarFormula.css');
 
 test('Page Builder uses one left-docked editor instead of a duplicate top ribbon',()=>{
@@ -30,6 +31,11 @@ test('Left Insert gallery expands to show all registered Smart component tiles',
  assert.match(leftGrid,/grid-auto-rows:55px/);
  assert.match(leftGrid,/height:auto!important;max-height:none!important/);
  assert.match(leftGrid,/overflow:visible!important/);
+ const topInsertRules=ribbonLayoutCss.slice(
+  ribbonLayoutCss.indexOf('/* Insert and Advanced must use the same 114px lane'),
+  ribbonLayoutCss.indexOf('/* Advanced ribbon:'));
+ assert.equal(topInsertRules.split(':not(.page-builder-design-dock-ribbon)').length-1,6,
+  'Two-row ribbon limits must never apply to the left dock');
  assert.match(dockCss,/overflow-x:hidden;overflow-y:auto/);
 });
 
