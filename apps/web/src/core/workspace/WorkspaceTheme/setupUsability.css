@@ -478,3 +478,19 @@ html,body{min-width:0!important;max-width:100%}
 /* One documented title hierarchy for setup list pages at any breakpoint. */
 .lightning .page-manager-header h1,.lightning .page-manager-view h1{font-size:26px!important;line-height:1.2!important}
 .lightning .app-manager-list-search input{min-height:40px!important}
+
+/* Setup Home audit: compact welcome, consistent cards and visible extra tiles. */
+.lightning .home-content .welcome-banner{display:flex!important;align-items:center!important;min-height:0!important;height:auto!important;max-height:120px;gap:12px;padding:16px 20px!important;box-sizing:border-box}
+.lightning .home-content .welcome-banner .welcome-art,.lightning .home-content .welcome-banner .welcome-quick{display:none!important}
+.lightning .home-content .welcome-copy{flex:1;min-width:0;display:block}
+.lightning .home-content .welcome-copy h2{font-size:18px;line-height:1.25;margin:0 0 5px}
+.lightning .home-content .welcome-copy p{font-size:13px;line-height:1.4;margin:0;max-width:70ch}
+.lightning .home-content .shortcut-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr))!important;gap:12px!important}
+.lightning .home-content .shortcut-card{min-height:92px!important;max-height:106px;padding:13px!important;grid-template-columns:34px minmax(0,1fr) 16px!important;grid-template-rows:auto auto;column-gap:10px!important;align-items:center}
+.lightning .home-content .shortcut-title{min-width:0;align-self:end;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+.lightning .home-content .shortcut-description{min-width:0;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;align-self:start}
+.lightning .home-content .shortcut-icon{width:32px!important;height:32px!important}
+.lightning .home-content .shortcut-icon svg{width:18px;height:18px}
+.lightning .home-content .shortcut-arrow{width:14px;height:14px}
+.lightning .home-content .page-heading h1{font-size:26px!important;line-height:1.2!important}
+@media(max-width:600px){.lightning .home-content .welcome-banner{max-height:none;padding:12px 14px!important}.lightning .home-content .shortcut-grid{grid-template-columns:1fr!important}.lightning .home-content .shortcut-card{min-height:72px!important;max-height:90px!important}}
