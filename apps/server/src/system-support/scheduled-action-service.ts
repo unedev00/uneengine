@@ -2,6 +2,7 @@ import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {RecordEngine} from '../system-files/record-engine.js';
 import type {NamedCredentialService} from './named-credential-service.js';
+import type {FlowRuntime} from '../system-files/flow-runtime.js';
 import type {DurableJobWorker,ClaimedJob} from './durable-job-worker.js';
 import {DurableJobService} from './durable-job-service.js';
 import {compileActionPlan,type ActionStep} from '../expression-engine/ActionFormulas.js';
@@ -21,7 +22,7 @@ function bounded(value:unknown,depth=0):unknown {
  if(own(value)&&Object.keys(value).length<=100){
   const output:Record<string,unknown>=Object.create(null);
   for(const [key,item] of Object.entries(value)){
-   if(!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(key)||reserved.test(key))continue;
+   if(item===undefined||!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(key)||reserved.test(key))continue;
    output[key]=bounded(item,depth+1);
   }
   return output;
@@ -44,7 +45,10 @@ function expressionSource(node:Expression):string{
  }
 }
 function lookup(source:Record<string,unknown>,reference:string):unknown{
- const segments=reference.replace(/^@/,'').split('.');
+ const normalized=reference.replace(/^\\$state\\./,'state.')
+  .replace(/^\\$event\\./,'event.')
+  .replace(/^\\$session$/,'sessionId');
+ const segments=normalized.replace(/^@/,'').split('.');
  let value:unknown=source;
  for(const key of segments){
   if(!own(value)||!Object.prototype.hasOwnProperty.call(value,key))return null;
@@ -186,7 +190,7 @@ export class ScheduledActionService {
  }
 }
 async function deliverCommunication(row:ScheduledActionRow,step:ActionStep,
- values:unknown[],credentials:NamedCredentialService){
+ values:unknown[],credentials:NamedCredentialService,stepNumber:number){
  const selected=(await credentials.list(row.tenant_id,row.scheduled_by))
    .find(item=>item.enabled&&item.name===step.object);
  if(!selected)throw Error('Named Credential unavailable');
@@ -210,11 +214,12 @@ async function deliverCommunication(row:ScheduledActionRow,step:ActionStep,
  }
  const response=await credentials.callout(row.tenant_id,row.scheduled_by,
   {namedCredentialId:selected.id,method:'POST',path,body},variables,
-   'scheduled-action:'+row.id+':'+row.next_step);
+   'scheduled-action:'+row.id+':'+stepNumber);
  if(response.status<200||response.status>=300)throw Error('Communication provider rejected request');
 }
 export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPersistence,
- rbac:RbacEngine,records:RecordEngine,credentials:NamedCredentialService){
+ rbac:RbacEngine,records:RecordEngine,credentials:NamedCredentialService,flows:FlowRuntime){
+ void rbac;
  const service=new ScheduledActionService(db);
  const authorize=async(job:ClaimedJob)=>{
   if(job.job_type!=='scheduled.action'||!job.actor_user_id)return false;
@@ -236,6 +241,10 @@ export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPers
     const step=steps[i];
     const values={...scope,...variables};
     const evalNode=(node:Expression)=>evaluate(node,values);
+    if(step.guards?.some(guard=>Boolean(evalNode(guard.condition))!==guard.expected)){
+     await service.progress(row,i+1,variables,step.name+' (skipped)');
+     continue;
+    }
     if(step.name==='WAIT'){
      const [minutes,seconds]=(step.values??[]).map(evalNode);
      if(typeof minutes!=='number'||typeof seconds!=='number'||
@@ -249,10 +258,20 @@ export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPers
      await service.progress(row,i+1,variables,step.name);
      break;
     }
-    if(step.name==='FLOW'||step.name==='SCREEN'||step.name==='PRINT'||step.name==='CREATEPDF')
+    if(step.name==='SCREEN'||step.name==='PRINT'||step.name==='CREATEPDF')
      throw Error('This action has no background execution adapter: '+step.name);
+    if(step.name==='FLOW'){
+     const {rows:active}=await db.query<{flow_type:string}>(`
+      SELECT flow_type FROM md_flow_definitions
+      WHERE tenant_id=$1 AND api_name=$2 AND active=true AND archived=false
+      ORDER BY version DESC LIMIT 1`,[row.tenant_id,step.object]);
+     if(active[0]?.flow_type!=='Autolaunched Flow')throw Error('Only Autolaunched Flows can resume in background');
+     await flows.execute(row.tenant_id,step.object,row.scheduled_by,{});
+     await service.progress(row,i+1,variables,step.name);
+     continue;
+    }
     if(['EMAIL','WHATSAPP','SMS'].includes(step.name))
-     await deliverCommunication(row,{...step},(step.values??[]).map(evalNode),credentials);
+     await deliverCommunication(row,step,(step.values??[]).map(evalNode),credentials,i);
     else {
      const id=step.id?savedId(evalNode(step.id)):undefined;
      const data=Object.fromEntries([...step.fields].map(([name,node])=>[name,evalNode(node)]));
