@@ -191,6 +191,7 @@ import './SmartCanvasHandles.css';
 // Single owner for ribbon height, overflow and scrollbar geometry.
 import './PageBuilderRibbonLayout.css';
 import './PageBuilderDesignDock.css';
+import './PageBuilderTopbarFormula.css';
 import RibbonFieldExpressionInput from './RibbonFieldExpressionInput';
 import {RibbonResponsive} from './PageBuilderRibbonStyle';
 import PageBuilderAdvancedStyle from './PageBuilderAdvancedStyle';
@@ -312,6 +313,7 @@ import SavedListViewPicker from './SavedListViewPicker';
 import PageDetailsDialog from './PageDetailsDialog';
 import PageDesignSplitAction from './PageDesignSplitAction';
 import PageInventoryImportDialog from './PageInventoryImportDialog';
+import {ensureTenantBrand} from '../../branding/tenantBrandLoader';
 import {designedPageLayouts,pageLayoutOptionLabel,primaryPageLayout,PAGE_LAYOUT_ORDER,type PageLayoutSummary} from './pageLayoutSummary';
 import {uneRibbonIcon} from './uneRibbonIcon';
 import RibbonImageContent from './RibbonImageContent';
@@ -358,6 +360,8 @@ function PageBuilder({
   /** apiName is given when opening another page's layout (e.g. from the page list). */
   onLayoutVariantChange?: (variant:PageLayoutVariant,apiName?:string) => void;
 }) {
+  // $tenant.name / $tenant.logo formulas: load the signed-in tenant's brand once.
+  useEffect(()=>{void ensureTenantBrand();},[]);
   const isPhoneBuilder = useFormFactor() === 'Phone';
   const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId);
   useEffect(() => {
@@ -610,12 +614,14 @@ function PageBuilder({
   const selectCanvasDataBinding=(componentId:string,target:Omit<CanvasBindingTarget,'componentId'|'requestId'>)=>{
     setSelectedId(componentId);setSelectionIds([componentId]);setSelectedRegion(null);
     setCanvasBinding(previous=>({...target,componentId,requestId:(previous?.requestId??0)+1}));
-    setRibbonCollapsed(false);
-    setRibbonTab('Component Data');setPageSettingsOpen(false);
+    // The Formula Bar lives in the topbar, so a field icon keeps the current tab.
+    setPageSettingsOpen(false);
     openComponentInspector('Data & Actions');
   };
   const selectRibbonTab = (tab: typeof ribbonTab) => {
-    if(tab==='Component Layout'||tab==='Arrange')tab='Component Design 2';
+    // Layout, Arrange and Data are retired: Source sits at the end of Design and the
+    // Formula Bar is always in the topbar.
+    if(tab==='Component Layout'||tab==='Arrange'||tab==='Component Data')tab='Component Design 2';
     setRibbonTab(tab);
     setPageSettingsDialogOpen(false);
     if (tab === 'Add Block') { setPageSettingsOpen(false); openPalette('Components', 'All Components'); }
@@ -687,15 +693,15 @@ function PageBuilder({
   const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
   // Shift selection and persisted canvas groups use one shared-property context.
   const ribbonSelectedMembers = selected
-    ? canvasBinding?.componentId===selected.id&&ribbonTab==='Component Data'
-      // Field icons edit just their component, even inside a grouped selection.
-      ? [selected]
-      : page.components.filter(item=>(selectionIds.length>1
+    ? page.components.filter(item=>(selectionIds.length>1
       ? selectionIds.includes(item.id)
       : selectedGroupMembers.length>1
         ? selectedGroupMembers.some(member=>member.id===item.id)
         : item.id===selected.id))
     : [];
+  // Formula Bar: a canvas field icon edits just its component, even inside a group.
+  const dataSelectedMembers = selected&&canvasBinding?.componentId===selected.id
+    ? [selected] : ribbonSelectedMembers;
   // Virtual copies serve multi-selection only; shared Design definitions stay intact.
   const design2SharedDefinitions=ribbonCatalog?.properties.filter(property=>
     property.id==='shapeId'||property.id==='shapeFill'||
@@ -709,9 +715,16 @@ function PageBuilder({
     : undefined;
   const ribbonMixedPropertyIds = ribbonSelectedMembers.length>1&&ribbonCatalog
     ? mixedCanvasPropertyIds(sharedRibbonDefinitions,
-      ribbonTab==='Component Layout'?'Layout':ribbonTab==='Component Data'?'Data':
+      ribbonTab==='Component Layout'?'Layout':
       ribbonTab==='Component Design 2'?'Design2':'Design',
       ribbonSelectedMembers)
+    : undefined;
+  const dataSharedPropertyIds = dataSelectedMembers.length>1&&ribbonCatalog
+    ? ribbonCatalog.properties.filter(property=>isSharedCanvasProperty(property,dataSelectedMembers))
+      .map(property=>property.id)
+    : undefined;
+  const dataMixedPropertyIds = dataSelectedMembers.length>1&&ribbonCatalog
+    ? mixedCanvasPropertyIds(sharedRibbonDefinitions,'Data',dataSelectedMembers)
     : undefined;
   const groupCandidates=page.components.filter(item=>selectionIds.includes(item.id));
   const canGroupSelected=groupCandidates.length>1&&groupCandidates.every(item=>
@@ -1627,7 +1640,7 @@ function PageBuilder({
     setPageSettingsOpen(false);
     setActivePanel('properties');
     setInspectorTab(componentNeedsData(type)?'Data & Actions':'Design');
-    setRibbonTab(componentNeedsData(type)?'Component Data':'Component Design 2');
+    setRibbonTab('Component Design 2');
     onNotify(`${custom?libraryComponentLabel(custom):type} added and selected`);
   };
   const addField = (fieldApiName: string) => {
@@ -2603,7 +2616,7 @@ function PageBuilder({
           setFocusedCardMapping(mapping);
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ribbonTab==='Add Block') { setRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Design 2'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
+        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ribbonTab==='Add Block') { setRibbonTab('Component Design 2'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
@@ -2661,7 +2674,7 @@ function PageBuilder({
             event.stopPropagation();
             selectCanvasComponent(event);
           } : undefined}
-      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab(componentNeedsData(component.type)?'Component Data':'Component Design 2'); } } : undefined}
+      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab('Component Design 2'); } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
         // A scrollable component is still a movable shape. Only native scrollbar
@@ -3091,7 +3104,7 @@ function PageBuilder({
   };
   const quickAccessOrder=['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'] as const;
   const journeyTabs: Array<typeof ribbonTab> = // The legacy Design tab is retired; Design 2 is the only Design ribbon.
-  ['Add Block','Component Data',
+  ['Add Block',
     'Component Design 2','Component Action','Advanced','Preview'];
   const ribbonTabsVisible: Array<typeof ribbonTab> = [...journeyTabs];
 
@@ -3105,9 +3118,33 @@ function PageBuilder({
   };
   // The SmartRibbon is built once. For Design it renders either in the top ribbon
   // strip or docked in the left Design panel (never both at the same time).
-  const smartRibbonElement = (selected && ribbonCatalog && ((selectedNewUne && (ribbonTab==='Component Data'|| ribbonTab==='Component Design 2'||ribbonTab==='Component Layout')) ||(!selectedNewUne && ribbonTab==='Component Design 2'))) ? (
+  const selectedRibbonApi = selected ? (selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type) : '';
+  const selectedHasDataRibbon = Boolean(selected && ribbonCatalog && selectedNewUne &&
+    ribbonCatalog.properties.some(property=>property.tab==='Data'&&
+      property.components.includes(selectedRibbonApi as UneBuilderApi)));
+  const selectedHasSourceRibbon = selectedHasDataRibbon && Boolean(ribbonCatalog?.properties.some(property=>
+    property.tab==='Data'&&property.group==='Source'&&property.components.includes(selectedRibbonApi as UneBuilderApi)));
+  // One Data engine, two placements: the Formula Bar in the topbar and the Source
+  // object selectors after Typography in Design. The Data tab itself is retired.
+  const dataRibbon = (part:'formulaBar'|'source') => selected && ribbonCatalog && selectedHasDataRibbon ? (
+    <SmartRibbon key={'smart-data-'+part} tab="Data" part={part} api={selectedRibbonApi}
+      definitions={ribbonCatalog.properties}
+      properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
+      componentId={selected.id} pageComponents={page.components}
+      canvasBinding={canvasBinding}
+      sharedPropertyIds={dataSharedPropertyIds} mixedPropertyIds={dataMixedPropertyIds}
+      selectedApis={dataSelectedMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
+      onChange={(properties:Record<string,unknown>)=>{
+        if(dataSelectedMembers.length>1)
+          applyPage({...page,components:updateSharedCanvasProperties(
+            page.components,selected.id,dataSelectedMembers,sharedRibbonDefinitions,'Data',properties)});
+        else updateComponent(selected.id,{properties});
+      }}
+      position={selected.position} layoutMode={page.layoutMode}/>
+  ) : null;
+  const smartRibbonElement = (selected && ribbonCatalog && ((selectedNewUne && (ribbonTab==='Component Design 2'||ribbonTab==='Component Layout')) ||(!selectedNewUne && ribbonTab==='Component Design 2'))) ? (<>
               <SmartRibbon
-                tab={ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
+                tab={ribbonTab==='Component Layout'?'Layout':
                   ribbonTab==='Component Design 2'?'Design2':'Design'}
                 api={selected.type.startsWith('Custom:')?selected.type.slice(7):selected.type}
                 definitions={ribbonCatalog.properties}
@@ -3133,7 +3170,7 @@ function PageBuilder({
                     const position=selected.position?{...selected.position,width,height}:undefined;
                     updateComponent(selected.id,{properties,...(position?{position}:{})});
                   }else if(ribbonSelectedMembers.length>1){
-                    const tab=ribbonTab==='Component Data'?'Data':ribbonTab==='Component Layout'?'Layout':
+                    const tab=ribbonTab==='Component Layout'?'Layout':
                       ribbonTab==='Component Design 2'?'Design2':'Design';
                     applyPage({...page,components:updateSharedCanvasProperties(
                       page.components,selected.id,ribbonSelectedMembers,sharedRibbonDefinitions,tab,properties)});
@@ -3154,7 +3191,8 @@ function PageBuilder({
                       page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,position)});
                   else updateComponent(selected.id,{position});
                 }}/>
-  ) : null;
+              {ribbonTab==='Component Design 2'&&selectedHasSourceRibbon&&dataRibbon('source')}
+  </>) : null;
   const designInPanel = designDockedLeft && ribbonTab==='Component Design 2' && !previewMode && smartRibbonElement!==null;
   return (
     <div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
@@ -3511,6 +3549,16 @@ function PageBuilder({
               </button>
             </div>
 </div>
+          {/* Always-on Formula Bar (filter, image upload, ƒx and the formula) for the
+              selected component's data bindings; disabled when nothing is bindable. */}
+          <div className="office-ribbon-topbar-formula" role="group" aria-label="Formula Bar">
+            {!previewMode&&dataRibbon('formulaBar')||<div className="smart-data-formula-bar is-empty" aria-label="Formula Bar">
+              <span className="smart-data-fx-prefix" aria-hidden="true">ƒx</span>
+              <div className="smart-data-formula-input"><input type="text" disabled
+                aria-label="Formula (select a component with data first)"
+                placeholder={selected?'No data bindings for this component':'Select a component'}/></div>
+            </div>}
+          </div>
           <div className="office-ribbon-quick-access" role="group" aria-label="Quick Access Toolbar">
             {quickAccessOrder.map(key=><span key={key} className={'office-ribbon-quick-action office-ribbon-quick-'+key}>
               {homeValue(key)}

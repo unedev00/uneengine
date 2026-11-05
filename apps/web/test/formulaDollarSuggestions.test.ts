@@ -22,13 +22,14 @@ const components=[{
  id:'label',properties:{stateBindings:{textSource:'selectedProduct'}}
 }];
 
-test('$ autocomplete lists page-declared keys and the current page-session token',()=>{
+test('$ autocomplete lists page-declared keys, the page-session token and the tenant brand',()=>{
  const choices=pageStateChoices(components);
  const keys=choices.filter(entry=>entry.source==='PageState').map(entry=>entry.key);
  assert.deepEqual(keys,['cartTotal','currentCategory','flowStatus','selectedProduct']);
  const all=formulaDollarSuggestions(choices).map(entry=>entry.reference);
- assert.deepEqual(all,['$session','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
- assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(1));
+ assert.deepEqual(all,['$session','$tenant.name','$tenant.logo','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
+ assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(3));
+ assert.deepEqual(formulaDollarSuggestions(choices,'tenant').map(x=>x.reference),['$tenant.name','$tenant.logo']);
  assert.deepEqual(formulaDollarSuggestions(choices,'sess').map(x=>x.reference),['$session']);
  assert.deepEqual(formulaDollarSuggestions(choices,'state.selected').map(x=>x.reference),['$state.selectedProduct']);
  assert.deepEqual(formulaDollarSuggestions(choices,'unknown'),[]);

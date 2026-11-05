@@ -63,8 +63,9 @@ test('Design 2 replaces the retired Design tab and is labelled Design',()=>{
  assert.match(inventory,/Design2/);
  assert.doesNotMatch(builder,/'Component Properties'/);
  assert.match(builder,/'Component Design 2': 'Design',/);
- assert.match(builder,/\['Add Block','Component Data',\s*'Component Design 2'/);
- assert.match(builder,/'Component Data':'Component Design 2'/);
+ // Data tab retired: Source is at the end of Design, the Formula Bar is in the topbar.
+ assert.match(builder,/\['Add Block',\s*'Component Design 2'/);
+ assert.match(builder,/tab==='Component Data'\)tab='Component Design 2'/);
  assert.match(shared,/const visible=definitions\.filter\(p=>p\.tab===tab\)/);
  assert.match(shared,/const contextualVisible=tab==='Design2'\?design2Properties:visible/);
  assert.match(sql,/m\.label,'Design2','Contextual'/);

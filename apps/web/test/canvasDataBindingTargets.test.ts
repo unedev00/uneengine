@@ -45,9 +45,10 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
  assert.match(ribbon,/setSelectedDataField\('collectionFormula'\)/);
  assert.match(icons,/onPointerDown=\{event=>event\.stopPropagation\(\)\}/);
  assert.match(builder,/!previewMode&&!libraryPreview&&selectedId===component\.id/);
- assert.match(builder,/setRibbonTab\('Component Data'\)/);
+ // The Data tab is retired: field icons feed the always-visible topbar Formula Bar.
+ assert.match(builder,/tab==='Component Data'\)tab='Component Design 2'/);
+ assert.match(builder,/dataRibbon\('formulaBar'\)/);
  assert.match(builder,/data-component-id=\{libraryPreview \? undefined : component\.id\}/);
- assert.match(builder,/setRibbonCollapsed\(false\)/);
  assert.match(builder,/canvasBinding=\{canvasBinding\}/);
  assert.match(builder,/const smartRibbonElement =/);
  assert.match(ribbon,/canvasBinding\?\.requestId/);
@@ -80,4 +81,19 @@ test('every Smart binding icon is field-anchored, never positioned in an arbitra
  assert.doesNotMatch(css,/\.modern-canvas-builder .*\.canvas-data-icon-button/);
  assert.match(runtime,/p\.builderPreview&&p\.collectionFormula&&\(dynamic\|\|hasCollection\)/);
  assert.match(runtime,/dynamic\|\|hasCollection\?"textSource":"tabCaptionFormula"/);
+});
+
+test('data icons: centred on boxes, zoom-safe, pointer cursor, green when active',()=>{
+ const icons=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
+ const css=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.css');
+ const handles=source('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
+ const runtime=source('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(icons,/hostRect\.width\/host\.offsetWidth/);
+ assert.match(icons,/\{x:centreX\+step,y:middle\}/);
+ assert.match(icons,/draggable=\{false\}/);
+ assert.match(icons,/resize\.observe\(element\)/);
+ assert.match(css,/is-active[\s\S]*?background:#22c55e/);
+ assert.match(css,/cursor:pointer!important/);
+ assert.match(handles,/:not\(\.free-canvas-move-edge\):not\(\.canvas-data-bindings\)/);
+ assert.match(runtime,/!String\(p\.imageSource\?\?p\.src\?\?""\)\.trim\(\)/);
 });
