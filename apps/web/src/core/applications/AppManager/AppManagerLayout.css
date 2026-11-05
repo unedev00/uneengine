@@ -77,3 +77,10 @@
 .app-manager-advanced-inner,.app-manager-readiness .app-setup-guide{min-width:0;overflow-wrap:anywhere}
 .app-manager-step{min-height:var(--md-control-height,40px)}
 @media(pointer:coarse){.app-manager-step,.app-manager-workspace .app-manager-form-card .form-control,.app-manager-workspace .app-manager-actions .btn{min-height:var(--md-control-touch,44px)}}
+
+/* Audit fixes: nonblocking confirmation and stable heading size. */
+.app-manager-workspace .app-manager-top h1{font-size:26px;line-height:1.2}
+.app-manager-confirm-backdrop{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:16px;background:rgb(16 24 40 / 55%)}
+.app-manager-confirm{width:min(440px,100%);max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;padding:24px;border-radius:12px;background:var(--md-surface,#fff);color:var(--md-text,#192230);box-shadow:0 20px 70px rgb(0 0 0 / 25%)}
+.app-manager-confirm h2{font-size:22px;margin:0 0 12px}.app-manager-confirm p{line-height:1.55;margin:0 0 20px}.app-manager-confirm .toolbar-actions{display:flex;justify-content:flex-end;gap:10px}
+.app-manager-confirm .btn-danger{background:#b42318;color:#fff;border-color:#b42318}
