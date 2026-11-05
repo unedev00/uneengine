@@ -615,13 +615,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
-          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
-          {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
-      </div>
-
-      {/* This occupies the same position for every Design section/component.
-          Unsupported or data-bound counts are disabled, never unmounted. */}
-      {(()=>{
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)+(row===1?' 79px':'')}}>
+          {sectionRow(activeDesign2Area,row).map(controls)}
+          {row===1&&{(()=>{
         const key=api==='smart_tabs'?'tabCount':
           api==='smart_cart'?'cardsPerRow':
           api==='smart_card_grid'&&countKey==='cardsPerColumn'?'cardsPerColumn':'cardsPerRow';
@@ -663,7 +659,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <option value="cardsPerColumn">Rows</option>
           </select>}
         </div>;
-      })()}
+      })()}}
+          </div>)}
+      </div>
+
       {activeDesign2Area==='Calendar'&&api==='smart_calendar'&&
         <div className="smart-design2-calendar-controls" role="group" aria-label="Calendar settings">
           {(['showDays','firstDay'] as const).map(id=>{
