@@ -59,7 +59,7 @@ test('Object Source is always present on Design, including components without Da
  assert.doesNotMatch(builder,/selectedHasSourceRibbon/);
  assert.match(ribbon,/sections\.filter\(group=>group==='Source'\)/);
  assert.match(ribbon,/disabled=\{!canAddSources\|\|sourceCount>=100\}/);
- assert.match(dock,/smart-ribbon\.smart-design-source\{\s*margin:0!important/);
+ assert.match(read('../src/core/builders/PageBuilder/PageBuilderTopbarFormula.css'),/margin:0!important/);
 });
 
 test('Fit Width accounts for the actual scroll viewport padding and ignores subpixel scale jitter',()=>{
