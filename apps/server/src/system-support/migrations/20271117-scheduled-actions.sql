@@ -44,7 +44,17 @@ CREATE TABLE IF NOT EXISTS md_scheduled_action_steps (
 CREATE TABLE IF NOT EXISTS md_scheduled_action_values(
   tenant_id uuid NOT NULL,
   scheduled_action_id uuid NOT NULL,
-  name text NOT NULL CHECK(name ~ '^[A-Za-z][A-Za-z0-9_.]{0,127}$'),
+  name text NOT NULL CHECK(name ~ '^[A-Za-z_$][A-Za-z0-9_$.]{0,127},
+  value_text text,
+  value_number double precision,
+  value_boolean boolean,
+  PRIMARY KEY(tenant_id,scheduled_action_id,name),
+  FOREIGN KEY(tenant_id,scheduled_action_id) REFERENCES md_scheduled_actions(tenant_id,id),
+  CHECK (num_nonnulls(value_text,value_number,value_boolean)<=1),
+  CHECK (value_text IS NULL OR length(value_text)<=4096),
+  CHECK (value_number IS NULL OR (value_number >= -1e308 AND value_number <= 1e308))
+);
+),
   value_text text,
   value_number double precision,
   value_boolean boolean,

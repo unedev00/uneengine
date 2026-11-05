@@ -657,6 +657,25 @@ function MetadataBoundPageComponent({
       }));
       return {updated:true};
     }
+    if(binding.actionType==='Formula' &&
+      /\\b(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS|FLOW)\\s*\\(/i
+        .test(String(binding.formula??''))){
+      const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
+        ?action.value as Record<string,unknown>:{value:action.value};
+      const pageApiName=pageSessionKey.split(':').at(-1)??'';
+      const result=await apiRequest<{completed:number;recordChanged:boolean;scheduledActionId:string|null}>(
+        '/action-formulas/execute',{method:'POST',body:JSON.stringify({
+          pageApiName,componentId:component.id,event:action.event,sessionId,
+          state:pageState,payload
+        })});
+      if(result.recordChanged){
+        setRevision(value=>value+1);
+        window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+          detail:{pageSessionKey,sessionId}
+        }));
+      }
+      return {updated:true,...result};
+    }
     if (binding.actionType === 'Formula') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
         ?action.value as Record<string,unknown>:{value:action.value};

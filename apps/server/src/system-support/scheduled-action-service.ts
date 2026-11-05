@@ -9,7 +9,7 @@ import {DurableJobService} from './durable-job-service.js';
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const source=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
-const varName=/^[A-Za-z][A-Za-z0-9_.]{0,127}$/;
+const varName=/^[A-Za-z_$][A-Za-z0-9_$.]{0,127}$/;
 type Scalar=string|number|boolean|null;
 export type ScheduledActionInput={
   tenantId:string;userId:string;sessionId:string;sourcePageApi?:string;
