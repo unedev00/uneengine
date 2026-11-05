@@ -503,7 +503,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        min={property.min??0} max={property.max} step={isTabIndex?1:undefined}
        integer={isTabIndex}
        value={kind==='position'&&useCanvasPosition?position?.[property.id as keyof Position]??'':
-        typeof value==='string'?Number.parseFloat(value)||'':value as number}
+        typeof value==='string'?(Number.isNaN(Number.parseFloat(value))?'':Number.parseFloat(value)):value as number}
        onValueChange={n=>write(isTabIndex?Math.max(0,Math.trunc(n)):n)}/>
    </span>;
    else if(kind==='shadow'&&compactDesign&&property.designDisplay==='dropdown')editor=<SmartIconDropdown kind="shadow" value={String(value)} label={title} disabled={!enabled} onChange={write}/>;
