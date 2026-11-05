@@ -56,14 +56,17 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const functions=getFormulaFunctionNames('ribbon_binding');
  const functionSuggestions=functionMatch?functions.filter(name=>
    name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
- const [hintPosition,setHintPosition]=useState<{top:number;left:number}|null>(null);
+ const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
  const hint=focused?formulaSignatureAt(draft,caret):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
    const rect=input.current?.getBoundingClientRect();
-   if(rect)setHintPosition({left:Math.max(6,Math.min(rect.left,window.innerWidth-380)),
-    top:window.innerHeight-rect.bottom>68?rect.bottom+5:Math.max(6,rect.top-62)});
+   if(rect){
+    const above=window.innerHeight-rect.bottom<90;
+    setHintPosition({left:Math.max(6,Math.min(rect.left,window.innerWidth-380)),
+     top:above?rect.top-5:rect.bottom+5,above});
+   }
   };
   reposition();window.addEventListener('resize',reposition);window.addEventListener('scroll',reposition,true);
   return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true)};
@@ -193,6 +196,22 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   update(next,end);setFunctionMatch(null);setMatches(null);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
  };
+ // The formula input always takes priority over contextual assistance. When both
+ // autocomplete and argument help exist, render them in ONE anchored dropdown
+ // below the field rather than floating the signature over the typing caret.
+ const suggestionsOpen=Boolean(popup&&((functionMatch&&functionSuggestions.length)||
+  (matches&&filtered.length)));
+ const signatureContent=hint?<><strong>{hint.name}</strong><span>(</span>
+  {hint.parameters.slice(0,Math.min(hint.maximumArguments,
+   Math.max(hint.minimumArguments,hint.argument+2,4))).map((parameter,index)=>
+    <span key={index} className={index===hint.argument?'is-current':''}>
+      {index?', ':''}{parameter.name}{parameter.optional?'?':''}
+    </span>)}
+  {hint.maximumArguments>Math.max(hint.minimumArguments,hint.argument+2,4)&&<span>, …</span>}
+  <span>)</span></>:null;
+ const inlineSignature=hint&&signatureContent?<div className="smart-formula-signature smart-formula-signature-inline"
+   role="status" aria-label="Formula argument help">{signatureContent}</div>:null;
+
  const finishEdit=()=>{
   const error=errorFor(draft);
   setValidationError(error);
@@ -232,15 +251,11 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    onBlur={()=>{setMatches(null);setFunctionMatch(null);setFocused(false);finishEdit();}}
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
 
-  {hint&&hintPosition&&createPortal(<div className="smart-formula-signature" role="status"
-    style={{position:'fixed',top:popup&&!popup.above?Math.max(4,popup.top-60):hintPosition.top,left:hintPosition.left,zIndex:6100}}>
-    <strong>{hint.name}</strong><span>(</span>
-    {hint.parameters.slice(0,Math.min(hint.maximumArguments,Math.max(hint.minimumArguments,hint.argument+2,4))).map((parameter,index)=>
-      <span key={index} className={index===hint.argument?'is-current':''}>
-        {index?', ':''}{parameter.name}{parameter.optional?'?':''}
-      </span>)}
-    {hint.maximumArguments>Math.max(hint.minimumArguments,hint.argument+2,4)&&<span>, …</span>}
-    <span>)</span>
+  {hint&&hintPosition&&!suggestionsOpen&&createPortal(<div
+    className="smart-formula-signature" role="status" aria-label="Formula argument help"
+    style={{position:'fixed',top:hintPosition.top,left:hintPosition.left,zIndex:6100,
+      transform:hintPosition.above?'translateY(-100%)':undefined}}>
+    {signatureContent}
    </div>,document.body)}
   {confirmIncomplete&&createPortal(<div className="smart-formula-confirm-backdrop">
     <section role="dialog" aria-modal="true" aria-label="Incomplete formula"
@@ -257,6 +272,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   {functionSuggestions.length>0&&functionMatch&&popup&&createPortal(<div id={suggestionListId} className="smart-formula-list"
     role="listbox" aria-label="Formula functions"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
+    {inlineSignature}
     {functionSuggestions.map((name,index)=><button id={suggestionListId+'-option-'+index}
       type="button" role="option" aria-selected={index===activeSuggestion} key={name}
       className={index===activeSuggestion?'is-active':''}
@@ -266,6 +282,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   </div>,document.body)}
   {matches&&filtered.length>0&&popup&&createPortal(<div id={suggestionListId} className="smart-formula-list" role="listbox"
     style={{position:'fixed',left:popup.left,top:popup.top,minWidth:popup.width,maxHeight:200,zIndex:6000}}>
+   {inlineSignature}
    {filtered.map((item,index)=><button key={item.reference} id={suggestionListId+'-option-'+index}
      type="button" role="option" aria-selected={index===activeSuggestion}
      className={index===activeSuggestion?'is-active':''}
