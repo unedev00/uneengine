@@ -1,5 +1,6 @@
 import TenantGovernance from './TenantGovernance';
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
+import {refreshTenantBrand} from '../../branding/tenantBrandLoader';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Save, Trash2, Plus, Lock, Unlock } from 'lucide-react';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
@@ -507,7 +508,9 @@ function CompanySettings({ canManage, section = 'general' }: { canManage: boolea
   const saveCompany=async()=>{if(!canManage||!companyReady||companySaving||logoReading||!saveCompanyAllowed)return;
     setCompanySaving(true);setCompanyError('');setCompanyNotice('');
     try{const saved=await apiRequest<{profile:CompanyProfile}>('/tenant/company-profile',{method:'PUT',body:JSON.stringify(company)});
-      setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice(section==='branding'?'Company logo saved.':'Company details saved.');}
+      setCompany(saved.profile);setCompanyEditing(false);setCompanyBeforeEdit(null);setCompanyNotice(section==='branding'?'Company logo saved.':'Company details saved.');
+       // Update every $tenant.* image/text formula immediately after a confirmed save.
+       void refreshTenantBrand();}
     catch(error){setCompanyError(companyFailureMessage(error));}
     finally{setCompanySaving(false)}
   };
