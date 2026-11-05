@@ -66,7 +66,7 @@ test('Only Card Grid has a contextual Image Border editor; Icon Fill stays hidde
  assert.match(ribbon,/!HIDDEN_RIBBON_PROPERTY_KEYS\.has\(p\.id\)/);
  assert.match(ribbon,/hasDesign2LayoutEquivalent\(/);
  assert.match(ribbon,/tab==='Layout'&&hasDesign2LayoutEquivalent/);
- assert.match(ribbon,/activeDesign2Area==='Image'&&api==='smart_card_grid'/);
+ assert.match(ribbon,/area==='Image'&&api==='smart_card_grid'/);
 });
 
 test('Manual tab count disables for any real Tabs Object or Collection source',()=>{
