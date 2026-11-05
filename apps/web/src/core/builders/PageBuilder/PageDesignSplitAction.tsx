@@ -60,16 +60,16 @@ export default function PageDesignSplitAction({label,summary,onOpenDefault,onOpe
   return <span className="page-manager-design-split">
     <button className="page-manager-icon-action" type="button"
       aria-label={'Design '+label} title={'Open '+primary+' page designer'}
-      onClick={onOpenDefault}><PanelsTopLeft size={16}/></button>
+      onClick={event=>{event.stopPropagation();onOpenDefault();}}><PanelsTopLeft size={16}/></button>
     <button ref={buttonRef} className="page-manager-design-layout-trigger" type="button"
       aria-label={'Choose design layout for '+label} aria-haspopup="menu"
-      aria-expanded={menuOpen} onClick={openMenu}><ChevronDown size={13}/></button>
+      aria-expanded={menuOpen} onClick={event=>{event.stopPropagation();openMenu();}}><ChevronDown size={13}/></button>
     {menuPosition && createPortal(
       <div ref={menuRef} className="page-manager-design-layout-menu" role="menu"
         aria-label={'Design layout for '+label} style={menuPosition}>
         {ordered.map(variant=><button key={variant} type="button" role="menuitem"
           className="page-manager-design-layout-option"
-          onClick={()=>{closeMenu();onOpenLayout(variant);}}>
+          onClick={event=>{event.stopPropagation();closeMenu();onOpenLayout(variant);}}>
           {pageLayoutOptionLabel(variant,summary)}
         </button>)}
       </div>,document.body)}
