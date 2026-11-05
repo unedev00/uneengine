@@ -257,3 +257,30 @@
  >.smart-ribbon.smart-design2-ribbon{
  box-sizing:border-box!important;max-width:100%!important;
 }
+
+/* FIX: The left dock stacks its context vertically. A 420px flex basis on
+ * the area picker became 420px of HEIGHT and produced the enormous blank box.
+ * Keep its existing 420px width and 30px height instead. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-design2-area-picker{
+  box-sizing:border-box!important;order:0!important;
+  flex:0 0 30px!important;width:420px!important;min-width:420px!important;max-width:420px!important;
+  height:30px!important;min-height:30px!important;max-height:30px!important;
+}
+/* Keep the original 440px dock and every icon width. Reserve enough room
+ * for the vertical scrollbar so the sixth 66px alignment button is visible. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
+  padding:10px 2px!important;
+}
+/* Lock, nesting and fill-canvas belong INSIDE Dimensions, not in an orphan
+ * second bordered section. Flatten only this nested command wrapper. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-dimensions
+ >.smart-design2-arrange-actions[data-design-section="dimensions"]{
+  display:contents!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-dimensions
+ >.smart-design2-arrange-actions[data-design-section="dimensions"]>.smart-design2-arrange-action{
+  flex:0 0 58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;
+}
