@@ -2776,7 +2776,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerMatchingRoutes(app,db,rbac);
   registerFieldExactIndexRoutes(app,db,rbac);
   registerMetadataLoaderRoutes(app,db,rbac,definitions,objectManagerMetadata,objectLifecycle);
-  registerDataLoaderRecordRoutes(app,records,definitions,rbac,externalIdUpsert);
+  registerDataLoaderRecordRoutes(app,db,records,definitions,rbac,externalIdUpsert);
   registerDataLoaderRibbonRoutes(app,db,rbac);
   registerBusinessProcessRoutes(app,db,rbac);
   registerObjectLabelTranslationRoutes(app,db,rbac);
