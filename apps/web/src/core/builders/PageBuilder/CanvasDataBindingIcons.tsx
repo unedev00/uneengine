@@ -38,24 +38,44 @@ function textRect(element:HTMLElement):Rect|null{
  }
  return null;
 }
-function spot(rect:Rect,anchor:Rect,propertyKey:string,index:number,used:IconPosition[]){
- const top=anchor.top-rect.top;
- const middle=top+(anchor.height-ICON_SIZE)/2;
- const right=anchor.right-rect.left;
- const left=anchor.left-rect.left;
- const candidates:{x:number;y:number}[]=[
+type Box={w:number;h:number};
+/** Positions are computed in the host's own (unscaled) CSS pixels so icons
+ * stay on their field at every canvas zoom level. */
+function local(anchor:Rect,host:Rect,sx:number,sy:number):Rect{
+ const left=(anchor.left-host.left)/sx,top=(anchor.top-host.top)/sy;
+ const width=anchor.width/sx,height=anchor.height/sy;
+ return {left,top,right:left+width,bottom:top+height,width,height};
+}
+function spot(box:Box,a:Rect,propertyKey:string,index:number,caption:boolean,used:IconPosition[]){
+ const step=index*(ICON_SIZE+SPACING);
+ const middle=a.top+(a.height-ICON_SIZE)/2;
+ const centreX=a.left+(a.width-ICON_SIZE)/2;
+ const large=a.width>=ICON_SIZE*3&&a.height>=ICON_SIZE*2;
+ const candidates:{x:number;y:number}[]=propertyKey==='tabCaptionFormula'
   // Tabs always keep their source icon in their own caption box.
-  ...(propertyKey==='tabCaptionFormula'?[{x:right-ICON_SIZE-2,y:top+2}]:[]),
-  {x:right+SPACING+index*(ICON_SIZE+SPACING),y:middle},
-  {x:right-ICON_SIZE-2-index*(ICON_SIZE+SPACING),y:top+2},
-  {x:left-ICON_SIZE-SPACING-index*(ICON_SIZE+SPACING),y:middle},
-  {x:left+2+index*(ICON_SIZE+SPACING),y:top+2}
- ];
+  ?[{x:a.right-ICON_SIZE-2-step,y:a.top+2}]
+  :caption
+  // Text: directly after the visible caption, vertically centred on it.
+  ?[{x:a.right+SPACING+step,y:middle},{x:a.left-ICON_SIZE-SPACING-step,y:middle},
+    {x:a.right-ICON_SIZE-2-step,y:middle}]
+  // Image / box / input: centred in the field when there is room, otherwise
+  // inside its right edge, vertically centred.
+  :large
+  ?[{x:centreX+step,y:middle},{x:centreX-step,y:middle}]
+  :[{x:a.right-ICON_SIZE-4-step,y:middle},{x:a.right+SPACING+step,y:middle}];
+ const fits=(c:{x:number;y:number})=>c.x>=2&&c.y>=2&&
+  c.x+ICON_SIZE<=box.w-2&&c.y+ICON_SIZE<=box.h-2;
  for(const candidate of candidates){
-  if(candidate.x<2||candidate.y<2||candidate.x+ICON_SIZE>rect.width-2||
-     candidate.y+ICON_SIZE>rect.height-2)continue;
+  if(!fits(candidate))continue;
   if(used.some(other=>overlaps(other,candidate)))continue;
   return candidate;
+ }
+ // Still anchored to the field: clamp its first spot inside the component.
+ const first=candidates[0];
+ if(first){
+  const clamped={x:Math.min(Math.max(2,first.x),box.w-ICON_SIZE-2),
+   y:Math.min(Math.max(2,first.y),box.h-ICON_SIZE-2)};
+  if(fits(clamped)&&!used.some(other=>overlaps(other,clamped)))return clamped;
  }
  return null; // Never manufacture a grid of unanchored fallback icons.
 }
@@ -79,16 +99,22 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
    frame=0;
    const hostRect=host.getBoundingClientRect();
    if(!validRect(hostRect)){setIcons([]);return;}
+   // Canvas zoom scales the host with a transform; undo it for positioning.
+   const sx=host.offsetWidth>0?hostRect.width/host.offsetWidth:1;
+   const sy=host.offsetHeight>0?hostRect.height/host.offsetHeight:1;
+   const box={w:host.offsetWidth||hostRect.width,h:host.offsetHeight||hostRect.height};
+   const watched=new Set<Element>();
    const next:IconPosition[]=[];
    const selected=new Set<string>();
    for(const element of host.querySelectorAll<HTMLElement>('[data-md-bind]')){
     // Nested components manage their own bindings when selected.
     if(element.closest('[data-component-id]')!==host)continue;
+    watched.add(element);
     const clipped=clipRect(element,host);
     if(!clipped)continue;
     const caption=textRect(element);
-    const anchor=element.dataset.mdBind==='tabCaptionFormula'?clipped:
-     caption&&validRect(caption)?caption:clipped;
+    const isCaption=element.dataset.mdBind!=='tabCaptionFormula'&&Boolean(caption&&validRect(caption));
+    const anchor=local(isCaption?caption!:clipped,hostRect,sx,sy);
     const properties=(element.dataset.mdBind??'').trim().split(/\s+/).filter(Boolean);
     const titles=(element.dataset.mdBindTitles??'').split('|');
     properties.forEach((propertyKey,index)=>{
@@ -104,15 +130,19 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
      const identity=perItem?itemId??String(itemIndex??0):'shared';
      const key=propertyKey+':'+identity;
      if(selected.has(key))return;
-     selected.add(key);
-     const pos=spot(hostRect,anchor,propertyKey,index,next);
+     const pos=spot(box,anchor,propertyKey,index,isCaption,next);
+     // Try the next visible row/card if this one has no room for the icon.
      if(!pos)return;
+     selected.add(key);
      next.push({key,propertyKey,label:displayLabel,x:pos.x,y:pos.y,
       ...(perItem?{itemIndex:Number.isFinite(itemIndex)?itemIndex:undefined,itemId}: {})});
     });
    }
+   // Fields that load or resize later (images, async records) re-position.
+   for(const element of watched)if(!observedFields.has(element)){observedFields.add(element);resize.observe(element);}
    setIcons(old=>JSON.stringify(old)===JSON.stringify(next)?old:next);
   };
+  const observedFields=new WeakSet<Element>();
   const schedule=()=>{if(!frame)frame=requestAnimationFrame(position);};
   const resize=new ResizeObserver(schedule);
   resize.observe(host);
@@ -122,7 +152,10 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
      change.target.closest('.canvas-data-bindings')))return;
    schedule();
   });
-  observer.observe(host,{childList:true,subtree:true,characterData:true});
+  observer.observe(host,{childList:true,subtree:true,characterData:true,
+   attributes:true,attributeFilter:['data-md-bind','style','class','src']});
+  // Images change size without DOM mutations once they finish loading.
+  host.addEventListener('load',schedule,true);
   host.addEventListener('scroll',schedule,true);
   window.addEventListener('resize',schedule);
   schedule();
@@ -130,19 +163,24 @@ export default function CanvasDataBindingIcons({componentId,api,definitions,acti
    if(frame)cancelAnimationFrame(frame);
    resize.disconnect();observer.disconnect();
    host.removeEventListener('scroll',schedule,true);
+   host.removeEventListener('load',schedule,true);
    window.removeEventListener('resize',schedule);
   };
  },[componentId,api,definitions]);
  return <div ref={root} className="canvas-data-bindings" role="group" aria-label="Selected component data bindings">
   {icons.map(icon=><button key={icon.key} type="button"
    className={'canvas-data-icon-button'+(active?.componentId===componentId&&
-    active.propertyKey===icon.propertyKey&&active.itemId===icon.itemId&&
-    active.itemIndex===icon.itemIndex?' is-active':'')}
+    active.propertyKey===icon.propertyKey&&(active.itemId??null)===(icon.itemId??null)&&
+    (active.itemIndex??null)===(icon.itemIndex??null)?' is-active':'')}
+   aria-pressed={active?.componentId===componentId&&active.propertyKey===icon.propertyKey}
    style={{left:icon.x,top:icon.y}} data-binding-property={icon.propertyKey}
    data-binding-item={icon.itemId??icon.itemIndex}
    title={'Edit '+icon.label+' in Data formula bar'}
    aria-label={'Edit '+icon.label+' data source'}
+   draggable={false}
    onPointerDown={event=>event.stopPropagation()}
+   onMouseDown={event=>event.stopPropagation()}
+   onDragStart={event=>{event.preventDefault();event.stopPropagation();}}
    onClick={event=>{event.preventDefault();event.stopPropagation();
     onChoose({propertyKey:icon.propertyKey,itemIndex:icon.itemIndex,itemId:icon.itemId,displayLabel:icon.label});}}>
    <Database aria-hidden="true" size={14}/>

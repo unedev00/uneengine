@@ -178,7 +178,9 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
           borderRadius:number(p.radius,12),boxSizing:"border-box",overflow:"hidden"}}>
         <span>Image Here</span>
       </div>
-     :grid&&preview&&!image&&(sample||p.builderPreview!==true)
+     // Builder only: an unbound image keeps a visible "Image Here" box on real
+     // rows too, so its Data Source icon stays reachable after an object is chosen.
+     :grid&&preview&&!image&&(sample||p.builderPreview!==true||!String(p.imageSource??p.src??"").trim())
     ?<div className="smart-card-image-placeholder" aria-hidden="true" style={{
        height:"100%",minHeight:0,display:"grid",placeItems:"center",
        background:"var(--md-card-placeholder,#edf2f7)",color:"#526276",fontSize:12
