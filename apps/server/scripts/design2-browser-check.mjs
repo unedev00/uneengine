@@ -637,6 +637,34 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   'Second tab icon must select its actual caption');
  assert.ok(await formulaInput.evaluate(el=>document.activeElement===el),
   'The existing Formula Bar must be focused after clicking an icon');
+
+ // The topbar must NEVER be covered by its own formula signature tooltip.
+ // Exercise a nested function with both argument help and completion visible.
+ await formulaInput.fill('=COLLECTION("Menu", EX');
+ const suggestionPopup=page.getByRole('listbox',{name:'Formula functions'});
+ await suggestionPopup.waitFor({state:'visible'});
+ const nestedHelp=suggestionPopup.getByRole('status',{name:'Formula argument help'});
+ await nestedHelp.waitFor({state:'visible'});
+ const formulaBounds=await formulaInput.boundingBox();
+ const suggestionBounds=await suggestionPopup.boundingBox();
+ const nestedHelpBounds=await nestedHelp.boundingBox();
+ assert.ok(formulaBounds&&suggestionBounds&&nestedHelpBounds);
+ assert.ok(suggestionBounds.y>=formulaBounds.y+formulaBounds.height+2,
+  'Autocomplete must open below, never in front of, the Formula Bar');
+ assert.ok(nestedHelpBounds.y>=formulaBounds.y+formulaBounds.height+2,
+  'Function signature must appear inside the dropdown below the typing caret');
+ assert.equal(await page.locator('body > .smart-formula-signature').count(),0,
+  'Nested autocomplete must not create a second floating tooltip over the Formula Bar');
+ assert.equal(await formulaInput.inputValue(),'=COLLECTION("Menu", EX',
+  'Opening autocomplete must not change the current formula text');
+ await formulaInput.fill('=COLLECTION("Menu", ');
+ const standaloneHelp=page.locator('body > .smart-formula-signature');
+ await standaloneHelp.waitFor({state:'visible'});
+ const standaloneBounds=await standaloneHelp.boundingBox();
+ assert.ok(standaloneBounds&&standaloneBounds.y>=formulaBounds.y+formulaBounds.height+2,
+  'Standalone function help must remain below the Formula Bar');
+ await formulaInput.fill('Tab 2');
+
  const cartCanvas=page.locator('[data-component-id="browser-design2-cart"]').first();
  await cartCanvas.click({position:{x:10,y:10}});
  const cartKeys=await auditBindings('browser-design2-cart');
