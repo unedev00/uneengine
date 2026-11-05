@@ -1,4 +1,5 @@
 import ResponsiveDataList from '../../records/ResponsiveDataList/ResponsiveDataList';
+import ScheduledActionRecords from './ScheduledActionRecords';
 import { RefreshCw, XCircle } from 'lucide-react';
 import {useEffect,useState} from 'react';
 import type { FlowInterviewMetadata } from '../../metadata/Definitions/metadata';
@@ -162,6 +163,7 @@ export default function FlowInterviews({
             </tr>)}</tbody>
           </table></div>}
       </section>}
+      <ScheduledActionRecords request={request}/>
     </div>
   );
 }
