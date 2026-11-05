@@ -148,7 +148,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    };
  },[daysOpen]);
  // Explicit selections only: the page object must not silently supply field suggestions.
- const sourceObjectKeys=Object.keys(properties).filter(key=>/^objectApiName(?:[2-9][0-9]*)?$/.test(key))
+ const sourceObjectKeys=Object.keys(properties).filter(key=>/^objectApiName(?:[2-9]|[1-9][0-9]+)?$/.test(key))
   .sort((a,b)=>(a==='objectApiName'?1:Number(a.slice(13)))-
     (b==='objectApiName'?1:Number(b.slice(13))));
  const sourceObjectNames=sourceObjectKeys
