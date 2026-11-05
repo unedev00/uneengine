@@ -1,6 +1,5 @@
-/* Permanent Page Builder left dock. The metadata-driven property editor and
- * Insert gallery use the existing shared renderer, with no duplicate top ribbon.
- * The dock scrolls vertically rather than clipping extra controls. */
+/* Permanent left-docked Page Builder inspector. Retired top-ribbon toggles and
+ * collapsed-ribbon modes are intentionally not included. */
 
 /* Canvas area: dock on the left, canvas fills the rest. */
 .builder-page .page-builder-layout.canvas-unified-builder.has-design-dock{
