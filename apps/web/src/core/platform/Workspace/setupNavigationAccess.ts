@@ -56,7 +56,7 @@ export function canOpenSetupRoute(route:AppRoute,permissions:readonly string[]):
   if(route.workspace==='report-builder')
     return canSeeSetupItem(route.resourceApiName==='viewer'?'Reports View':'Reports Builder',permissions);
   if(route.workspace==='dashboard-builder')
-    return canSeeSetupItem(route.dashboardView?'Dashboard View':'Dashboard Builder',permissions);
+    return canSeeSetupItem(route.dashboardView||route.resourceApiName==='viewer'?'Dashboard View':'Dashboard Builder',permissions);
   if(route.workspace==='named-credentials')
     return canSeeSetupItem(route.resourceApiName==='Webhooks'?'Webhook Endpoints':
       route.resourceApiName==='NamedDevices'?'Named Devices':'Named Credentials',permissions);
