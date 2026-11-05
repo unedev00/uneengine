@@ -33,5 +33,12 @@ test('$flow formula picks the Flow at runtime; blank result does nothing',()=>{
 test('$flow exists only in the Action formula bar',()=>{
  assert.match(String(evaluateFieldExpressionDetailed('=$flow.ApplePay',{},{}).error),/only available in the Action formula bar/);
  assert.ok(!formulaDollarSuggestions([],'').some(item=>item.reference.startsWith('$flow.')));
- assert.ok(formulaDollarSuggestions([],'flow',flows).some(item=>item.reference==='$flow.ApplePay'));
+ assert.ok(formulaDollarSuggestions([],'flow',flows).some(item=>item.reference==='FLOW(ApplePay)'));
+});
+
+test('FLOW authoring and legacy branches select the same runnable flow',()=>{
+ const formula='=IF($state.Total > 5, FLOW(ApplePay), $flow.CardMachine)';
+ assert.equal(validateFlowActionFormula(formula,flows),null);
+ assert.equal(flowActionFormulaTarget({actionType:'Formula',formula},{},{Total:7},'s',flows),'ApplePay');
+ assert.match(String(validateFlowActionFormula('FLOW(OldPay)',flows)),/inactive/);
 });

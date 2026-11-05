@@ -96,7 +96,7 @@ export default function PageBuilderActionRibbon({
  const selectedFlow=active&&selected.actionType==='Flow'?metadataSelection(flows,selected.flowApiName):undefined;
  const selectedFlowName=String(selectedFlow?.apiName??(active&&selected.actionType==='Flow'?selected.flowApiName??'':''));
  const formulaValue=!active?'':selected.actionType==='Formula'?String(selected.formula??'')
-  :selected.actionType==='Flow'&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedFlowName)?'$flow.'+selectedFlowName:'';
+  :selected.actionType==='Flow'&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedFlowName)?'=FLOW('+selectedFlowName+')':'';
  const formulaEditable=active&&(selected.actionType==='Formula'||selected.actionType==='Flow');
  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
   ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
@@ -209,7 +209,7 @@ export default function PageBuilderActionRibbon({
      <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
        <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
        <span className="page-action-formula-symbol" aria-hidden="true"
-         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"; IF($state.Total > 500, $flow.ApplePay, $flow.CardMachine)'}>ƒx</span>
+         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"; IF($state.Total > 500, FLOW(ApplePay), FLOW(CardMachine))'}>ƒx</span>
        <SmartFormulaField label="Selected action formula" fields={formulaFields}
          stateOptions={stateOptions}
          flowReferences={availableFlows.map(flow=>({apiName:flow.apiName,label:flow.label}))}

@@ -2,7 +2,7 @@ import {formulaFunctionCatalog} from '../../../../../server/src/expression-engin
 
 /** Excel-style argument guidance for any registered function, including nested calls.
  * Quotes and commas inside nested expressions are ignored. No evaluation occurs. */
-export function formulaSignatureAt(source:string,caret:number){
+export function formulaSignatureAt(source:string,caret:number,actions=false){
  const frames:Array<{name:string;argument:number}>=[];
  let quote=false;
  for(let index=0;index<Math.max(0,Math.min(caret,source.length));index++){
@@ -20,6 +20,24 @@ export function formulaSignatureAt(source:string,caret:number){
  }
  const active=frames.at(-1);
  if(!active)return null;
+ if(actions){
+  const signatures:Record<string,string[]>={
+   FLOW:['FlowApiName'],ACTIONS:['Action'],CREATERECORD:['Object','Field','Value'],
+   UPDATERECORD:['Object','RecordId','Field','Value'],DELETERECORD:['Object','RecordId'],AS:['variable']
+  };
+  const signature=Object.prototype.hasOwnProperty.call(signatures,active.name)?signatures[active.name]:undefined;
+  if(signature){
+   const pairs=['CREATERECORD','UPDATERECORD'].includes(active.name);
+   const repeating=pairs||active.name==='ACTIONS';
+   const count=repeating?Math.max(signature.length,active.argument+2):signature.length;
+   const parameters=Array.from({length:count},(_,i)=>({
+    name:signature[i]??(pairs?signature[signature.length-2+(i-signature.length)%2]:'Action'),
+    optional:i>=signature.length
+   }));
+   return {name:active.name,argument:Math.min(active.argument,count-1),parameters,
+    minimumArguments:signature.length,maximumArguments:count};
+  }
+ }
  const definition=formulaFunctionCatalog.get(active.name);
  if(!definition)return null;
  const {parameters,minimumArguments,maximumArguments}=definition.signature;

@@ -1,3 +1,4 @@
+import {compileRecordActions,isRecordAction,normalizeFlowCalls,recordActionNames} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
@@ -53,11 +54,11 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [activeSuggestion,setActiveSuggestion]=useState(0);
  const suggestionListId=useId();
  useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
- const functions=getFormulaFunctionNames('ribbon_binding');
+ const functions=[...getFormulaFunctionNames('ribbon_binding'),...(flowReferences?['FLOW',...recordActionNames]:[])];
  const functionSuggestions=functionMatch?functions.filter(name=>
-   name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
+   name.includes(functionMatch.query.toUpperCase())).slice(0,12):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
- const hint=focused?formulaSignatureAt(draft,caret):null;
+ const hint=focused?formulaSignatureAt(draft,caret,Boolean(flowReferences)):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
@@ -137,6 +138,9 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(!flowReferences&&/\$flow\b/i.test(next))return '$flow is only available in the Action formula bar';
   const custom=validate?.(next);
   if(custom)return custom;
+  if(flowReferences&&isRecordAction(next)){
+   try{compileRecordActions(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
+  }
   const source=next.trim();
   if(!isFormulaDraft(source))return null;
   if(tokenEndsInComponentPrefix(source))return 'Select a component and property';
@@ -146,7 +150,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     return 'Complete the function with arguments';
   try{
    const expression=new Parser(tokenize(source.startsWith('=')?source.slice(1):source)).parse();
-   validateFormulaFunctions(expression,'ribbon_binding');
+   validateFormulaFunctions(flowReferences?normalizeFlowCalls(expression):expression,'ribbon_binding');
    return null;
   }catch(error){return error instanceof Error?error.message:'Incomplete formula';}
  };

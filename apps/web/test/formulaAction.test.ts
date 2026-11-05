@@ -96,3 +96,16 @@ test('Page State formula assignment updates its chosen target without a Record A
  },{value:'Food'},{},[],'' );
  assert.deepEqual(result,{changes:[{key:'categoryId',value:'Food'}],recordChanged:false});
 });
+
+test('record actions await results, preserve value types and stop after a failure',async()=>{
+ const calls:Array<{path:string;init?:RequestInit}>=[];
+ const request=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  calls.push({path,init});
+  if(calls.length===2)throw Error('Access denied');
+  return {record:{Id:'r1'}} as T;
+ };
+ const formula='=ACTIONS(CREATERECORD(Item, Amount, $state.total, AS(item)), UPDATERECORD(Item, item.Id, Amount, 2), DELETERECORD(Item, item.Id))';
+ await assert.rejects(executePageFormulaAction(request,{formula},{},{total:12},[],'Item'),/after 1 confirmed.*Access denied/);
+ assert.deepEqual(calls.map(call=>call.path),['/records/Item','/records/Item/r1']);
+ assert.deepEqual(JSON.parse(String(calls[0].init?.body)),{Amount:12});
+});

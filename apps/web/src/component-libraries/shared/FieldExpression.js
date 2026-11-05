@@ -1,3 +1,4 @@
+import {normalizeFlowCalls} from '../../../../server/src/expression-engine/ActionFormulas.js';
 /** Bounded browser formula evaluator shared by page bindings and UNE renderers.
  * It reads only own properties of the already-authorised record and never evals code.
  */
@@ -282,7 +283,11 @@ const evaluateCall=(name,args,context)=>{
 };
 export const componentReaderKey=Symbol.for('metadrive.pageFormulaComponentReader');
 function parse(source,record,formulaContext){
- const expression=new Parser(tokenize(source)).parse();
+ const parsed=new Parser(tokenize(source)).parse();
+ const expression=formulaContext.flowReferences?normalizeFlowCalls(parsed):parsed;
+ return evaluateParsedExpression(expression,record,formulaContext);
+}
+export function evaluateParsedExpression(expression,record,formulaContext){
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=(reference,currentRecord=record)=>{
    // Page-local globals are scoped inputs; never read storage or arbitrary records.
