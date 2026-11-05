@@ -1,6 +1,6 @@
 import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent,type CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
-import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff,Hand} from 'lucide-react';
+import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff,Hand,ChevronDown,Plus,X} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab,Design2Slot,Design2SlotRule} from './uneBuilderPropertyInventory';
@@ -39,6 +39,8 @@ type Props={tab:UneBuilderTab;api:string;definitions:readonly UneRibbonProperty[
  design2Slots?:readonly Design2Slot[];design2SlotRules?:readonly Design2SlotRule[];componentVisible?:boolean;
  onVisibleChange?:(visible:boolean)=>void;
  design2Arrange?:ArrangeRibbonProps;
+ inspectorSection?:string|null;
+ onInspectorSectionChange?:(section:string|null)=>void;
  /** Data only: 'formulaBar' renders just the Formula Bar (topbar); 'source' just the
   * Source object selectors (end of Design). Both reuse this single Data engine. */
  part?:'formulaBar'|'source';};
@@ -50,7 +52,7 @@ const cartSummaryLabels:Record<string,{key:string;slot:string}>={
  taxValue:{key:'taxLabel',slot:'Summary 3'},
  discountValue:{key:'discountLabel',slot:'Summary 4'}
 };
-export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',canvasBinding=null,design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange,part}:Props){
+export default function SmartRibbon({tab,api,definitions,properties,onChange,objects,pageObjectApiName='',position,onPositionChange,layoutMode,sharedPropertyIds,mixedPropertyIds,selectedApis,pageComponents=[],componentId='',canvasBinding=null,design2Slots=[],design2SlotRules=[],componentVisible=true,onVisibleChange,design2Arrange,inspectorSection,onInspectorSectionChange,part}:Props){
  const uploadInput=useRef<HTMLInputElement>(null);
  const [uploadBusy,setUploadBusy]=useState(false);
  const [uploadError,setUploadError]=useState('');
@@ -91,7 +93,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   return null;
  };
 
- const [design2Area,setDesign2Area]=useState('Body');
+ const expandedInspector=inspectorSection===undefined?'Body':inspectorSection;
+ const chooseInspectorSection=(section:string)=>onInspectorSectionChange?.(expandedInspector===section?null:section);
  const [countKey,setCountKey]=useState<'cardsPerRow'|'cardsPerColumn'>('cardsPerRow');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
@@ -145,8 +148,27 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    };
  },[daysOpen]);
  // Explicit selections only: the page object must not silently supply field suggestions.
- const sourceObjectNames=['objectApiName','objectApiName2','objectApiName3']
+ const sourceObjectKeys=Object.keys(properties).filter(key=>/^objectApiName(?:[2-9][0-9]*)?$/.test(key))
+  .sort((a,b)=>(a==='objectApiName'?1:Number(a.slice(13)))-
+    (b==='objectApiName'?1:Number(b.slice(13))));
+ const sourceObjectNames=sourceObjectKeys
   .map(key=>fallback(properties[key])).filter((name,index,all)=>name&&all.indexOf(name)===index);
+ const sourceCount=Math.min(100,Math.max(1,Number(properties.objectSourceCount)||1,
+  ...sourceObjectKeys.filter(key=>fallback(properties[key])).map(key=>
+    key==='objectApiName'?1:Number(key.slice(13)))));
+ const sourceBaseProperty=definitions.find(item=>item.id==='objectApiName'&&item.tab==='Data');
+ const sourceKey=(index:number)=>index===1?'objectApiName':'objectApiName'+index;
+ const updateSourceCount=(next:number)=>onChange({...properties,objectSourceCount:next,
+   [sourceKey(next)]:properties[sourceKey(next)]??''});
+ const removeSource=(index:number)=>{
+  const next={...properties};
+  const values=Array.from({length:sourceCount},(_,offset)=>fallback(properties[sourceKey(offset+1)]))
+    .filter((_,offset)=>offset!==index-1);
+  for(let n=1;n<=sourceCount;n++)delete next[sourceKey(n)];
+  values.forEach((name,offset)=>{next[sourceKey(offset+1)]=name;});
+  next.objectSourceCount=values.length;
+  onChange(next);
+ };
  const sourceObjects=objects.filter(item=>sourceObjectNames.includes(item.apiName))
   .sort((a,b)=>sourceObjectNames.indexOf(a.apiName)-sourceObjectNames.indexOf(b.apiName));
  const objectName=sourceObjectNames[0]??'';
@@ -179,7 +201,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
  if(api==='smart_calendar'&&!design2Areas.includes('Calendar'))design2Areas.push('Calendar');
- const activeDesign2Area=design2Areas.includes(design2Area)?design2Area:design2Areas[0]??'Body';
+ const activeDesign2Area=expandedInspector&&design2Areas.includes(expandedInspector)?expandedInspector:'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE ribbon scaffold for all Design 2 sections and all components.
  // Body owns the approved R1-R3 visual icon matrix; the two Image icons
@@ -191,19 +213,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    ...design2Slots.filter(slot=>slot.area==='Image'&&
      (slot.slotKey==='placement'||slot.slotKey==='imageFill'))
  ].sort((a,b)=>a.row-b.row||a.order-b.order);
- const areaSlots=design2Slots.filter(slot=>slot.area===activeDesign2Area);
- const design2RenderedSlots:Design2Slot[]=design2TemplateSlots.map(template=>{
-   // Match the semantic slot, not the old section-local position. Older
-   // metadata areas used R2 for Fill and R3C3 for Text Size; those should
-   // no longer shift the whole ribbon when the section changes.
+ const design2RenderedSlots:Design2Slot[]=design2Areas.flatMap(area=>{
+  const areaSlots=design2Slots.filter(slot=>slot.area===area);
+  return design2TemplateSlots.map(template=>{
    const actual=areaSlots.find(slot=>slot.slotKey===template.slotKey);
-   const bodyImagePlacement=activeDesign2Area==='Body'&&template.slotKey==='placement'&&
-     ['smart_card_grid','smart_image','smart_cart'].includes(api);
-   return {
-     ...template,area:activeDesign2Area,
-     propertyKey:bodyImagePlacement?'imagePlacement':actual?.propertyKey??null,
-     fallbackKey:actual?.fallbackKey??template.fallbackKey
-   };
+   const bodyImagePlacement=area==='Body'&&template.slotKey==='placement'&&
+    ['smart_card_grid','smart_image','smart_cart'].includes(api);
+   return {...template,area,
+    propertyKey:bodyImagePlacement?'imagePlacement':actual?.propertyKey??null,
+    fallbackKey:actual?.fallbackKey??template.fallbackKey};
+  });
  });
  const design2Properties=tab==='Design2'?design2RenderedSlots
    .map(slot=>{
@@ -233,11 +252,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        ['bold','wrap'].includes(slot.slotKey)?'boolean':
        ['selection','shape','textMode','orientation','placement','imageFill'].includes(slot.slotKey)?'choice':'number';
      const original:UneRibbonProperty=assigned??fallbackDefinition??{
-       id:slot.fallbackKey,label:slot.slotKey,tab:'Design2',group:activeDesign2Area,
+       id:slot.fallbackKey,label:slot.slotKey,tab:'Design2',group:slot.area,
        kind:fallbackKind,components:[]
      };
      return {...original,label:slot.slotKey==='focused'?'Focused Color':original.label,
-       tab:'Design2' as const,group:activeDesign2Area,
+       tab:'Design2' as const,group:slot.area,
        components:assigned?assigned.components:[],
        designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
@@ -275,7 +294,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    !(tab==='Layout'&&hasDesign2LayoutEquivalent(
      p.id,selectedComponentApis,p.components,design2Slots,design2SlotRules)));
  const groups=[...new Set(displayProperties.map(p=>p.group))];
- const groupOrder=tab==='Design2'?[activeDesign2Area]
+ const groupOrder=tab==='Design2'?design2Areas
   :tab==='Data'?['Source','Values','Cart','Cart columns','Cart totals','Card Grid']
   :tab==='Design'?['Body','Shape','Typography','Tabs','Header','Badge','Header Supporting','Button',
     'Table','Row','Summary','Summary 2','Card Grid']
@@ -364,8 +383,10 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  ));
  const controls=(property:UneRibbonProperty)=>{
    const slotPlacement=tab==='Design2'?design2RenderedSlots.find(slot=>
-     slot.area===activeDesign2Area&&slot.row===property.designRow&&slot.order===property.designOrder):undefined;
-   const supported=property.components.includes(api)&&(!sharedPropertyIds||sharedPropertyIds.includes(property.id));
+     slot.area===property.group&&slot.row===property.designRow&&slot.order===property.designOrder):undefined;
+   const sharedKey=tab==='Data'&&/^objectApiName[0-9]+$/.test(property.id)?'objectApiName':property.id;
+   const supported=property.components.includes(api)&&(!sharedPropertyIds||
+     sharedPropertyIds.includes(property.id)||sharedPropertyIds.includes(sharedKey));
    const kind=api==='smart_calendar'&&property.id==='shadow'
      ? 'shadow' : property.kindOverrides?.[api]??property.kind;
    const key=api==='smart_calendar'&&property.id==='shadow'?'shadow':property.valueKeys?.[api]??property.id;
@@ -591,14 +612,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   {tab==='Design2'?<section className="smart-ribbon-group smart-design2-group"
       data-design-three-row="true" data-smart-tab="Design2" aria-label="Design 2 contextual properties">
     <div className="smart-design2-workbench">
+      <section className="smart-inspector-section smart-design2-dimensions-section">
+        <button type="button" className="smart-inspector-section-toggle"
+          aria-expanded={expandedInspector==='Dimensions & Alignment'}
+          onClick={()=>chooseInspectorSection('Dimensions & Alignment')}>
+          <ChevronDown size={15} aria-hidden="true"/>Dimensions & Alignment
+        </button>
+        {expandedInspector==='Dimensions & Alignment'&&<div className="smart-inspector-section-content">
       <div className="smart-design2-context" data-design-row={0}>
-        <label className="smart-design2-area-picker">
-          <span aria-hidden="true">Select it</span>
-          <select className="smart-design2-area-select" aria-label="Select Design 2 area"
-            value={activeDesign2Area} onChange={event=>setDesign2Area(event.target.value)}>
-            {design2Areas.map(area=><option value={area} key={area}>{area}</option>)}
-          </select>
-        </label>
         <div className="smart-design2-dimensions" role="group" aria-label="Dimensions">
         {(()=>{
           const shown=componentVisible;
@@ -628,10 +649,20 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange} section="arrangement"/>
         <Design2CanvasActions area={activeDesign2Area} arrange={design2Arrange} section="dimensions"/>
       </div>
+        </div>}
+      </section>
+      <div className="smart-design2-area-list">
+        {design2Areas.map(area=><section className="smart-inspector-section smart-design2-area-section"
+          data-design-area={area} key={area}>
+          <button type="button" className="smart-inspector-section-toggle"
+            aria-expanded={expandedInspector===area} onClick={()=>chooseInspectorSection(area)}>
+            <ChevronDown size={15} aria-hidden="true"/>{area}
+          </button>
+          {expandedInspector===area&&<div className="smart-inspector-section-content">
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
           data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)+(row===1?' 79px':'')}}>
-          {sectionRow(activeDesign2Area,row).map(controls)}
+          {sectionRow(area,row).map(controls)}
           {row===1&&(()=>{
         const key=api==='smart_tabs'?'tabCount':
           api==='smart_cart'?'cardsPerRow':
@@ -640,7 +671,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
         const supported=Boolean(property?.components.includes(api)&&
           (!sharedPropertyIds||sharedPropertyIds.includes(key)));
         const sourceBound=api==='smart_tabs'&&smartTabsHaveDataSource(properties);
-        const enabled=activeDesign2Area==='Body'&&supported&&!sourceBound;
+        const enabled=area==='Body'&&supported&&!sourceBound;
         const raw=properties[property?.valueKeys?.[api]??key]??
           property?.defaultsOverrides?.[api]??property?.default??1;
         const numeric=Number(raw);
@@ -676,7 +707,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           </div>)}
       </div>
 
-      {activeDesign2Area==='Calendar'&&api==='smart_calendar'&&
+      {area==='Calendar'&&api==='smart_calendar'&&
         <div className="smart-design2-calendar-controls" role="group" aria-label="Calendar settings">
           {(['showDays','firstDay'] as const).map(id=>{
             const property=definitions.find(p=>p.id===id);
@@ -685,7 +716,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
               designOrder:id==='showDays'?1:2}):null;
           })}
         </div>}
-      {activeDesign2Area==='Image'&&api==='smart_card_grid'&&(()=>{
+      {area==='Image'&&api==='smart_card_grid'&&(()=>{
         const property=definitions.find(p=>p.id==='imageBorderColor'&&p.components.includes(api));
         return property?<div className="smart-design2-image-border">
           <RibbonColorPalette variant="property" kind="border" label="Image Border Color"
@@ -693,15 +724,45 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             onChange={value=>onChange({...properties,imageBorderColor:value})}/>
         </div>:null;
       })()}
+          </div>}
+        </section>)}
+      </div>
     </div>
   </section>:tab==='Data'?<>
-    {part!=='formulaBar'&&sections.filter(group=>group==='Source').map(section=><section className="smart-ribbon-group" key={section}
-      data-design-three-row="true" data-smart-tab={tab} aria-label={section}
-      style={{'--smart-section-width':sectionWidth(section)+'px'} as CSSProperties}>
-      <div className="smart-ribbon-items">{[1,2,3].map(row=><div className="smart-ribbon-row"
-        data-design-row={row} key={row}>{sectionRow(section,row).map(controls)}</div>)}</div>
-      <span className="smart-ribbon-caption">{section}</span>
-    </section>)}
+    {part!=='formulaBar'&&sections.filter(group=>group==='Source').map(section=>
+      <section className="smart-inspector-section smart-source-section" key={section} aria-label="Object Source">
+        <div className="smart-source-heading">
+          <button type="button" className="smart-inspector-section-toggle"
+            aria-expanded={expandedInspector==='Object Source'} onClick={()=>chooseInspectorSection('Object Source')}>
+            <ChevronDown size={15} aria-hidden="true"/>Object Source ({sourceCount})
+          </button>
+          <button type="button" className="smart-source-add" aria-label="Add Object"
+            title="Add another source Object" disabled={!sourceBaseProperty||sourceCount>=100}
+            onClick={()=>{updateSourceCount(sourceCount+1);onInspectorSectionChange?.('Object Source');}}>
+            <Plus size={15} aria-hidden="true"/>
+          </button>
+        </div>
+        {expandedInspector==='Object Source'&&<div className="smart-inspector-section-content">
+          <div className="smart-source-entries">
+            {sourceBaseProperty&&Array.from({length:sourceCount},(_,i)=>{
+              const index=i+1;
+              const objectProperty:UneRibbonProperty={...sourceBaseProperty,id:sourceKey(index),
+                label:'Object '+index,designCaption:'Object '+index,
+                designWidth:150,designCaptionWidth:52,default:'',
+                valueKeys:undefined,defaultsOverrides:undefined};
+              return <div className="smart-source-entry" key={index}>
+                {controls(objectProperty)}
+                {index>1&&<button type="button" className="smart-source-remove"
+                  title={'Remove Object '+index} aria-label={'Remove Object '+index}
+                  onClick={()=>removeSource(index)}><X size={14} aria-hidden="true"/></button>}
+              </div>;
+            })}
+          </div>
+          <button type="button" className="smart-source-add-label"
+            disabled={!sourceBaseProperty||sourceCount>=100}
+            onClick={()=>updateSourceCount(sourceCount+1)}><Plus size={14} aria-hidden="true"/> Add Object</button>
+        </div>}
+      </section>)}
     {part!=='source'&&<div className="smart-data-workspace">
       <div className="smart-data-formula-bar" aria-label="Data expression or record filter formula">
         {/* An optional collection is a SOURCE of records, edited in this same bar. */}
