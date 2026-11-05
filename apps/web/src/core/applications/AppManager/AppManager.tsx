@@ -78,6 +78,7 @@ export default function AppManager({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const assignedPages = pages.filter((page) => page.status === 'Active'
     && (page.activationAssignments ?? []).some((assignment) => assignment.appId === selectedApiName));
 
@@ -185,7 +186,8 @@ export default function AppManager({
   };
 
   const remove = async () => {
-    if (!selectedApiName || !window.confirm(`Delete the ${draft.label} app?`)) return;
+    if (!selectedApiName || busy) return;
+    setConfirmDelete(false);
     setBusy(true);
     setError('');
     setNotice('');
@@ -210,7 +212,7 @@ export default function AppManager({
     const previous = apps.find(app => app.apiName === selectedApiName) ?? apps[0];
     setSelectedApiName(previous?.apiName ?? '');
     setDraft(previous ? appDraftFromMetadata(previous) : emptyApp());
-    setError(''); setNotice('');
+    setError(''); setNotice('');setConfirmDelete(false);
   };
   const startNewApp = () => {
     const original = apps.find(app => app.apiName === selectedApiName);
@@ -272,6 +274,18 @@ export default function AppManager({
   ];
 
   return <div className="home-content app-manager-workspace">
+    {confirmDelete && <div className="app-manager-confirm-overlay" role="presentation">
+      <section className="app-manager-confirm-dialog" role="alertdialog" aria-modal="true"
+        aria-labelledby="app-manager-confirm-title" aria-describedby="app-manager-confirm-description"
+        onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setConfirmDelete(false);}}}>
+        <h2 id="app-manager-confirm-title">Delete {draft.label}?</h2>
+        <p id="app-manager-confirm-description">This will delete the selected app configuration. This action cannot be undone.</p>
+        <div className="app-manager-confirm-actions">
+          <button className="btn" type="button" autoFocus onClick={()=>setConfirmDelete(false)}>Cancel</button>
+          <button className="btn btn-danger" type="button" onClick={()=>void remove()} disabled={busy}>Delete App</button>
+        </div>
+      </section>
+    </div>}
     <header className="page-heading app-manager-top">
       <div>
         <div className="eyebrow">{embedded ? 'App Builder' : 'Platform Tools'}</div>
@@ -436,7 +450,7 @@ export default function AppManager({
           <PlatformPageSlot slotKey="actions"><div className="app-manager-actions">
             {!embedded && <button className="btn" type="button" disabled={busy} onClick={returnToList}>Cancel</button>}
             {!creating && <button className="btn" type="button" disabled={busy || apps.length <= 1}
-              onClick={() => void remove()}><Trash2 size={14}/>Delete App</button>}
+              onClick={() => setConfirmDelete(true)}><Trash2 size={14}/>Delete App</button>}
             <button className="btn btn-brand" type="submit"
               disabled={busy || (!draft.navigationItems.length && !draft.navigationPageApiNames.length)}>
               {busy ? 'Saving…' : creating ? 'Create App' : 'Save Changes'}
