@@ -29,14 +29,16 @@ export function formulaSignatureAt(source:string,caret:number,actions=false){
   const signature=Object.prototype.hasOwnProperty.call(signatures,active.name)?signatures[active.name]:undefined;
   if(signature){
    const pairs=['CREATERECORD','UPDATERECORD'].includes(active.name);
-   const repeating=pairs||active.name==='ACTIONS';
+   const attachments=['EMAIL','WHATSAPP'].includes(active.name);
+   const repeating=pairs||attachments||active.name==='ACTIONS';
+   const minimum=active.name==='SCREEN'||active.name==='CREATERECORD'?1:attachments?signature.length-1:signature.length;
    const count=repeating?Math.max(signature.length,active.argument+2):signature.length;
    const parameters=Array.from({length:count},(_,i)=>({
-    name:signature[i]??(pairs?signature[signature.length-2+(i-signature.length)%2]:'Action'),
-    optional:i>=signature.length
+    name:signature[i]??(pairs?signature[signature.length-2+(i-signature.length)%2]:attachments?'Attachment'+(i-signature.length+2):'Action'),
+    optional:i>=minimum
    }));
    return {name:active.name,argument:Math.min(active.argument,count-1),parameters,
-    minimumArguments:signature.length,maximumArguments:count};
+    minimumArguments:minimum,maximumArguments:count};
   }
  }
  const definition=formulaFunctionCatalog.get(active.name);

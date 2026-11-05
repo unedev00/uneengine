@@ -1,4 +1,4 @@
-import {normalizeFlowCalls} from '../../../../server/src/expression-engine/ActionFormulas.js';
+import {executeActionPlan,normalizeFlowCalls} from '../../../../server/src/expression-engine/ActionFormulas.js';
 /** Bounded browser formula evaluator shared by page bindings and UNE renderers.
  * It reads only own properties of the already-authorised record and never evals code.
  */
@@ -707,4 +707,9 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
    namedCollections:context?.namedCollections,
    pageState:context?.state,sessionId:context?.session?.id,
    namedCollectionSelections:context?.state?.collectionSelections});
+}
+
+/** Explicit action entry point. Ordinary field evaluation remains side-effect free. */
+export function executeActionFormula(formula,record,context,services){
+ return executeActionPlan(formula,record,(node,scope)=>evaluateParsedExpression(node,scope,context),services);
 }

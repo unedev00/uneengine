@@ -1,5 +1,5 @@
 import {actionArgumentSuggestions} from './actionArgumentSuggestions';
-import {isScreenAction,parseScreenAction,compileRecordActions,isRecordAction,normalizeFlowCalls,recordActionNames} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isScreenAction,parseScreenAction,compileActionPlan,isActionPlan,normalizeFlowCalls,actionFunctionNames} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
@@ -9,7 +9,7 @@ import {formulaDollarSuggestions} from './formulaDollarSuggestions';
 import {formulaSignatureAt} from './formulaSignatureHelp';
 import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {getFormulaFunctionNames,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+import {formulaFunctionPrefix,matchingFormulaFunctions,getFormulaFunctionNames,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 // Styles are loaded by the Page Builder entrypoint so this reusable editor
 // can also render in lightweight server-side ribbon contract tests.
@@ -57,9 +57,8 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [activeSuggestion,setActiveSuggestion]=useState(0);
  const suggestionListId=useId();
  useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
- const functions=[...getFormulaFunctionNames('ribbon_binding'),...(flowReferences?[...recordActionNames,'AS']:[])];
- const functionSuggestions=functionMatch?functions.filter(name=>
-   name.includes(functionMatch.query.toUpperCase())).slice(0,12):[];
+ const functions=[...getFormulaFunctionNames('ribbon_binding'),...(flowReferences?[...actionFunctionNames,'AS']:[])];
+ const functionSuggestions=functionMatch?matchingFormulaFunctions(functions,functionMatch.query):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
  const hint=focused?formulaSignatureAt(draft,caret,Boolean(flowReferences)):null;
  useLayoutEffect(()=>{
@@ -145,8 +144,8 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(flowReferences&&isScreenAction(next)){
    try{parseScreenAction(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid screen';}
   }
-  if(flowReferences&&isRecordAction(next)){
-   try{compileRecordActions(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
+  if(flowReferences&&isActionPlan(next)){
+   try{compileActionPlan(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
   }
   const source=next.trim();
   if(!isFormulaDraft(source))return null;
@@ -177,9 +176,8 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    setMatches(args?{start:caret-args.query.length,end:caret,query:args.query,prefix:''}:mention?{start:caret-mention[0].length,end:caret,query:mention[1],prefix:'@'}:
     dollar?{start:caret-dollar[0].length,end:caret,query:dollar[1],prefix:'$'}:
     tableField?{...tableField,prefix:''}:null);
-   const name=next.trimStart().startsWith('=')&&!openString
-      ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
-   setFunctionMatch(tablePart||args?null:name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
+   const name=next.trimStart().startsWith('=')?formulaFunctionPrefix(before):null;
+   setFunctionMatch(tablePart||args||!name?null:{start:caret-name.length,end:caret,query:name});
  };
  const update=(next:string,caret:number)=>{
   setDraft(next);

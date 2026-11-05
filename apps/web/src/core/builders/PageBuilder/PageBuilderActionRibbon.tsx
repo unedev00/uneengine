@@ -1,4 +1,4 @@
-import {isRecordAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {useState,useEffect} from 'react';
 import {Trash2, SlidersHorizontal, Eye, EyeOff} from 'lucide-react';
 import type {FlowDefinitionMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
@@ -224,7 +224,7 @@ export default function PageBuilderActionRibbon({
        <SmartFormulaField label="Selected action formula" fields={formulaFields} objects={objects} actionPages={pages} actionCredentials={credentials}
          stateOptions={stateOptions}
          flowReferences={availableFlows.map(flow=>({apiName:flow.apiName,label:flow.label}))}
-         validate={value=>!isRecordAction(value)&&isFlowActionFormula(value)?validateFlowActionFormula(value,flows):null}
+         validate={value=>!isActionPlan(value)&&isFlowActionFormula(value)?validateFlowActionFormula(value,flows):null}
          disabled={disabled||!formulaEditable}
          value={formulaValue}
          onChange={value=>{

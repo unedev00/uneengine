@@ -102,11 +102,11 @@ test('record actions await results, preserve value types and stop after a failur
  const request=async<T>(path:string,init?:RequestInit):Promise<T>=>{
   calls.push({path,init});
   if(calls.length===2)throw Error('Access denied');
-  return {record:{Id:'r1'}} as T;
+  return {record:{Id:rowId}} as T;
  };
  const formula='=ACTIONS(CREATERECORD(Item, Amount, $state.total, AS(item)), UPDATERECORD(Item, item.Id, Amount, 2), DELETERECORD(Item, item.Id))';
  await assert.rejects(executePageFormulaAction(request,{formula},{},{total:12},[],'Item'),/after 1 confirmed.*Access denied/);
- assert.deepEqual(calls.map(call=>call.path),['/records/Item','/records/Item/r1']);
+ assert.deepEqual(calls.map(call=>call.path),['/records/Item','/records/Item/'+rowId]);
  assert.deepEqual(JSON.parse(String(calls[0].init?.body)),{Amount:12});
 });
 
@@ -130,4 +130,16 @@ test('invalid final action fails before the first mutation',async()=>{
  const request=async<T>():Promise<T>=>{requests++;return {} as T;};
  await assert.rejects(executePageFormulaAction(request,{formula:'ACTIONS(CREATERECORD(Item),SMS(Provider,"recipient"))'},{},{},[],''),/Invalid SMS/);
  assert.equal(requests,0);
+});
+
+test('AS fields beyond Id use the authorised record response including generated defaults',async()=>{
+ const paths:string[]=[];
+ const request=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  paths.push(path);
+  if(!init)return {record:{Id:rowId,Name:'Generated'}} as T;
+  if(path==='/records/Child')assert.equal(JSON.parse(String(init.body)).Name,'Generated');
+  return {record:{Id:rowId}} as T;
+ };
+ await executePageFormulaAction(request,{formula:'ACTIONS(CREATERECORD(Parent,AS(parent)),CREATERECORD(Child,Name,parent.Name))'},{},{},[],'');
+ assert.deepEqual(paths,['/records/Parent','/records/Parent/'+rowId,'/records/Child']);
 });

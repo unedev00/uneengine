@@ -151,3 +151,23 @@ export function validateFormulaFunctions(expression:Expression,context:FormulaEx
   };
   visit(expression);
 }
+
+/** Substring completion shared by Page, Flow and record-filter formula inputs. */
+export function formulaFunctionPrefix(before:string){
+ const match=/(?:^\s*=?\s*|[,(=+*/&<>-]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before);
+ if(!match)return null;
+ let quote='';
+ for(let index=0;index<before.length;index++){
+  const ch=before[index];
+  if(quote&&ch==='\\'){index++;continue;}
+  if(quote&&ch===quote){
+   if(before[index+1]===quote){index++;continue;}
+   quote='';
+  }else if(!quote&&(ch==='"'||ch==="'"))quote=ch;
+ }
+ return quote?null:match[1];
+}
+export function matchingFormulaFunctions(names:readonly string[],query:string){
+ const search=query.toUpperCase();
+ return names.filter(name=>name.includes(search)).slice(0,12);
+}
