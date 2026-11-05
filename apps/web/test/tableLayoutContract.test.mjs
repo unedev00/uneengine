@@ -38,6 +38,8 @@ test('page list has a compact leading Actions column without a frozen edge', () 
   const split = source('core/builders/PageBuilder/PageDesignSplitAction.tsx');
   assert.match(split, /<PanelsTopLeft size=\{16\}\/>/);
   assert.match(split, /page-manager-design-layout-select/);
+  assert.match(css, /\.page-manager-design-layout-select\s*\{[^}]*opacity:\s*0\s*!important/s);
+  assert.match(css, /\.page-manager-design-split::after\s*\{[^}]*transform:\s*rotate\(45deg\)/s);
   assert.match(pages, /<Power size=\{16\}\/>/);
   assert.match(pages, /<Trash2 size=\{16\}\/>/);
 });
