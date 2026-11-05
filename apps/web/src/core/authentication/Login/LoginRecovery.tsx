@@ -22,6 +22,7 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
  const [options,setOptions]=useState<Options>(defaults);
  const [message,setMessage]=useState('');
  const [busy,setBusy]=useState(false);
+ const [loadingOptions,setLoadingOptions]=useState(true);
  useEffect(()=>{
   // Clear sensitive link tokens immediately; never keep them in browser history.
   const params=new URLSearchParams(window.location.search);
@@ -32,8 +33,9 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
   }
   let active=true;
   void apiRequest<Options>('/auth/password-reset/options')
-   .then(value=>{if(active)setOptions(value);})
-   .catch(()=>{if(active)setMessage('Recovery methods cannot be loaded. Try again later.');});
+   .then(value=>{if(active){setOptions(value);setMessage('');}})
+   .catch(()=>{if(active)setMessage('Recovery methods cannot be loaded. Contact your administrator or support for assistance.');})
+   .finally(()=>{if(active)setLoadingOptions(false);});
   return()=>{active=false;};
  },[]);
  const request=async(selected:Channel)=>{
@@ -72,20 +74,24 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
   finally{setBusy(false);}
  };
  return <section className="auth-recovery">
-  <h2>Recover your password</h2>
+  <h1>Recover your password</h1>
   {step==='choose'&&<>
    <p>Enter your registered email and choose where to receive your verification code.</p>
    <label className="form-label">Account email
     <input className="form-control" type="email" autoComplete="username"
      value={email} onChange={event=>setEmail(event.target.value)} required/>
    </label>
-   <div className="auth-recovery-channels">
-    {channelButtons.map(item=><button key={item.channel} type="button"
-     className="btn auth-recovery-channel" disabled={busy||!email.trim()||!options.channels[item.channel]}
-     onClick={()=>void request(item.channel)} >{options.method==='LINK'&&item.channel==='email'?'Send reset link by Email':item.label}
-     {!options.channels[item.channel]&&' — Not configured'}
+   {loadingOptions&&<p role="status">Checking available recovery methods…</p>}
+   {!loadingOptions&&channelButtons.some(item=>options.channels[item.channel])&&<div className="auth-recovery-channels">
+    {channelButtons.filter(item=>options.channels[item.channel]).map(item=><button key={item.channel} type="button"
+      className="btn auth-recovery-channel" disabled={busy||!email.trim()} onClick={()=>void request(item.channel)}>
+      {options.method==='LINK'&&item.channel==='email'?'Send reset link by Email':item.label}
     </button>)}
-   </div>
+   </div>}
+   {!loadingOptions&&!channelButtons.some(item=>options.channels[item.channel])&&<div className="auth-recovery-help" role="status">
+     <p>Password self-service is unavailable. Contact your organisation administrator or <a href="mailto:support@unesolutions.co.uk?subject=Account%20recovery">UNE Solutions support</a> to request assistance.</p>
+     <button className="btn" type="button" onClick={()=>{setLoadingOptions(true);setMessage('');void apiRequest<Options>('/auth/password-reset/options').then(setOptions).catch(()=>setMessage('Recovery remains unavailable. Contact your administrator or support.')).finally(()=>setLoadingOptions(false));}}>Retry recovery options</button>
+   </div>}
   </>}
   {step==='verify'&&<>
    <p>Enter the {options.otpLength}-digit code delivered to your registered {channel==='email'?'email':'phone'}.</p>
