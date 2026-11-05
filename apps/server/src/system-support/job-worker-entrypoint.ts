@@ -69,7 +69,7 @@ export async function startDurableJobWorker(env:NodeJS.ProcessEnv=process.env) {
    'metadrive-'+randomUUID());
   const authorizeFlow=registerFlowJobHandler(worker,db,rbac,flows,flowTriggers);
   const authorizeWebhook=registerOutboundWebhookJobHandler(worker,db,rbac,credentials);
-  const authorizeScheduled=registerScheduledActionWorker(worker,db,rbac,records,credentials);
+  const authorizeScheduled=registerScheduledActionWorker(worker,db,rbac,records,credentials,flows);
   authorize=job=>job.job_type==='webhook.deliver'?authorizeWebhook(job):
    job.job_type==='scheduled.action'?authorizeScheduled(job):authorizeFlow(job);
   const interval=Number(env.METADRIVE_WORKER_POLL_MS??'5000');
