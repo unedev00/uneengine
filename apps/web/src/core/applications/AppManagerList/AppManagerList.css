@@ -69,3 +69,9 @@
  .app-manager-list-search{min-height:44px}
 }
 @media(max-width:640px){.app-manager-workspace .page-heading.app-manager-top{padding-bottom:8px;margin-bottom:8px;min-height:auto}}
+
+/* Keep Actions reachable and sortable at desktop/tablet widths. */
+.app-manager-list-table{min-width:0}.app-manager-list-table :is(th,td){overflow-wrap:anywhere}
+.app-manager-list-table :is(th,td):nth-child(3){width:20%}.app-manager-list-table :is(th,td):nth-child(6){width:22%}
+.app-manager-sort{border:0;background:transparent;color:inherit;font:inherit;font-weight:600;padding:5px 0;cursor:pointer;text-align:left}.app-manager-sort:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px}
+@media(min-width:1024px) and (max-width:1250px){.app-manager-list-table{font-size:12px}.app-manager-list-table :is(th,td){padding:8px 6px}.app-manager-list-actions{gap:4px}.app-manager-list-actions .btn{padding-inline:6px}}
