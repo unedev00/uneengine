@@ -143,6 +143,14 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
   const [setupSidebarCollapsed, setSetupSidebarCollapsed] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
   );
+  // Resize transitions are navigation state transitions, not a persisted user
+  // preference: close any overlay when shrinking and restore labels on desktop.
+  useEffect(() => {
+    const breakpoint=window.matchMedia('(max-width: 1024px)');
+    const sync=(event:MediaQueryListEvent)=>setSetupSidebarCollapsed(event.matches);
+    breakpoint.addEventListener('change',sync);
+    return()=>breakpoint.removeEventListener('change',sync);
+  }, []);
   const [shortcutHelpOpen,setShortcutHelpOpen] = useState(false);
   useEffect(()=>{
     const onWorkspaceKey=(event:KeyboardEvent)=>{
