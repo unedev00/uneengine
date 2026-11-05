@@ -251,8 +251,8 @@ export class PageRuntime {
       const rev=before.rows[0]?.revision??0;
       if(p.revision!==undefined&&p.revision!==rev)throw new Error('Page revision conflict');
       await client.query(`INSERT INTO md_lightning_page_details
-        (tenant_id,page_id,page_type,target_object,record_mode,layout_mode,template,canvas_width,canvas_height,canvas_fill_color,status,devices,revision)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        (tenant_id,page_id,page_type,target_object,record_mode,layout_mode,template,canvas_width,canvas_height,canvas_fill_color,status,devices,revision,creation_layout_variant)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
         ON CONFLICT(tenant_id,page_id) DO UPDATE SET
           page_type=EXCLUDED.page_type,target_object=EXCLUDED.target_object,
           record_mode=EXCLUDED.record_mode,layout_mode=EXCLUDED.layout_mode,template=EXCLUDED.template,
@@ -260,7 +260,8 @@ export class PageRuntime {
            canvas_fill_color=EXCLUDED.canvas_fill_color,
           status=EXCLUDED.status,devices=EXCLUDED.devices,revision=EXCLUDED.revision,updated_at=now()`,
         [tenantId,pageId,p.pageType,p.targetObject,p.recordMode??'View',p.layoutMode,p.template??null,
-          p.canvasWidth,p.canvasHeight,p.canvasFillColor??'#ffffff',p.status,p.devices,rev+1]);
+          p.canvasWidth,p.canvasHeight,p.canvasFillColor??'#ffffff',p.status,p.devices,rev+1,
+          ['Desktop','Mobile','Tablet','Custom'].includes(String(p.layoutVariant))?p.layoutVariant:'Desktop']);
       await client.query('DELETE FROM md_lightning_page_nodes WHERE tenant_id=$1 AND page_id=$2',[tenantId,pageId]);
       await client.query('DELETE FROM md_lightning_page_activation WHERE tenant_id=$1 AND page_id=$2',[tenantId,pageId]);
       for(const [index,c] of components.entries()){
