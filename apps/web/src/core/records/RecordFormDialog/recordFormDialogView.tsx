@@ -21,6 +21,7 @@ import SchemaBuilder from '../../builders/SchemaBuilder/SchemaBuilder';
 import * as React from 'react';
 import {apiRequest} from '../../authentication/Client/authClient';
 import TenantMediaPicker from '../../builders/ComponentProperties/TenantMediaPicker';
+import {acceptsTenantImageAsset} from './tenantImageTextField';
 import TenantFilePicker from '../../builders/ComponentProperties/TenantFilePicker';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
@@ -633,7 +634,7 @@ export function RecordFormDialog({
         maxLength={textMaximum ? Number(textMaximum) : field.dataType === 'Text' ? 255 : undefined}
         value={value}
         onChange={(event) => onChange(field.apiName, type === 'number' ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value)} />
-      {type==='text' && <details className="component-optional-settings">
+      {type==='text' && acceptsTenantImageAsset(field) && <details className="component-optional-settings">
         <summary className="properties-help">Use tenant image asset</summary>
         <TenantMediaPicker value={typeof value==='string'?value:''}
           onChange={next=>onChange(field.apiName,next)} disabled={common.disabled}/>
