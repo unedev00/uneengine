@@ -240,14 +240,15 @@ test('Smart Card Grid keeps one viewport row at a time and scrolls narrow column
   records,textSource:'@Name',cardsPerRow:6,cardsPerColumn:1,
   cardMinWidth:185,gap:12
  });
- assert.match(html,/grid-template-columns:repeat\\(6,minmax\\(185px,1fr\\)\\)/);
- assert.match(html,/overflow-x:auto/);
- assert.match(html,/overflow-y:auto/);
- assert.match(html,/grid-auto-rows:max\\(96px/);
+ assert.ok(html.includes('grid-template-columns:repeat(6,minmax(185px,1fr))'),
+  'Configured columns must preserve a minimum width to enable horizontal scrolling');
+ assert.ok(html.includes('overflow-x:auto')&&html.includes('overflow-y:auto'),
+  'Native scrollbars must depend on content overflow along each axis');
+ assert.ok(html.includes('grid-auto-rows:max(96px'));
  assert.match(html,/Product 6/,'scrolling must preserve records past the first row');
  const source=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- assert.match(source,/new ResizeObserver\\(measureGridViewport\\)/);
- assert.match(source,/gridViewportHeight>0/);
- assert.match(source,/gridViewportHeight-\\(rows-1\\)\\*gap/);
- assert.match(source,/gridViewportRef/);
+ assert.ok(source.includes('new ResizeObserver(measureGridViewport)'));
+ assert.ok(source.includes('gridViewportHeight>0'));
+ assert.ok(source.includes('gridViewportHeight-(rows-1)*gap'));
+ assert.ok(source.includes('gridViewportRef'));
 });
