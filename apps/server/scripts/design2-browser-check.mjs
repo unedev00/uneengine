@@ -880,24 +880,36 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const actionLabels=['Align left','Align centre','Align right','Align top','Align middle',
    'Align bottom','Distribute horizontally','Distribute vertically','Bring to front',
    'Send backward','Group','Ungroup','Lock / Unlock component','Component nesting','Fill canvas'];
+ // In the permanent left dock, controls wrap into Dimensions, Alignment and
+ // Arrangement sections. The retired top ribbon's 40px/44px C7–C21 x offsets
+ // are no longer meaningful; check the real dock dimensions and grouping.
+ const arrangeDock=page.locator('.page-builder-design-dock');
+ const dockBounds=await arrangeDock.boundingBox();
+ const selectorRect=await arrangeDock.locator('.smart-design2-area-picker').boundingBox();
+ assert.ok(dockBounds&&selectorRect&&selectorRect.width>=400,
+  'The area picker must have a full-width row in the left Design dock');
+ const rects=[];
  for(let i=0;i<15;i++){
   const button=buttons.nth(i);
   assert.equal(await button.getAttribute('data-design-row'),'0');
   assert.equal(await button.getAttribute('data-design-column'),String(i+7));
   assert.equal(await button.getAttribute('title'),actionLabels[i]);
   const rect=await button.boundingBox();
-  assert.ok(rect&&Math.abs(rect.width-40)<1&&Math.abs(rect.height-26)<1,
-   'R0 C'+(i+7)+' action must measure exactly 40×26px');
+  const expectedWidth=i===12||i===13?58:66;
+  assert.ok(rect&&Math.abs(rect.width-expectedWidth)<1&&Math.abs(rect.height-26)<1,
+   'R0 C'+(i+7)+' action must measure '+expectedWidth+'×26px in the left dock: '+JSON.stringify(rect));
+  assert.ok(rect.x>=dockBounds.x-2&&rect.x+rect.width<=dockBounds.x+dockBounds.width+2,
+   'R0 C'+(i+7)+' action must fit inside the dock without horizontal clipping');
+  rects.push(rect);
  }
- const firstAction=await buttons.first().boundingBox();
- const selectorRect=await page.locator('.smart-design2-area-picker').boundingBox();
- assert.ok(firstAction&&selectorRect&&Math.abs(firstAction.x-selectorRect.x-564)<2,
-  'C7 must start after the exact C1–C6 slots, including empty C5/C6');
- for(let i=1;i<15;i++){
-  const prev=await buttons.nth(i-1).boundingBox(),next=await buttons.nth(i).boundingBox();
-  assert.ok(prev&&next&&Math.abs(next.x-prev.x-44)<1,
-   'R0 Arrange icons must retain their fixed 40px width and 4px gap');
+ for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+  const a=rects[i],b=rects[j];
+  assert.ok(a.x+a.width<=b.x+1||b.x+b.width<=a.x+1||
+    a.y+a.height<=b.y+1||b.y+b.height<=a.y+1,
+   'R0 actions must not overlap in wrapped dock sections: C'+(i+7)+' and C'+(j+7));
  }
+ assert.ok(rects.slice(0,6).every(rect=>Math.abs(rect.y-rects[0].y)<2),
+  'Six alignment actions must form one orderly line inside the dock');
  assert.equal(await buttons.nth(0).isDisabled(),false,'Align left must work for a single component');
  assert.equal(await buttons.nth(6).isDisabled(),true,'Distribute needs three selected components');
  assert.equal(await buttons.nth(10).isDisabled(),true,'Group needs multiple selected components');
@@ -978,7 +990,6 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Vertical Design dock uses a real seventh grid column, not a fixed
  // top-ribbon pixel offset. Its controls must fit the dock without x-scroll.
  await page.getByRole('tab',{name:'Design',exact:true}).click();
- await page.getByRole('button',{name:'Show tabs in the left panel'}).click();
  await dock.waitFor({state:'visible'});
  const dockArea=dock.getByLabel('Select Design 2 area');
  const dockHand=dock.locator('.smart-design2-count-field');
@@ -1005,9 +1016,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.equal(await dockCount.count(),1,'Hand disappeared in vertical '+section);
   await assertDockGeometry(section);
  }
- await page.getByRole('button',{name:'Show tabs in the top ribbon'}).first().click();
-
- console.info('Design 2 R0 C7–C21 browser: fixed geometry, Body-only enablement and all 15 commands verified');
+ console.info('Design 2 R0 C7–C21 browser: dock layout, Body-only enablement and all 15 commands verified');
 
  console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
 }
