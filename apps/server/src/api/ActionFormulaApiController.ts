@@ -47,7 +47,9 @@ export function registerActionFormulaApiController(app:Express,db:SqlPersistence
   if(page.status!=='Active')throw Error('Action Page is not published');
   const component=page.components.find(item=>item.id===componentId);
   if(!component)throw Error('Action component does not exist');
-  const bindings=component.properties.actionFlows;
+  const properties=component.properties&&typeof component.properties==='object'&&!Array.isArray(component.properties)
+    ?component.properties as Record<string,unknown>:{};
+  const bindings=properties.actionFlows;
   if(!bindings||typeof bindings!=='object'||Array.isArray(bindings))
    throw Error('No action bindings on this component');
   const binding=(bindings as Record<string,unknown>)[event];
