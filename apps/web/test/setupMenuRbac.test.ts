@@ -35,8 +35,11 @@ test('Role visibility follows least-privilege matrix, not general metadata privi
     ['Users',['Administrator','Developer']],
     ['Public Groups',['Developer']],
     ['Sharing Rules',['Developer']],
-    ['Reports',['Administrator','Developer','User']],
-    ['Dashboards',['Administrator','Developer','User']],
+    ['Reports Builder',['Administrator','Developer']],
+    ['Reports View',['Administrator','Developer','User']],
+    ['Dashboard Builder',['Administrator','Developer']],
+    ['Dashboard View',['Administrator','Developer','User']],
+    ['Records',['Administrator','Developer','User']],
     ['Page Builder',[]]
   ];
   const groups:Record<string,string[]>={Administrator:administrator,Developer:developer,User:user};
@@ -52,8 +55,11 @@ test('Role visibility follows least-privilege matrix, not general metadata privi
 
 test('Deep links fail closed and report/dashboard view grants do not reveal admin pages',()=>{
   const user=['setup:Records:view','setup:ReportsView:view','setup:DashboardsView:view'];
-  assert.equal(canOpenSetupRoute({kind:'setup',workspace:'report-builder'},user),true);
+  assert.equal(canOpenSetupRoute({kind:'setup',workspace:'report-builder',resourceApiName:'viewer'},user),true);
+  assert.equal(canOpenSetupRoute({kind:'setup',workspace:'report-builder'},user),false);
   assert.equal(canOpenSetupRoute({kind:'setup',workspace:'dashboard-builder',dashboardView:true},user),true);
+  assert.equal(canOpenSetupRoute({kind:'setup',workspace:'dashboard-builder',resourceApiName:'viewer'},user),true);
+  assert.equal(canOpenSetupRoute({kind:'setup',workspace:'dashboard-builder'},user),false);
   assert.equal(canOpenSetupRoute({kind:'setup',workspace:'rbac',resourceApiName:'Users'},user),false);
   assert.equal(canOpenSetupRoute({kind:'setup',workspace:'app-manager'},user),false);
   assert.equal(canOpenSetupRoute({kind:'setup',workspace:'named-credentials',resourceApiName:'Webhooks'},user),false);
