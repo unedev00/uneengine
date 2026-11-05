@@ -102,7 +102,16 @@ export async function requestProductionDeployment(
     throw new DeploymentControlError('Main has changed. Refresh the deployment status before confirming.',409);
    if(status.active)
     throw new DeploymentControlError('A production deployment is already queued or running.',409);
-   const result=await operate({action:'deploy_latest',service:'api',release:expectedCommit});
+   // A broker or systemd scheduler failure is not a PostgreSQL outage.
+   // Turn the fixed-operation broker's rejection into a bounded deployment
+   // error so the UI never reports a misleading "SQL service unavailable".
+   let result:{output:string};
+   try{
+    result=await operate({action:'deploy_latest',service:'api',release:expectedCommit});
+   }catch{
+    throw new DeploymentControlError(
+     'OCI deployment scheduler unavailable. Refresh status and check the OCI operations service.',503);
+   }
    if(!result.output.includes('QUEUED '+expectedCommit))
     throw new DeploymentControlError('OCI broker did not confirm the deployment request.',502);
    await client.query('INSERT INTO md_security_events(tenant_id,actor_user_id,action,details) VALUES($1,$2,$3,$4::jsonb)',
