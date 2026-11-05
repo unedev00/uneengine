@@ -118,11 +118,12 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
  const single=p.kind==="smart_image";
  const grid=p.kind==="smart_card_grid";
  const imageHeight=number(p.imageHeight,220,0,1200);
- // Keep the historical 50/50 horizontal split until an imageWidth is authored.
- // Vertical cards continue to use imageHeight only.
+ // Keep the historical automatic image fill/50-50 split until a dimension is
+ // authored. The image area uses height for top/bottom, width for left/right.
  const imageWidth=p.imageWidth===undefined||p.imageWidth===null||p.imageWidth===""
   ?null:number(p.imageWidth,0,0,1200);
- const imageVisible=!grid||(horizontal?imageWidth!==0:imageHeight>0);
+ const hasImageHeight=p.imageHeight!==undefined&&p.imageHeight!==null&&p.imageHeight!=="";
+ const imageVisible=horizontal?imageWidth!==0:imageHeight>0;
  const headerHeight=number(p.headerBoxHeight,44,0,1200);
  // Optional shared Card Grid spacing keeps the historic 4px/10px layout
  // until a tenant explicitly configures the new Card Padding control.
@@ -168,10 +169,13 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   ...(focused&&(focusedWidth>0||focusedHeight>0)?{margin:"auto"}:{})
  }} data-selected={selected?"true":undefined}>
   {imageVisible&&<div data-md-bind={p.builderPreview?"imageSource":undefined} data-md-bind-titles={p.builderPreview?"Card image":undefined} style={{order:["right","bottom"].includes(p.imagePlacement)?2:0,
-    flex:horizontal?(grid&&imageWidth!==null?"0 0 "+imageWidth+"px":"1 1 50%"):
-      single?"1 1 auto":grid?"1 1 "+imageHeight+"px":undefined,
-    // A user-defined side image cannot squeeze the text to zero or exceed the card.
-    maxWidth:grid&&horizontal&&imageWidth!==null?"calc(100% - 96px)":undefined,
+    flex:horizontal?(imageWidth!==null?"0 0 "+imageWidth+"px":"1 1 50%"):
+      single?(hasImageHeight?"0 1 "+imageHeight+"px":"1 1 auto"):
+      grid?"1 1 "+imageHeight+"px":undefined,
+    // A user-defined side image cannot squeeze adjacent text to zero. A
+    // captionless standalone Image can still use its full component width.
+    maxWidth:horizontal&&imageWidth!==null
+      ?(grid||header?"calc(100% - 96px)":"100%"):undefined,
     minWidth:0,minHeight:0,
     ...(single?{display:"flex"}:{}),
     ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight,
