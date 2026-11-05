@@ -1,5 +1,5 @@
 -- Idempotent permission-set presets for Setup navigation.
--- Do not rewrite an existing Administrator/Developer/User policy or any assignments.
+-- Preserve all existing non-navigation rules and assignments; reconcile only the requested menu grants.
 -- Assign a new preset explicitly through the existing Users & Permissions editor.
 -- Record-level read/edit must be granted separately on the relevant object/record.
 CREATE OR REPLACE FUNCTION md_seed_setup_menu_permission_sets(target_tenant uuid)
@@ -7,6 +7,7 @@ RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
   preset record;
   preset_id uuid;
+  created_set boolean;
 BEGIN
   FOR preset IN SELECT * FROM (VALUES
     ('Administrator',ARRAY['CompanySettings','SecurityRecovery','ConnectedApps','AuditTrail','ObjectManager','Records','DataLoader','AppExchange','ReportsBuilder','DashboardBuilder','ReportsView','DashboardsView','Users','Roles','Profiles','PermissionSets','PermissionSetGroups']::text[],ARRAY['ObjectDefinition|read','ObjectDefinition|create','ObjectDefinition|manage','Security|read','Security|manage','ConnectedApp|manage','SetupAudit|read','User|read','User|create','User|edit','User|delete','SystemDefinition:reports|read','SystemDefinition:reports|manage','SystemDefinition:dashboards|read','SystemDefinition:dashboards|manage']::text[]),
@@ -18,14 +19,15 @@ BEGIN
     VALUES(target_tenant,preset.api_name,preset.api_name,
       'Standard Setup navigation preset; assign explicitly to users, profiles or groups','Deny')
     ON CONFLICT(tenant_id,api_name) DO NOTHING;
-    -- Preserve customer-modified presets. Only initialise newly inserted ones.
-    IF FOUND THEN
-      SELECT id INTO preset_id FROM md_permission_sets
-        WHERE tenant_id=target_tenant AND api_name=preset.api_name;
-      INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect)
-      SELECT target_tenant,preset_id,'SetupMenu:'||menu,'read','allow'
-        FROM unnest(preset.visible_menus) AS menu
-      ON CONFLICT(tenant_id,permission_set_id,resource,action) DO NOTHING;
+    created_set := FOUND;
+    SELECT id INTO preset_id FROM md_permission_sets
+      WHERE tenant_id=target_tenant AND api_name=preset.api_name;
+    -- Add required menu grants to existing presets without changing their API/record rules.
+    INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect)
+    SELECT target_tenant,preset_id,'SetupMenu:'||menu,'read','allow'
+      FROM unnest(preset.visible_menus) AS menu
+    ON CONFLICT(tenant_id,permission_set_id,resource,action) DO NOTHING;
+    IF created_set THEN
       INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect)
       SELECT target_tenant,preset_id,split_part(capability,'|',1),split_part(capability,'|',2),'allow'
         FROM unnest(preset.api_rights) AS capability
@@ -35,7 +37,7 @@ BEGIN
 END
 $$;
 
--- Safe backfill: only creates missing preset permission sets for existing tenants.
+-- Backfill missing presets and the new navigation tokens, without changing existing API rules.
 SELECT md_seed_setup_menu_permission_sets(id) FROM md_tenants;
 
 -- Registration makes each capability editable in the existing permission-set UI.
