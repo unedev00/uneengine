@@ -729,6 +729,29 @@ try{
     const picker=document.querySelector('select[aria-label="Choose page layout"]');
     return picker?.value===expected;
   },variant,{timeout:5000});
+  if(variant==='Custom'){
+   // The Custom Canvas width/height controls live in the same left Design
+   // dock as Smart component settings. Replacing digits must not snap back
+   // while the number is temporarily empty or below the minimum.
+   await page.locator('.page-preview-area [data-component-id]').first().click({position:{x:5,y:5}});
+   await page.getByRole('tab',{name:'Design',exact:true}).click();
+   const replaceCanvasNumber=async(input,next)=>{
+    await input.focus();
+    await input.press('ControlOrMeta+a');
+    await input.press('Backspace');
+    assert.equal(await input.inputValue(),'');
+    await input.pressSequentially(next);
+    assert.equal(await input.inputValue(),next);
+    await input.blur();
+    assert.equal(await input.inputValue(),next);
+   };
+   const widthField=page.getByRole('spinbutton',{name:'Page width'});
+   const heightField=page.getByRole('spinbutton',{name:'Page height'});
+   await replaceCanvasNumber(widthField,'1680');
+   const previousHeight=await heightField.inputValue();
+   await replaceCanvasNumber(heightField,'994');
+   await replaceCanvasNumber(heightField,previousHeight);
+  }
   await page.getByRole('button',{name:'Page settings',exact:true}).click();
   await page.getByText('These settings belong only to the selected '+variant+' layout.').waitFor();
   await page.locator('.builder-layout-dimensions input').first().fill(String(width));
