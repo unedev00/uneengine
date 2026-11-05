@@ -947,7 +947,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.equal(await dockCount.count(),1,'Hand disappeared in vertical '+section);
   await assertDockGeometry(section);
  }
- await page.getByRole('button',{name:'Show Design in the ribbon'}).click();
+ await page.getByRole('button',{name:'Show Design in the ribbon'}).first().click();
 
  console.info('Design 2 R0 C7–C21 browser: fixed geometry, Body-only enablement and all 15 commands verified');
 
