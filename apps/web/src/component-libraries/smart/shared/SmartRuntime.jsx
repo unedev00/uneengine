@@ -7,15 +7,15 @@ import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 import {getTenantBrand,subscribeTenantBrand} from "../../shared/TenantBrand.js";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
 const text=(v)=>v===null||v===undefined?"":String(v);
-const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections,collectionRows,sessionId)=>{
+const expression=(v,record,pageState,objectApiName,collectionSources,namedCollections,collectionRows,sessionId,readComponent)=>{
  if(typeof v!=="string")return text(v);
  // The common bounded evaluator resolves authorised row-specific relationship
  // values via __mentionValues without turning numbers into quoted strings or
  // replacing @mentions inside quoted literals.
  if(/^(?:https:\/\/|asset:|data:image\/)/i.test(v.trim()))return v;
- if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/\$(?:state\.|session\b|tenant\.)/i.test(v)&&!/^\s*"/.test(v)&&
+ if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/\$(?:component\.|state\.|session\b|tenant\.)/i.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{},{namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows,pageState,sessionId}));}catch{return "";}
+ try{return text(evaluateFieldExpression(v,record||{},{readComponent,namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows,pageState,sessionId}));}catch{return "";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
@@ -39,7 +39,7 @@ const scopedExpression=(p,key,source,record)=>fieldAllows(p,key,record)
     ?text(p.kind==="smart_card_grid"&&record.__collectionManual===false
       &&typeof record.Name==="string"&&record.Name.trim()
       ?record.Name:record.__collectionLabel??record.Name??"")
-    :expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId)):"";
+    :expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId,p.readComponent)):"";
 const recordOf=p=>p.objectApiName&&Array.isArray(p.records)
  ?(p.records[0]??{}):p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
  Array.isArray(p.records)&&p.records.length?p.records[0]:Array.isArray(p.items)&&p.items.length?p.items[0]:{};
@@ -61,7 +61,7 @@ const boundImage=(p,record)=>{
   const source=p.imageSource??p.src??'';
  const key=typeof source==='string'?source.replace(/^@/,''):'';
  if(key && record && Object.prototype.hasOwnProperty.call(record,key))return text(record[key]);
- return expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId);
+ return expression(source,record,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,undefined,p.sessionId,p.readComponent);
 };
 const gridText=(p,key,record)=>p.kind==="smart_card_grid"
  ?scopedExpression(p,key,p[key]??"",record):"";
@@ -105,6 +105,9 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
  const header=scopedExpression(p,"textSource",p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
  const badge=scopedExpression(p,"badgeText",p.badgeText??"",record);
  // Card Grid uses the same record-scoped, permission-aware formula evaluation as other Data fields.
+ React.useEffect(()=>{
+  if(p.kind==='smart_image')p.onFormulaDisplay?.({textSource:header,imageSource:image,badgeText:badge});
+ },[p.kind,p.onFormulaDisplay,header,image,badge]);
  const description=gridText(p,"cardDescription",record);
  const value=gridText(p,"cardValue",record);
  const buttonText=gridText(p,"cardButtonText",record);
@@ -698,7 +701,7 @@ export default function SmartRuntime(p){
   const pagination=p.recordPagination;
   const complete=!pagination||(pagination.offset===0&&pagination.total<=rows.length);
   return expression(formula,row,p.pageState,p.objectApiName,p.formulaCollectionSources,p.namedCollections,
-   complete&&rows.length<=200?rows:undefined,p.sessionId);
+   complete&&rows.length<=200?rows:undefined,p.sessionId,p.readComponent);
  }}
     fieldAllowed={(key,row)=>fieldAllows(p,key,row)} fire={fire}/>;
  else if(name==="smart_calendar")content=<SmartCalendar p={p} fire={fire}/>;

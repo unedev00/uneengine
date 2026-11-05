@@ -1,3 +1,4 @@
+import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
@@ -15,7 +16,7 @@ import type {MentionKind} from '../../../component-libraries/shared/primitives/S
  */
 export function splitSmartFormula(value:string){
  const parts:{value:string;kind:'field'|'string'|'operator'|'text'}[]=[];
- const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$state\.[A-Za-z][A-Za-z0-9_]*|\$flow\.[A-Za-z][A-Za-z0-9_]*|\$session|[+*\/&-])/g;
+ const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$component(?:\.[A-Za-z_][A-Za-z0-9_]*){1,2}|\$state\.[A-Za-z][A-Za-z0-9_]*|\$flow\.[A-Za-z][A-Za-z0-9_]*|\$session|[+*\/&-])/g;
  let cursor=0;let match:RegExpExecArray|null;
  while((match=token.exec(value))){
   if(match.index>cursor)parts.push({value:value.slice(cursor,match.index),kind:'text'});
@@ -26,6 +27,9 @@ export function splitSmartFormula(value:string){
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
  return parts;
 }
+function tokenEndsInComponentPrefix(source:string){
+ return /\$component(?:\.[A-Za-z_][A-Za-z0-9_]*)?\.$/.test(source);
+}
 export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[],flowReferences}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
  objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind;
@@ -35,6 +39,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   * everywhere else, so normal formula bars never suggest or accept $flow. */
  flowReferences?:readonly {apiName:string;label:string}[]
 }){
+ const scope=usePageFormulaScope();
  const input=useRef<HTMLInputElement>(null);
  const [draft,setDraft]=useState(value);
  const [validationError,setValidationError]=useState<string|null>(null);
@@ -52,7 +57,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const functionSuggestions=functionMatch?functions.filter(name=>
    name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number}|null>(null);
- const hint=focused&&draft.trimStart().startsWith('=')?formulaSignatureAt(draft,caret):null;
+ const hint=focused?formulaSignatureAt(draft,caret):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
@@ -85,7 +90,17 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const collectionNames=[...new Set(stateOptions.filter(entry=>entry.source==='CollectionState')
   .map(entry=>entry.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
  const dollarMentions=matches?.prefix==='$'
-  ?formulaDollarSuggestions(stateOptions,matches.query,flowReferences):[];
+  ?[...formulaDollarSuggestions(stateOptions,matches.query,flowReferences),...componentMentions()]:[];
+ function componentMentions(){
+  const entries=scope?.entries??[];
+  if(!entries.length||!matches)return [];
+  const path=matches.query.split('.');
+  if(path.length===1)return [{reference:'$component.',label:'Components on this page'}];
+  if(path[0]!=='component')return [];
+  if(path.length===2)return entries.map(item=>({reference:'$component.'+item.token+'.',label:item.name}));
+  const entry=entries.find(item=>item.token===path[1]);
+  return (entry?.keys??[]).map(key=>({reference:'$component.'+path[1]+'.'+key,label:key}));
+ }
  // Inside TABLE(@Object, ...), field choices follow that Object, not the
  // Page Builder's first object or another selected independent source.
  const tableOpen=/\bTABLE\s*\(\s*@([A-Za-z][A-Za-z0-9_]*)\s*,([^)]*)$/i.exec(draft.slice(0,caret));
@@ -113,7 +128,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
  const isFormulaDraft=(source:string)=>source.startsWith('=')||
-  /^\$(?:state\.|session(?:\b|\.)|flow\.)/.test(source)||
+  /^\$(?:component\.|flow\.|state\.|session(?:\b|\.))/.test(source)||
   /^@[A-Za-z][A-Za-z0-9_.]*\s*(?:==|=|<>|!=|>=|<=|>|<)/.test(source);
  const errorFor=(next:string):string|null=>{
   if(!flowReferences&&/\$flow\b/i.test(next))return '$flow is only available in the Action formula bar';
@@ -121,6 +136,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(custom)return custom;
   const source=next.trim();
   if(!isFormulaDraft(source))return null;
+  if(tokenEndsInComponentPrefix(source))return 'Select a component and property';
   if(!source.slice(source.startsWith('=')?1:0).trim())return 'Complete the formula after =';
   const functionPrefix=/^=\s*([A-Za-z][A-Za-z0-9_]*)$/.exec(source);
   if(functionPrefix&&functions.some(name=>name.startsWith(functionPrefix[1].toUpperCase())))
@@ -167,6 +183,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   setValidationError(null);
   if(!error)onChange(next);
   setCaret(end);setMatches(null);setFunctionMatch(null);
+  if(reference.startsWith('$component.')&&reference.endsWith('.'))suggest(next,end);
   requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(end,end)});
  };
  const insertFunction=(name:string)=>{
@@ -216,7 +233,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    onChange={e=>update(e.currentTarget.value,e.currentTarget.selectionStart??e.currentTarget.value.length)}/>
 
   {hint&&hintPosition&&createPortal(<div className="smart-formula-signature" role="status"
-    style={{position:'fixed',top:hintPosition.top,left:hintPosition.left,zIndex:6100}}>
+    style={{position:'fixed',top:popup&&!popup.above?Math.max(4,popup.top-60):hintPosition.top,left:hintPosition.left,zIndex:6100}}>
     <strong>{hint.name}</strong><span>(</span>
     {hint.parameters.slice(0,Math.min(hint.maximumArguments,Math.max(hint.minimumArguments,hint.argument+2,4))).map((parameter,index)=>
       <span key={index} className={index===hint.argument?'is-current':''}>

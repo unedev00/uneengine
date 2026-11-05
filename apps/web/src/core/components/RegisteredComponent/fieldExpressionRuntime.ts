@@ -37,7 +37,7 @@ export function getAuthenticatedFormulaBindingContext():FormulaBindingContext|nu
 function isFieldExpression(value:string):boolean{
   const input=value.trim().replace(/^=\s*/,'');
   return /^(?:TRUE|FALSE|NULL|PI)$/i.test(input)||input.startsWith('(')||/^[+-]\d/.test(input)
-    ||input.startsWith('@')||input.startsWith('{!')||/^\$(?:state|session)(?:\.|$)/.test(input)||/^"(?:[^"]|"")*"\s*&/.test(input)
+    ||input.startsWith('@')||input.startsWith('{!')||/^\$(?:component|state|session)(?:\.|$)/.test(input)||/^"(?:[^"]|"")*"\s*&/.test(input)
     ||/^(?:\d+(?:\.\d+)?\s*[+\-*/%^<>]|"(?:[^"]|"")*"\s*(?:&|=|<>|!=|<=|>=|<|>))/.test(input)
     ||/^(?:IF|IFERROR|CASE|AND|OR|NOT|XOR|ISBLANK|ISNULL|ISNUMBER|BLANKVALUE|NULLVALUE|TEXT|VALUE|ASCII|LOWER|UPPER|PROPER|INITCAP|LEN|TRIM|LEFT|RIGHT|MID|FIND|BEGINS|CONTAINS|EXACT|ISPICKVAL|INCLUDES|CONCATENATE|SUBSTITUTE|REPT|REVERSE|ENCODEURL|URLENCODE|URLDECODE|LPAD|RPAD|REPLACE|CHAR|CASESAFEID|T|COLLECTION|COLLECTIONCOUNT|COLLECTIONSUM|SUM|VLOOKUP|ABS|ROUND|ROUNDUP|ROUNDDOWN|TRUNC|SIGN|MIN|MAX|MOD|SQRT|POWER|CEILING|FLOOR|MCEILING|MFLOOR|EXP|LN|LOG|SIN|COS|TAN|ASIN|ACOS|ATAN|ATAN2|SINH|COSH|TANH|DEGREES|RADIANS|DATE|DATEVALUE|DATETIMEVALUE|TODAY|NOW|DAY|MONTH|YEAR|HOUR|MINUTE|SECOND|TIMEVALUE|TIMENOW|TZOFFSET|WEEKDAY|ISOWEEK|ISOYEAR|ADDDAYS|ADDMONTHS|GEOLOCATION|DISTANCE)\s*\(/i.test(input);
 }
@@ -81,7 +81,7 @@ export function resolveFieldText(
 
 export function resolveRegisteredTextProperties(
  definitions:ReadonlyArray<{propertyKey:string;kind:string}>,properties:Record<string,unknown>,
- context?:FormulaBindingContext
+ context?:FormulaBindingContext,readComponent?:FormulaBindingContext['readComponent']
 ):Record<string,unknown>{
   const baseContext=context??getAuthenticatedFormulaBindingContext()??undefined;
   // Shared formula aggregation may consume only a complete, already-authorised
@@ -91,7 +91,7 @@ export function resolveRegisteredTextProperties(
   const completeRows=rows&&rows.length<=200&&
     (!pagination||(pagination.offset===0&&typeof pagination.total==='number'&&pagination.total<=rows.length))
     ?rows as Record<string,unknown>[]:undefined;
-  const formulaContext={...(baseContext??{}),now:baseContext?.now??new Date(),
+  const formulaContext={...(baseContext??{}),readComponent:readComponent??baseContext?.readComponent,now:baseContext?.now??new Date(),
     ...(completeRows?{collectionRows:completeRows}:{}),
     ...(properties.formulaCollectionSources&&typeof properties.formulaCollectionSources==='object'
       ?{collectionSources:properties.formulaCollectionSources as FormulaBindingContext['collectionSources']}:{}),
@@ -106,11 +106,17 @@ export function resolveRegisteredTextProperties(
   const hasRecord=Boolean(record&&typeof record==='object'&&!Array.isArray(record));
   const resolvedContext=withRecordTypeContext(formulaContext,record,properties.object);
   let next=properties;
-  for(const definition of definitions){
+  // Binding formulas on repeating rows are resolved by the row renderer.
+  const authored=properties.properties;
+  const extra=authored&&typeof authored==='object'&&!Array.isArray(authored)
+    ?Object.entries(authored).filter(([key,value])=>typeof value==='string'&&value.includes('$component.')
+      &&!definitions.some(field=>field.propertyKey===key)).map(([propertyKey])=>({propertyKey,kind:'TEXT'})):[];
+  for(const definition of [...definitions,...extra]){
     if(!['TEXT','LONG_TEXT','TEXTAREA','STRING'].includes(definition.kind))continue;
     const value=properties[definition.propertyKey];
     if(typeof value!=='string'||!isFieldExpression(value))continue;
     const localRefs=[...value.matchAll(/@([A-Za-z][A-Za-z0-9_]*)/g)].map(match=>match[1]);
+    if(!hasRecord&&rows&&rows.length>1&&value.includes('$component.')&&localRefs.length)continue;
     const localSum=/^=?\s*SUM\s*\(/i.test(value.trim())&&rows?.some(row=>
       row&&typeof row==='object'&&!Array.isArray(row)&&localRefs.some(key=>Object.hasOwn(row,key)));
     if(localSum&&!completeRows)continue; // Never evaluate totals from an incomplete page.

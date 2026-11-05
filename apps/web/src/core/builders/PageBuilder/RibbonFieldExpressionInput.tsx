@@ -1,10 +1,21 @@
+import SmartFormulaField from './SmartFormulaField';
+import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useEffect,useRef,useState, type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {FieldMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {relationshipFormulaFields} from './relationshipFormulaFields';
 
 /** A bounded @field picker; expressions are evaluated by the component runtime, never by eval(). */
-export default function RibbonFieldExpressionInput({label,value,fields,onChange,placeholder,objects=[],objectApiName=''}:{
+export default function RibbonFieldExpressionInput(props:Parameters<typeof StandaloneFieldInput>[0]){
+ const scope=usePageFormulaScope();
+ if(!scope)return <StandaloneFieldInput {...props}/>;
+ return <div className="office-ribbon-inline-field office-ribbon-expression-input">
+  <span className="office-ribbon-field-name">{props.label}</span>
+  <SmartFormulaField label={props.label+' expression'} value={props.value} onChange={props.onChange}
+   disabled={false} fields={props.fields} objects={props.objects} rootObjectApiName={props.objectApiName}/>
+ </div>;
+}
+function StandaloneFieldInput({label,value,fields,onChange,placeholder,objects=[],objectApiName=''}:{
   label:string;value:string;fields:FieldMetadata[];onChange:(value:string)=>void;placeholder?:string;
   objects?:readonly ObjectMetadata[];objectApiName?:string;
 }){

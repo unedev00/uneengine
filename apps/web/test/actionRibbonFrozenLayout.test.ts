@@ -52,20 +52,20 @@ test('Cart Actions expose independent eye controls without editing Flow or Formu
  assert.match(page,/item\.properties,\[property\]:visible/);
 });
 
-test('Formula bar remains mounted and editable only for Formula action',()=>{
+test('Formula bar remains mounted and editable for Flow and Formula actions',()=>{
  const blank=render({});
  const flow=render({click:{actionType:'Flow',flowApiName:'Some_Flow'}},'click');
  const plus=render({qtyIncrease:{actionType:'Formula',formula:'@Quantity + 2'}},'qtyIncrease');
  const minus=render({qtyDecrease:{actionType:'Formula',formula:'@Quantity - 3'}},'qtyDecrease');
  for(const html of [blank,flow,plus,minus])assert.match(html,/aria-label="Actions formula bar"/);
- for(const html of [blank,flow])
-  assert.match(html,/aria-label="Selected action formula"[^>]*disabled/);
+ assert.doesNotMatch(flow,/aria-label="Selected action formula"[^>]*disabled/);
+ assert.match(blank,/aria-label="Selected action formula"[^>]*disabled/);
  assert.match(plus,/@Quantity \+ 2/);
  assert.match(minus,/@Quantity - 3/);
  assert.doesNotMatch(plus,/aria-label="Selected action formula"[^>]*disabled/);
  assert.match(plus,/aria-label="Remove \+ Icon action"/);
  const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
- assert.match(source,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
+ assert.match(flow,/\$flow\.Some_Flow/);
  assert.match(source,/delete next\[slot\.key\]/);
 });
 

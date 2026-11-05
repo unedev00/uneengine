@@ -39,6 +39,11 @@ test('page list has a compact leading Actions column without a frozen edge', () 
   assert.match(split, /<PanelsTopLeft size=\{16\}\/>/);
   assert.match(split, /page-manager-design-layout-trigger/);
   assert.match(split, /createPortal\(/);
+  // Regression: the closed control is a chevron only; the open menu has its
+  // own opaque, body-level surface so table cell text cannot show through.
+  assert.match(split, /<ChevronDown size=\{13\}\/>/);
+  assert.match(split, /<\/div>,document\.body\)\}/);
+  assert.match(css, /\.page-manager-design-layout-menu\s*\{[^}]*opacity:\s*1;/);
   assert.match(split, /aria-haspopup="menu"/);
   assert.match(split, /onOpenLayout\(variant\)/);
   assert.doesNotMatch(split, /<select/);
