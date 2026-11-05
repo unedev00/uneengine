@@ -21,6 +21,7 @@ import Design2IconDropdown from './Design2IconDropdown';
 import SmartMultiSelect from './SmartMultiSelect';
 import SmartIconGallery from './SmartIconGallery';
 import Design2CanvasActions from './Design2CanvasActions';
+import {smartTabsHaveDataSource} from './smartTabsCountSource';
 import type {ArrangeRibbonProps} from './ArrangeRibbon';
 import './SmartRibbon.css';
 import './SmartRibbonApprovedThreeRow.css';
@@ -87,7 +88,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  };
 
  const [design2Area,setDesign2Area]=useState('Body');
- const [countKey,setCountKey]=useState<'tabCount'|'tabIndex'|'cardsPerRow'|'cardsPerColumn'>('tabCount');
+ const [countKey,setCountKey]=useState<'cardsPerRow'|'cardsPerColumn'>('cardsPerRow');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
@@ -620,31 +621,54 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
       </div>
       <div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
-          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)}}>
-          {sectionRow(activeDesign2Area,row).map(controls)}</div>)}
-      </div>
-      {activeDesign2Area==='Body'&&['smart_tabs','smart_card_grid','smart_cart'].includes(api)&&(()=>{
-        const keys=api==='smart_tabs'?['tabCount','tabIndex']:api==='smart_cart'?['cardsPerRow']:['cardsPerRow','cardsPerColumn'];
-        const key=keys.includes(countKey)?countKey:keys[0];
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)+(row===1?' 79px':'')}}>
+          {sectionRow(activeDesign2Area,row).map(controls)}
+          {row===1&&(()=>{
+        const key=api==='smart_tabs'?'tabCount':
+          api==='smart_cart'?'cardsPerRow':
+          api==='smart_card_grid'&&countKey==='cardsPerColumn'?'cardsPerColumn':'cardsPerRow';
         const property=definitions.find(p=>p.id===key);
-        const enabled=Boolean(property?.components.includes(api)&&
+        const supported=Boolean(property?.components.includes(api)&&
           (!sharedPropertyIds||sharedPropertyIds.includes(key)));
-        const raw=properties[property?.valueKeys?.[api]??key]??property?.defaultsOverrides?.[api]??property?.default??1;
-        return <div className="smart-design2-count" role="group" aria-label="Count controls">
-          <Hand size={16} aria-hidden="true"/>
-          {keys.length>1&&<select aria-label="Count property" value={key}
-            onChange={event=>setCountKey(event.target.value as 'tabCount'|'tabIndex'|'cardsPerRow'|'cardsPerColumn')}>
-            {api==='smart_tabs'?<><option value="tabCount">Count</option><option value="tabIndex">Initial tab</option></>:
-            <><option value="cardsPerRow">{api==='smart_cart'?'Items':'Columns'}</option><option value="cardsPerColumn">Rows</option></>}
+        const sourceBound=api==='smart_tabs'&&smartTabsHaveDataSource(properties);
+        const enabled=activeDesign2Area==='Body'&&supported&&!sourceBound;
+        const raw=properties[property?.valueKeys?.[api]??key]??
+          property?.defaultsOverrides?.[api]??property?.default??1;
+        const numeric=Number(raw);
+        const value=Number.isFinite(numeric)?Math.trunc(numeric):1;
+        const title=sourceBound?'Number of tabs is determined by its data source':
+          property?.label??'Count';
+        const minimum=property?.min??1;
+        const maximum=property?.max??(api==='smart_tabs'?20:99);
+        return <div className="smart-design2-count" role="group"
+          aria-label="Count controls" data-supported={enabled?'true':'false'}
+          data-source-bound={sourceBound?'true':'false'}>
+          <span className="smart-design2-count-field" title={title}>
+            <Hand size={16} aria-hidden="true"/>
+            <input type="number" className="smart-office-number" step={1}
+              aria-label={api==='smart_tabs'?'Number of tabs':title}
+              title={title} min={minimum} max={maximum}
+              disabled={!enabled} value={supported?value:''}
+              onChange={event=>{
+                const next=Number(event.target.value);
+                if(enabled&&event.target.value!==''&&Number.isInteger(next)&&
+                  next>=minimum&&next<=maximum)
+                  onChange({...properties,[property!.valueKeys?.[api]??key]:next});
+              }}/>
+          </span>
+          {api==='smart_card_grid'&&<select className="smart-design2-count-choice"
+            aria-label="Card count dimension" title="Card count dimension"
+            disabled={activeDesign2Area!=='Body'}
+            value={countKey} onChange={event=>
+              setCountKey(event.target.value as 'cardsPerRow'|'cardsPerColumn')}>
+            <option value="cardsPerRow">Columns</option>
+            <option value="cardsPerColumn">Rows</option>
           </select>}
-          <input type="number" aria-label={property?.label??key} title={property?.label??key}
-            min={property?.min??(key==='tabIndex'?0:1)} max={property?.max??(key==='tabCount'||key==='tabIndex'?20:50)}
-            disabled={!enabled} value={Number(raw)||0}
-            onChange={event=>{const number=Number(event.target.value);
-              if(enabled&&Number.isInteger(number)&&number>=(key==='tabIndex'?0:1))
-                onChange({...properties,[property!.valueKeys?.[api]??key]:number});}}/>
         </div>;
       })()}
+          </div>)}
+      </div>
+
       {activeDesign2Area==='Calendar'&&api==='smart_calendar'&&
         <div className="smart-design2-calendar-controls" role="group" aria-label="Calendar settings">
           {(['showDays','firstDay'] as const).map(id=>{
