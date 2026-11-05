@@ -1172,13 +1172,15 @@ test('Cart visible-row setting constrains item region, not header and summary',a
  assert.match(html,/Total not bound/);
 });
 
-test('31 October ribbon consolidation scopes @ fields to three explicit objects and is SQL owned',()=>{
+test('Design source scopes @ fields to explicitly selected metadata objects and preserves SQL ownership',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
  const sql=read('../../server/src/system-support/migrations/20270207-page-builder-ribbon-sources-layout.sql');
  const styles=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
- for(const key of ['objectApiName','objectApiName2','objectApiName3'])assert.ok(ribbon.includes("'"+key+"'"));
+ assert.match(ribbon,/sourceKey=\(index:number\)=>index===1\?'objectApiName':'objectApiName'\+index/);
+ assert.match(ribbon,/sourceObjectKeys=Object\.keys\(properties\)/);
+ assert.match(ribbon,/objectSourceCount/);
  assert.match(ribbon,/const objectName=sourceObjectNames\[0\]\?\?''/);
  assert.doesNotMatch(ribbon,/fallback\(properties\.objectApiName\)\|\|pageObjectApiName/);
  assert.match(formula,/relationshipFormulaFields/);

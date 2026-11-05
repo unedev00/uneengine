@@ -36,7 +36,7 @@ test('Hand control edits the existing count metadata, not a new counter',()=>{
  assert.match(design,/className="smart-office-number" step=\{1\}/);
  assert.doesNotMatch(design,/value="tabIndex"/);
  assert.match(design,/data-source-bound=\{sourceBound\?'true':'false'\}/);
- assert.match(design,/activeDesign2Area==='Body'&&supported&&!sourceBound/);
+ assert.match(design,/area==='Body'&&supported&&!sourceBound/);
 });
 
 test('Tab dimensions, orientation and count resize canvas frame together',()=>{
@@ -51,8 +51,8 @@ test('Calendar, image and header settings stay directly editable in Design',()=>
  for(const key of ['showDays','firstDay','imageFill','imagePlacement','imageHeight',
    'headerBoxHeight','supportingBoxHeight','imageBorderColor'])
    assert.ok(design.includes(key),'Missing '+key);
- assert.match(design,/activeDesign2Area==='Calendar'/);
- assert.match(design,/activeDesign2Area==='Image'&&api==='smart_card_grid'/);
+ assert.match(design,/area==='Calendar'/);
+ assert.match(design,/area==='Image'&&api==='smart_card_grid'/);
 });
 
 test('Badge visibility follows rendered nonempty text, including spaces',()=>{

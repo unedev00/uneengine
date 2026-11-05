@@ -1,6 +1,5 @@
-/* Permanent Page Builder left dock. The metadata-driven property editor and
- * Insert gallery use the existing shared renderer, with no duplicate top ribbon.
- * The dock scrolls vertically rather than clipping extra controls. */
+/* Permanent left-docked Page Builder inspector. Retired top-ribbon toggles and
+ * collapsed-ribbon modes are intentionally not included. */
 
 /* Canvas area: dock on the left, canvas fills the rest. */
 .builder-page .page-builder-layout.canvas-unified-builder.has-design-dock{
@@ -280,4 +279,172 @@
  .smart-design2-group .smart-design2-dimensions
  >.smart-design2-arrange-actions[data-design-section="dimensions"]>.smart-design2-arrange-action{
   flex:0 0 58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;
+}
+
+
+/* One vertical inspector: reuse the existing SQL 26px property controls without
+ * resizing, reordering, or altering their disabled state in each Design area. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design-source{
+ box-sizing:border-box!important;display:block!important;
+ width:420px!important;min-width:420px!important;max-width:420px!important;
+ height:auto!important;min-height:0!important;max-height:none!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-workbench{
+ display:flex!important;flex-direction:column!important;gap:0!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-area-list{
+ box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+ width:420px!important;min-width:420px!important;max-width:420px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section{
+ box-sizing:border-box!important;display:block!important;
+ width:420px!important;min-width:420px!important;max-width:420px!important;
+ margin:0!important;padding:0!important;
+ border:0!important;border-bottom:1px solid #ccd2dd!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section-toggle{
+ box-sizing:border-box!important;display:flex!important;
+ width:100%!important;min-height:32px!important;align-items:center!important;
+ gap:7px!important;padding:5px 6px!important;margin:0!important;
+ border:0!important;background:transparent!important;
+ color:#183b68!important;font:600 12px/18px "Segoe UI",Arial,sans-serif!important;
+ text-align:left!important;cursor:pointer!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section-toggle svg{flex:0 0 15px;transition:transform .12s ease}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section-toggle[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section-toggle:hover{background:#e8f1ff!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section-toggle:focus-visible,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-heading button:focus-visible,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-remove:focus-visible,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-add-label:focus-visible{
+ outline:2px solid #176ce5!important;outline-offset:-2px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-inspector-section-content{
+ box-sizing:border-box!important;width:420px!important;
+ min-width:420px!important;max-width:420px!important;
+ padding:1px 0 9px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-area-section .smart-ribbon-items{
+ box-sizing:border-box!important;display:flex!important;
+ flex-direction:column!important;align-items:flex-start!important;
+ gap:0!important;width:420px!important;min-width:420px!important;
+ height:auto!important;min-height:0!important;max-height:none!important;
+ margin:0!important;padding:0!important;overflow:visible!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-area-section .smart-ribbon-row[data-design-row]{
+ width:420px!important;min-width:420px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-dimensions-section .smart-design2-context[data-design-row="0"]{
+ padding:0!important;
+}
+/* Existing dimensions and alignment buttons retain their exact widths. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-dimensions-section .smart-design2-context[data-design-row="0"] .smart-design2-dimensions,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-dimensions-section .smart-design2-context[data-design-row="0"] .smart-design2-arrange-actions{
+ width:420px!important;min-width:420px!important;max-width:420px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design-source .smart-source-heading{
+ display:flex!important;align-items:center!important;width:420px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design-source .smart-source-heading>.smart-inspector-section-toggle{
+ flex:1 1 auto!important;width:auto!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-add,.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-remove{
+ box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
+ justify-content:center!important;width:26px!important;height:26px!important;
+ padding:0!important;margin:0 5px 0 0!important;
+ border:1px solid #b7c9df!important;border-radius:3px!important;
+ background:#fff!important;color:#29466b!important;cursor:pointer!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-entries{display:flex!important;flex-direction:column!important;gap:5px!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-entry{display:flex!important;align-items:center!important;gap:6px!important;padding:0 6px!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-entry>.smart-property{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;
+ gap:5px!important;min-height:26px!important;
+ width:205px!important;max-width:205px!important;flex:0 0 205px!important;
+ opacity:1;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-entry>.smart-property.disabled{opacity:.46!important}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-entry>.smart-property>.smart-label{
+ box-sizing:border-box!important;display:block!important;
+ width:52px!important;min-width:52px!important;flex:0 0 52px!important;
+ color:#253c5b!important;font:11px/26px "Segoe UI",Arial,sans-serif!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-entry .smart-select{
+ box-sizing:border-box!important;width:150px!important;min-width:150px!important;
+ max-width:150px!important;height:26px!important;min-height:26px!important;
+ border:1px solid #b7c9df!important;border-radius:3px!important;
+ background:#fff!important;color:#253c5b!important;font:11px "Segoe UI",Arial,sans-serif!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-source-add-label{
+ display:inline-flex!important;align-items:center!important;gap:5px!important;
+ margin:8px 0 0 7px!important;padding:5px 8px!important;
+ border:1px solid #b7c9df!important;border-radius:3px!important;
+ background:#fff!important;color:#29466b!important;font:11px "Segoe UI",Arial,sans-serif!important;
+ cursor:pointer!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ :is(.smart-source-add,.smart-source-remove,.smart-source-add-label):disabled{
+ opacity:.46!important;cursor:not-allowed!important;
+}
+
+/* The permanent inspector nests the original three-row matrix one level under
+ * an accordion panel. Reapply the ORIGINAL fixed SQL grid-area contract at the
+ * nested path: generic grid-area:auto!important otherwise pushes Image R2C5
+ * away from Width R2C4 even though both icons retain their correct widths. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ >.smart-ribbon-group.smart-design2-group
+ .smart-design2-area-section .smart-ribbon-items
+ >.smart-ribbon-row[data-design-row]{
+ box-sizing:border-box!important;display:grid!important;
+ grid-auto-flow:row!important;grid-template-rows:26px!important;
+ grid-auto-rows:26px!important;column-gap:4px!important;row-gap:0!important;
+ justify-content:start!important;align-items:center!important;
+ width:420px!important;min-width:420px!important;max-width:420px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ >.smart-ribbon-group.smart-design2-group
+ .smart-design2-area-section .smart-ribbon-items
+ >.smart-ribbon-row[data-design-row]>.smart-property{
+ grid-area:1 / var(--smart-slot-column,1) / span 1 / span 1!important;
+ grid-column:var(--smart-slot-column,1) / span 1!important;
+ grid-row:1 / span 1!important;justify-self:start!important;
+ box-sizing:border-box!important;
+ width:var(--smart-control-width)!important;min-width:var(--smart-control-width)!important;
+ max-width:var(--smart-control-width)!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
 }
