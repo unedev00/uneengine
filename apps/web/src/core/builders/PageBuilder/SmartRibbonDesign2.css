@@ -501,7 +501,7 @@
  * Keep its dimensions, native spinner and position unchanged in every area. */
 .office-builder-ribbon .smart-design2-group .smart-design2-workbench{position:relative!important;}
 .office-builder-ribbon .smart-design2-group .smart-design2-count{
- position:absolute;left:298px;top:30px;
+ position:relative;grid-column:7;grid-row:1;
  box-sizing:border-box;display:flex;align-items:center;gap:4px;
  height:26px;min-height:26px;max-height:26px;
  margin:0;padding:0;background:transparent;color:#1d4266;z-index:2;
@@ -535,11 +535,12 @@
  .smart-design2-count-field{
  opacity:.45;cursor:not-allowed;
 }
-.office-builder-ribbon .smart-design2-group .smart-design2-count-choice{
+.office-builder-ribbon.smart-design2-group .smart-design2-count-choice{
  box-sizing:border-box;width:74px;height:26px;min-width:74px;max-width:74px;
  border:1px solid #b7c9df;border-radius:3px;background:#fff;color:#1d4266;
  font:11px "Segoe UI",Arial,sans-serif;
 }
+
 .office-builder-ribbon .smart-design2-group .smart-design2-calendar-controls,
 .office-builder-ribbon .smart-design2-group .smart-design2-image-border{
  position:absolute;left:382px;top:30px;display:flex;gap:5px;align-items:center;height:26px;
