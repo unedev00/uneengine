@@ -1,3 +1,4 @@
+import {printRecordPages} from './printRecordPages';
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
@@ -264,7 +265,7 @@ function RuntimeReportChart({ report, objects, recordContext }: {
 }
 
 function MetadataBoundPageComponent({
-  definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
+  definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', printRows=false,initialPageState, sessionIdOverride, children
 }: {
   definition: LibraryComponentMetadata;
   component: PageComponentMetadata;
@@ -286,6 +287,7 @@ function MetadataBoundPageComponent({
   recordId?: string;
   initialPageState?:Record<string,unknown>;
   pageComponents?:readonly PageComponentMetadata[];
+  printRows?:boolean;
   sessionIdOverride?:string;
   children?: ReactNode;
 }) {
@@ -428,11 +430,13 @@ function MetadataBoundPageComponent({
       pending = true;
       const request = ++requestId;
       try {
-        const page=await loadFlowScreenRecordPage(objectApiName,{
-          limit:recordPageSize,offset:recordOffset,
+        const load=(offset:number)=>loadFlowScreenRecordPage(objectApiName,{
+          limit:recordPageSize,offset,
           filter:relatedQuery.filter??(recordQuery.serverFilterable?recordQuery.filter:undefined),
           filters:recordQuery.filters,filterLogic:recordQuery.filterLogic
         });
+        const first=await load(recordOffset);
+        const page=printRows?await printRecordPages(first,load,()=>active):first;
         if (active && request === requestId) {
           setRecords(page.records);
           setRecordTotal(page.total);
@@ -470,7 +474,7 @@ function MetadataBoundPageComponent({
         document.removeEventListener('visibilitychange', onVisible);
       }
     };
-  }, [objectApiName, recordQueryKey, recordOffset, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions]);
+  }, [objectApiName, recordQueryKey, recordOffset, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions,printRows]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');
@@ -913,7 +917,7 @@ function MetadataBoundPageComponent({
       // A typed collection is the Data Source; presenter defaults must not
       // overwrite its permission-checked, formula-filtered rows.
       ...(dataCollectionRows?{records:dataCollectionRows}:{}),
-      ...(!dataCollectionRows&&objectApiName ? {recordPagination:{
+      ...(!printRows&&!dataCollectionRows&&objectApiName ? {recordPagination:{
         limit:recordPageSize,offset:recordOffset,total:recordTotal,
         hasPrevious:recordOffset>0,hasNext:recordOffset+recordPageSize<recordTotal,
         available:recordQuery.serverFilterable
@@ -924,7 +928,7 @@ function MetadataBoundPageComponent({
         value:toggleBinding.ready?toggleBinding.value:false,
         onBoundToggleChange:changeBoundToggle}:{})
     }} />
-    {objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
+    {!printRows&&objectApiName&&recordQuery.serverFilterable&&recordTotal>recordPageSize&&<nav
       className="records-pagination" aria-label={component.label+' record pages'}>
       <button type="button" className="btn" disabled={dataLoading||recordOffset===0}
         onClick={()=>setRecordOffset(offset=>Math.max(0,offset-recordPageSize))}>Previous</button>
@@ -932,7 +936,7 @@ function MetadataBoundPageComponent({
       <button type="button" className="btn" disabled={dataLoading||recordOffset+recordPageSize>=recordTotal}
         onClick={()=>setRecordOffset(offset=>offset+recordPageSize)}>Next</button>
     </nav>}
-    {objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
+    {!printRows&&objectApiName&&!recordQuery.serverFilterable&&recordTotal>recordPageSize&&<p role="status">
       Results are incomplete: this filter was applied only to the first 100 fetched records. Additional matches may exist; pagination is unavailable for this filter combination.
     </p>}
   </div>;
@@ -1156,7 +1160,7 @@ function LightningAppRuntime({
       const content = needsMetadataComponentRuntime(component.properties)
         ? <MetadataBoundPageComponent definition={definition} component={component} defaultObjectApiName={page.targetObject}
             objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={runtimeKey} pageComponents={page.components} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
-            recordId={String(inScreenContext?.values?.recordId??'')} disableActions={Boolean(printPreview)} initialPageState={inScreenContext?.values}
+            recordId={String(inScreenContext?.values?.recordId??'')} disableActions={Boolean(printPreview)} printRows={Boolean(printPreview)} initialPageState={inScreenContext?.values}
             sessionIdOverride={inScreenContext?.sessionId}
             children={nestedChildren}
             onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} />

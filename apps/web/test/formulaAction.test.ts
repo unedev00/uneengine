@@ -143,3 +143,12 @@ test('AS fields beyond Id use the authorised record response including generated
  await executePageFormulaAction(request,{formula:'ACTIONS(CREATERECORD(Parent,AS(parent)),CREATERECORD(Child,Name,parent.Name))'},{},{},[],'');
  assert.deepEqual(paths,['/records/Parent','/records/Parent/'+rowId,'/records/Child']);
 });
+
+test('print templates fetch all bounded pages and reject a shifting dataset',async()=>{
+ const {printRecordPages}=await import('../src/core/pages/PageRuntime/printRecordPages');
+ const first={records:[{Id:'a'}],total:2};
+ assert.equal((await printRecordPages(first,async offset=>{
+  assert.equal(offset,1);return {records:[{Id:'b'}],total:2};
+ },()=>true)).records.length,2);
+ await assert.rejects(printRecordPages(first,async()=>first,()=>true),/changed/);
+});
