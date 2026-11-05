@@ -794,8 +794,7 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     }
     if (item === 'Reports Builder') {openSetupWorkspace('report-builder');return;}
     if (item === 'Dashboard View') {
-      navigateRoute({kind:'setup',workspace:'dashboard-builder',
-        ...(dashboards[0]?{resourceApiName:dashboards[0].apiName}:{}),dashboardView:true});return;
+      navigateRoute({kind:'setup',workspace:'dashboard-builder',resourceApiName:'viewer'});return;
     }
     if (item === 'Dashboard Builder') {openSetupWorkspace('dashboard-builder');return;}
     if (item === 'Universal Data Loader') {openSetupWorkspace('data-loader');return;}
