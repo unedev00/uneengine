@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState,type ChangeEvent} from 'react';
+import React,{useEffect,useMemo,useState,type ChangeEvent} from 'react';
 import {Download,Upload,CheckCircle2,AlertTriangle,Database,Table2,SlidersHorizontal} from 'lucide-react';
 import UniversalMetadataLoader from '../../builders/ObjectManager/UniversalMetadataLoader';
 
@@ -151,7 +151,9 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
   </nav>
   <div style={{maxWidth:1100}}>
    {tab==='objects'&&<UniversalMetadataLoader inline apiRequest={apiRequest}
-    currentObject={selectedObject} onClose={()=>{}} onChanged={()=>{
+    currentObject={selectedObject} availableObjects={objectList}
+    onObjectChange={apiName=>{setObjectApi(apiName);setExternalField('');}}
+    onClose={()=>{}} onChanged={()=>{
      void apiRequest<{objects:ObjectInfo[]}>('/metadata/objects').then(result=>setObjectList(result.objects.filter(o=>o.apiName!=='User')));
      onMetadataChanged?.();
     }}/>}

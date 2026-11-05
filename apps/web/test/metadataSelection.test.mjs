@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import UniversalDataLoaderWorkspace from '../src/core/workspace/SetupShell/UniversalDataLoaderWorkspace.tsx';
 import {
   reconcileCurrentAppId, reconcileSelectedObject, reconcileSelectedPage
 } from '../src/core/workspace/SetupShell/metadataSelection.ts';
@@ -112,4 +115,28 @@ test('Flow list keeps the Setup sidebar and a first-column pencil Edit action', 
   assert.match(list, /<td><button type="button" className="icon-button subtle" aria-label=\{`Edit \$\{candidate\.label\}`\}/);
   assert.doesNotMatch(list, /<th>Actions<\/th>/,
     'The old trailing actions column must not duplicate the first-column Edit button');
+});
+
+
+test('Universal Data Loader can choose any listed object instead of locking metadata export to Account', () => {
+  const objects = [
+    {apiName:'Account',label:'Account',fields:[]},
+    {apiName:'Product__c',label:'Product',fields:[]},
+    {apiName:'CustomOrders__c',label:'Custom Orders',fields:[]}
+  ];
+  const html = renderToStaticMarkup(createElement(UniversalDataLoaderWorkspace, {
+    apiRequest:async()=>({}), objects
+  }));
+  assert.match(html, /aria-label="Select object for metadata export"/);
+  assert.match(html, /<option value="Product__c"/);
+  assert.match(html, /<option value="CustomOrders__c"/);
+  assert.match(html, /All permitted objects/);
+  assert.match(html, /object selection controls only the download/);
+
+  const metadataLoader = read('../src/core/builders/ObjectManager/UniversalMetadataLoader.tsx');
+  const workspace = read('../src/core/workspace/SetupShell/UniversalDataLoaderWorkspace.tsx');
+  assert.match(metadataLoader, /onObjectChange\(event\.target\.value\)/);
+  assert.match(metadataLoader, /objects:exportMode==='current'\?\[currentObject\]:\[\]/);
+  assert.match(workspace, /availableObjects=\{objectList\}/);
+  assert.match(workspace, /category="records" options=\{\{objectApi:selectedObject/);
 });
