@@ -232,3 +232,22 @@ test('Card Grid selection and imageWidth use shared SQL Ribbon metadata, no cust
  assert.match(catalog,/enabledWhen\?:/);
  assert.match(ribbon,/'Summary 2','Card Grid'/);
 });
+
+
+test('Smart Card Grid keeps one viewport row at a time and scrolls narrow columns horizontally',async()=>{
+ const records=Array.from({length:7},(_,i)=>({Id:'id-'+i,Name:'Product '+i}));
+ const html=await renderSmart('smart_card_grid',{
+  records,textSource:'@Name',cardsPerRow:6,cardsPerColumn:1,
+  cardMinWidth:185,gap:12
+ });
+ assert.match(html,/grid-template-columns:repeat\\(6,minmax\\(185px,1fr\\)\\)/);
+ assert.match(html,/overflow-x:auto/);
+ assert.match(html,/overflow-y:auto/);
+ assert.match(html,/grid-auto-rows:max\\(96px/);
+ assert.match(html,/Product 6/,'scrolling must preserve records past the first row');
+ const source=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
+ assert.match(source,/new ResizeObserver\\(measureGridViewport\\)/);
+ assert.match(source,/gridViewportHeight>0/);
+ assert.match(source,/gridViewportHeight-\\(rows-1\\)\\*gap/);
+ assert.match(source,/gridViewportRef/);
+});
