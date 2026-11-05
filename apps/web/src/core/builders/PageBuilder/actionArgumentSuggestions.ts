@@ -20,7 +20,7 @@ export function actionArgumentSuggestions(before:string,objects:readonly Source[
    stack.pop();
    const parent=stack.at(-1);
    if(frame?.name==='AS'&&parent&&['CREATERECORD','UPDATERECORD','CREATEPDF'].includes(parent.name))
-    aliases.set(frame.args[0].join(''),parent.args[0].join(''));
+    aliases.set(frame.args[0].join(''),parent.name==='CREATEPDF'?'__PDF__':parent.args[0].join(''));
   }else if(token.kind==='punctuation'&&token.value===',')frame?.args.push([]);
   else frame?.args.at(-1)?.push(token.value);
  }
@@ -29,7 +29,7 @@ export function actionArgumentSuggestions(before:string,objects:readonly Source[
  const index=frame.args.length-1;
  const [alias,field]=suffix.split('.');
  if(field!==undefined){
-  if(aliases.get(alias)&&/^CREATEPDF/.test(aliases.get(alias)!))return null;
+  if(aliases.get(alias)==='__PDF__')return {query:suffix,choices:[{apiName:alias+'.FileId',label:'Generated PDF file ID'}]};
   const source=objects.find(object=>object.apiName===aliases.get(alias));
   return source?{query:suffix,choices:source.fields.map(item=>({...item,apiName:alias+'.'+item.apiName}))}:null;
  }
