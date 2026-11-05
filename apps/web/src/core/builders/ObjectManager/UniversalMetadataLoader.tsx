@@ -5,8 +5,10 @@ type Row={sheet:string;excelRow:number;objectApi:string;fieldApi?:string;action:
  status:'Valid'|'Error'|'Skipped'|'Success';result?:string;message:string};
 type Report={digest?:string;summary:{total:number;valid?:number;success?:number;error:number;skipped:number};
  rows:Row[];report:string};
+type ExportableObject={apiName:string;label:string};
 type Props={apiRequest:<T>(path:string,init?:RequestInit)=>Promise<T>;currentObject:string;onClose:()=>void;
- onChanged:()=>void;inline?:boolean};
+ onChanged:()=>void;inline?:boolean;availableObjects?:ExportableObject[];
+ onObjectChange?:(apiName:string)=>void};
 function saveXlsx(base64:string,filename:string){
  const bytes=atob(base64);const data=new Uint8Array(bytes.length);
  for(let i=0;i<bytes.length;i++)data[i]=bytes.charCodeAt(i);
@@ -14,7 +16,8 @@ function saveXlsx(base64:string,filename:string){
  const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;
  document.body.appendChild(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-export default function UniversalMetadataLoader({apiRequest,currentObject,onClose,onChanged,inline=false}:Props){
+export default function UniversalMetadataLoader({apiRequest,currentObject,onClose,onChanged,inline=false,
+ availableObjects,onObjectChange}:Props){
  const [workbook,setWorkbook]=useState(''),[fileName,setFileName]=useState('');
  const [validation,setValidation]=useState<Report|null>(null);
  const [execution,setExecution]=useState<Report|null>(null);
@@ -58,6 +61,7 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
   finally{setBusy(false);}
  };
  const exportWorkbook=async()=>{
+  if(exportMode==='current'&&!currentObject){setError('Choose an object before exporting');return;}
   setBusy(true);setError('');
   try{
    const result=await apiRequest<{workbook:string}>('/metadata/loader/export',{
@@ -79,12 +83,20 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
    <section className="metadata-card" style={{marginBottom:16}}>
     <h3><Download size={17}/> Download existing metadata</h3>
     <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:12}}>
-     <label><input type="radio" checked={exportMode==='current'} onChange={()=>setExportMode('current')}/> Selected object ({currentObject})</label>
+     <label><input type="radio" checked={exportMode==='current'} onChange={()=>setExportMode('current')}
+      disabled={!currentObject}/> Selected object{!availableObjects?.length||!onObjectChange?' ('+(currentObject||'none')+')':''}</label>
+     {availableObjects&&onObjectChange&&<select className="form-control" aria-label="Select object for metadata export"
+      style={{width:260,maxWidth:'100%'}} value={currentObject}
+      onChange={event=>onObjectChange(event.target.value)} disabled={busy||exportMode==='all'}>
+      {availableObjects.map(item=><option key={item.apiName} value={item.apiName}>
+       {item.label} ({item.apiName})</option>)}
+     </select>}
      <label><input type="radio" checked={exportMode==='all'} onChange={()=>setExportMode('all')}/> All permitted objects</label>
-     <button className="btn" type="button" onClick={()=>void exportWorkbook()} disabled={busy}>
+     <button className="btn" type="button" onClick={()=>void exportWorkbook()}
+      disabled={busy||(exportMode==='current'&&!currentObject)}>
       <FileSpreadsheet size={16}/> Download Excel</button>
     </div>
-    <p className="properties-help">The export includes object and field properties, API names and revisions. Edit the file in Excel and re-upload it using Upsert. Removing a row never deletes metadata.</p>
+    <p className="properties-help">This object selection controls only the download. Upload an Objects/Fields workbook for any permitted object, regardless of the selected export object. The export includes API names and revisions; removing a row never deletes metadata.</p>
    </section>
    <section className="metadata-card" style={{marginBottom:16}}>
     <h3><Upload size={17}/> Upload workbook</h3>
