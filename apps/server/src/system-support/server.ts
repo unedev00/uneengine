@@ -847,6 +847,23 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     res.json({profile:await platformTenants.saveSetting(actor.tenant_id,actor.user_id,'company-profile',req.body)});
   }));
+  /** Tenant name and logo for page formulas ($tenant.name / $tenant.logo).
+   * Every signed-in user of the tenant (kiosk and app users) may read these two
+   * public brand values; the full company profile still needs TenantSettings read. */
+  app.get('/api/tenant/brand',route(async(req,res)=>{
+    const actor=req.actor!;
+    const [profile,tenant]=await Promise.all([
+      db.query<{properties:unknown}>(
+        "SELECT properties FROM md_tenant_settings WHERE tenant_id=$1 AND setting_key='company-profile'",[actor.tenant_id]),
+      db.query<{name:string}>('SELECT name FROM md_tenants WHERE id=$1',[actor.tenant_id])
+    ]);
+    const settings=profile.rows[0]?.properties;
+    const values=settings&&typeof settings==='object'&&!Array.isArray(settings)?settings as Record<string,unknown>:{};
+    const text=(value:unknown)=>typeof value==='string'?value.trim():'';
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({name:text(values.tradingName)||text(values.legalName)||text(tenant.rows[0]?.name),
+      logo:text(values.logoUrl)});
+  }));
   app.get('/api/tenant/business-calendar',route(async(req,res)=>{
     const actor=req.actor!;
     res.setHeader('Cache-Control','private, no-store');
