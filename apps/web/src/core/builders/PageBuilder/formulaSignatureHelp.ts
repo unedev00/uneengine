@@ -22,7 +22,8 @@ export function formulaSignatureAt(source:string,caret:number,actions=false){
  if(!active)return null;
  if(actions){
   const signatures:Record<string,string[]>={
-   FLOW:['FlowApiName'],ACTIONS:['Action'],CREATERECORD:['Object','Field','Value'],
+   EMAIL:['NamedCredential','To','Subject','Body','Attachment'],WHATSAPP:['NamedCredential','Recipient','Message','Attachment'],
+   SMS:['NamedCredential','To','Message'],PRINT:['TemplateApiName','RecordId'],SCREEN:['PageApiName','Mode'],FLOW:['FlowApiName'],ACTIONS:['Action'],CREATERECORD:['Object','Field','Value'],
    UPDATERECORD:['Object','RecordId','Field','Value'],DELETERECORD:['Object','RecordId'],AS:['variable']
   };
   const signature=Object.prototype.hasOwnProperty.call(signatures,active.name)?signatures[active.name]:undefined;

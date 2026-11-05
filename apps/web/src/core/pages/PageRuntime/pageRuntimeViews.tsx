@@ -1,3 +1,7 @@
+import {createPortal as renderScreenPortal} from 'react-dom';
+import {runSequenceFlow} from './formulaFlowSequence';
+import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {previewPrintTemplate,openFormulaScreen,type PopupScreen} from './screenFormula';
 import {PageFormulaScope,useComponentFormulaState} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
@@ -629,7 +633,13 @@ function MetadataBoundPageComponent({
     // $flow formula: IF(..., $flow.A, $flow.B) picks the Flow, then the normal Flow
     // path runs it (same inputs/outputs, server RBAC). Blank result = do nothing.
     const authoredBinding = config as Record<string, unknown>;
-    const formulaFlow = flowActionFormulaTarget(authoredBinding, action.value, pageState, sessionId, availableFlows);
+    if(authoredBinding.actionType==='Formula'&&isScreenAction(String(authoredBinding.formula))){
+      const payload=action.value as {recordId?:unknown}|null;
+      return openFormulaScreen(String(authoredBinding.formula),{
+        objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
+      },onNavigate,pageSessionKey,sessionId,String(payload?.recordId??pageState.recordId??recordId??''));
+    }
+    const formulaFlow = isActionPlan(String(authoredBinding.formula))?undefined:flowActionFormulaTarget(authoredBinding, action.value, pageState, sessionId, availableFlows);
     if (formulaFlow === '') return { skipped: true };
     const binding: Record<string, unknown> = formulaFlow
       ? { ...authoredBinding, actionType: 'Flow', flowApiName: formulaFlow } : authoredBinding;
@@ -688,7 +698,13 @@ function MetadataBoundPageComponent({
         },onNavigate});
       }
       const result=await executePageFormulaAction(apiRequest,binding,payload,
-        pageState,objects,objectApiName,sessionId);
+        pageState,objects,objectApiName,sessionId,(template,id)=>previewPrintTemplate(template,id,pageSessionKey,sessionId),
+        async(name,target,mode)=>{
+          if(name==='SCREEN')return openFormulaScreen('SCREEN('+target+(mode?','+mode:'')+')',{
+            objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
+          },onNavigate,pageSessionKey,sessionId,String(payload.recordId??pageState.recordId??recordId??''));
+          return runSequenceFlow(target,availableFlows,apiRequest,onLaunchFlow);
+        });
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
@@ -961,6 +977,8 @@ function LightningAppRuntime({
   onNavigate,
   onLaunchFlow,
   onStandaloneModeChange,
+  printPreview,
+  instanceKey,
   inScreenPage=false,
   inScreenContext,
   previewPage,
@@ -980,6 +998,8 @@ function LightningAppRuntime({
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   onStandaloneModeChange: (enabled: boolean) => void;
+  printPreview?:PopupScreen;
+  instanceKey?:string;
   inScreenPage?: boolean;
   inScreenContext?: {sessionId?:string;values?:Record<string,unknown>};
   /** Unpublished draft for the Page Builder. Uses this runtime without fetching/caching a published page. */
@@ -995,7 +1015,7 @@ function LightningAppRuntime({
   const requestedLayout = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('pageLayout') === 'Custom'
       ? 'Custom' : layoutDevice === 'Tablet' ? 'Tablet' : formFactor === 'Phone' ? 'Mobile' : 'Desktop';
-  const cacheKey=pageDefinitionCacheKey(appId,inScreenPage?'window:'+pageApiName:pageApiName,requestedLayout,viewportWidth,profileId);
+  const cacheKey=pageDefinitionCacheKey(appId,printPreview?'print:'+pageApiName:inScreenPage?'window:'+pageApiName:pageApiName,requestedLayout,viewportWidth,profileId);
   const routeKey=cacheKey;
   const [pageLoad,setPageLoad]=useState<{
     routeKey:string;
@@ -1009,15 +1029,32 @@ function LightningAppRuntime({
   // Never run components from the previous route while navigating. Cached
   // definitions render immediately; uncached routes show the loading state.
   const page=previewPage??(routePending?cached:pageLoad.page);
+  const runtimeKey=instanceKey??appId+':'+page?.apiName;
+  const [popup,setPopup]=useState<PopupScreen|null>(null);
+  useEffect(()=>{
+    setPopup(null);
+    const open=(event:Event)=>{
+      const request=event as CustomEvent<{parentKey:string;screen:PopupScreen}>;
+      if(request.detail?.parentKey!==runtimeKey)return;
+      event.preventDefault();
+      setPopup(request.detail.screen);
+    };
+    window.addEventListener('metadrive:open-formula-screen',open);
+    return ()=>window.removeEventListener('metadrive:open-formula-screen',open);
+  },[runtimeKey]);
   const error=previewPage?'':routePending?'':pageLoad.error;
   const loading=previewPage?false:routePending?!cached:pageLoad.loading;
+  useEffect(()=>{
+    if(page&&printPreview)printPreview.ready?.();
+    if(error&&printPreview)printPreview.failed?.(Error(error));
+  },[page,error,printPreview]);
   const [activeTabs, setActiveTabs] = useState<Record<string,string>>({});
-  const [layoutState,setLayoutState]=useState<Record<string,unknown>>(inScreenPage?inScreenContext?.values??{}:{});
+  const [layoutState,setLayoutState]=useState<Record<string,unknown>>(inScreenContext?.values??{});
   const [interactionOverrides,setInteractionOverrides]=useState<Record<string,Record<string,unknown>>>({});
   useEffect(()=>setInteractionOverrides({}),[appId,page?.apiName]);
   useEffect(()=>{
     if(!page)return;
-    const session=appId+':'+page.apiName;
+    const session=runtimeKey;
     const targets=page.components.map(item=>{
       const definition=item.type.startsWith('Custom:')
         ?findRegisteredComponent(libraryComponents,item.type.slice('Custom:'.length),'page'):undefined;
@@ -1043,10 +1080,10 @@ function LightningAppRuntime({
     return()=>window.removeEventListener('metadrive:page-component-interaction',onInteraction);
   },[page,appId,libraryComponents,layoutState,requestedLayout]);
   useEffect(()=>{
-    setLayoutState(inScreenPage?inScreenContext?.values??{}:{});
+    setLayoutState(inScreenContext?.values??{});
     const listener=(event:Event)=>{
       const detail=(event as CustomEvent<{pageSessionKey:string;key:string;value:unknown}>).detail;
-      if(detail?.pageSessionKey!==appId+':'+page?.apiName)return;
+      if(detail?.pageSessionKey!==runtimeKey)return;
       if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(detail.key))return;
       setLayoutState(prev=>({...prev,[detail.key]:detail.value}));
     };
@@ -1063,7 +1100,7 @@ function LightningAppRuntime({
       return ()=>{active=false;};
     }
     setPageLoad({routeKey,appId,page:null,error:'',loading:true});
-    const endpoint = inScreenPage && pageApiName
+    const endpoint = printPreview?`/apps/${encodeURIComponent(appId)}/print-templates/${encodeURIComponent(pageApiName??'')}?formFactor=Desktop`:inScreenPage && pageApiName
       ? `/apps/${encodeURIComponent(appId)}/in-screen-pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
       : pageApiName
         ? `/apps/${encodeURIComponent(appId)}/pages/${encodeURIComponent(pageApiName)}?formFactor=${requestedLayout}&viewportWidth=${viewportWidth}`
@@ -1099,7 +1136,7 @@ function LightningAppRuntime({
     isComponentVisible(component, appVisibilityContext, false);
   const emitInteraction=(component:PageComponentMetadata,event:string,value:unknown)=>{
     window.dispatchEvent(new CustomEvent('metadrive:page-component-interaction',{
-      detail:{pageSessionKey:appId+':'+page.apiName,componentId:component.id,event,value}
+      detail:{pageSessionKey:runtimeKey,componentId:component.id,event,value}
     }));
   };
   const renderComponent = (original: PageComponentMetadata): React.ReactNode => {
@@ -1118,9 +1155,9 @@ function LightningAppRuntime({
       </div>;
       const content = needsMetadataComponentRuntime(component.properties)
         ? <MetadataBoundPageComponent definition={definition} component={component} defaultObjectApiName={page.targetObject}
-            objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={appId + ':' + page.apiName} pageComponents={page.components} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
-            initialPageState={inScreenPage?inScreenContext?.values:undefined}
-            sessionIdOverride={inScreenPage?inScreenContext?.sessionId:undefined}
+            objects={objects} apps={apps} pages={pages} currentAppId={appId} pageSessionKey={runtimeKey} pageComponents={page.components} reports={reports} availableFlows={availableFlows} formFactor={formFactor}
+            recordId={String(inScreenContext?.values?.recordId??'')} disableActions={Boolean(printPreview)} initialPageState={inScreenContext?.values}
+            sessionIdOverride={inScreenContext?.sessionId}
             children={nestedChildren}
             onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} />
         : <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent props={{
@@ -1140,7 +1177,7 @@ function LightningAppRuntime({
             label: component.type.startsWith('Custom:smart_') && typeof component.properties.label === 'string'
               ? component.properties.label : component.label,
             properties: component.properties,
-            pageSessionKey: appId + ':' + page.apiName, componentId: component.id,
+            pageSessionKey: runtimeKey, componentId: component.id,
             device: layoutDevice, children: nestedChildren,
             loadAsset: loadPageMediaAsset
           }} />;
@@ -1177,7 +1214,7 @@ function LightningAppRuntime({
               flows={availableFlows} request={apiRequest}
               libraryComponents={libraryComponents}
               onFinished={()=>window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-                detail:{pageSessionKey:appId+':'+page.apiName}}))}/>
+                detail:{pageSessionKey:runtimeKey}}))}/>
           </React.Suspense>;
     if (component.type === 'Dashboard') return <section className="record-fields-card surface" key={component.id}>
       <EmbeddedDashboard dashboardApiName={String(component.properties.dashboardApiName ?? '')}
@@ -1263,12 +1300,29 @@ function LightningAppRuntime({
     ?<React.Suspense fallback={null}><InScreenFlowHost flows={availableFlows}
       appApiName={appId} pageApiName={page.apiName} onLaunchFlow={onLaunchFlow}
       pageRecordId={typeof layoutState.recordId==='string'?layoutState.recordId:undefined}/></React.Suspense>:null;
+  const screenPopup=popup?renderScreenPortal(<dialog open className={popup.print?'formula-print-preview':undefined} aria-label={popup.page} style={{position:'fixed',inset:0,zIndex:1200,width:'85vw',height:'85vh',overflow:'auto'}}>
+    <button type="button" onClick={()=>{popup.failed?.(Error('Preview closed'));setPopup(null);}}>Close</button>
+    {popup.print&&<button type="button" onClick={()=>window.print()}>Print / Save PDF</button>}
+    <LightningAppRuntime key={popup.instance} printPreview={popup.print?popup:undefined} instanceKey={popup.instance} appId={appId} pageApiName={popup.page}
+     objects={objects} apps={apps} pages={pages} reports={reports} libraryComponents={libraryComponents}
+     availableFlows={availableFlows} formFactor={formFactor} profileId={profileId} pageDefinitionCache={pageDefinitionCache}
+     onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} onStandaloneModeChange={()=>{}}
+     inScreenPage={popup.inScreen} inScreenContext={{sessionId:popup.sessionId,values:{recordId:popup.recordId}}}/>
+   </dialog>,document.body):null;
+  const paperStyle=printPreview?<style>{`@media print {
+   @page {size:${Number(page.canvasWidth)}px ${Number(page.canvasHeight)}px;margin:0}
+   body > :not(.formula-print-preview) {display:none!important}
+   dialog.formula-print-preview {position:absolute!important;inset:0!important;width:100%!important;height:auto!important;overflow:visible!important;border:0;padding:0}
+   .formula-print-preview > button {display:none} .formula-print-preview tr {break-inside:avoid} .formula-page-break {break-before:page}
+  }`}</style>:null;
   if(page.layoutMode==='free-canvas')return <><ResponsivePageCanvas page={page}>
     {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
-  </ResponsivePageCanvas>{inScreenHost}</>;
+  </ResponsivePageCanvas>{paperStyle}{inScreenHost}{screenPopup}</>;
   const renderRegion = (region: 'header' | 'main' | 'sidebar') =>
     childrenOf(page.components, null).filter((component) => isAppComponentVisible(component) && (component.region ?? 'main') === region).map(component => {
       const content = renderComponent(component);
+      if(printPreview&&component.properties.printBreakBefore===true)
+        return <div className="formula-page-break" key={component.id}>{content}</div>;
       return content && !component.type.startsWith('Custom:') && !isLayoutType(component.type)
         && (hasPageComponentAppearance(component.properties)||Object.keys(behaviorAppearance(component.properties,appVisibilityContext)).length>0)
         ? <div key={component.id} data-page-appearance={pageAppearanceTarget(component.type)} data-page-style={pageAppearanceStyleKeys(resolvePageComponentStyle(component.properties, component.type, layoutDevice))} style={{...resolvePageComponentStyle(component.properties, component.type, layoutDevice),...behaviorAppearance(component.properties,appVisibilityContext)}}>{content}</div>
@@ -1278,7 +1332,7 @@ function LightningAppRuntime({
     pageType={page.pageType} template={page.template} canvasFillColor={page.canvasFillColor}
     fullscreen={isStandaloneRuntime && page.layoutMode === 'template'} phone={formFactor === 'Phone'} layoutVariant={page.components.find(component => component.properties?.standalonePresentation === true)?.properties?.presentationLayout as string | undefined}
     overlayOpen={layoutState.basketOpen===true}
-    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />{inScreenHost}</PageFormulaScope>;
+    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />{paperStyle}{inScreenHost}{screenPopup}</PageFormulaScope>;
 }
 
 

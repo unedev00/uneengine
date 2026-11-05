@@ -1,4 +1,5 @@
-import {compileRecordActions,isRecordAction,normalizeFlowCalls,recordActionNames} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {actionArgumentSuggestions} from './actionArgumentSuggestions';
+import {isScreenAction,parseScreenAction,compileRecordActions,isRecordAction,normalizeFlowCalls,recordActionNames} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
@@ -31,13 +32,15 @@ export function splitSmartFormula(value:string){
 function tokenEndsInComponentPrefix(source:string){
  return /\$component(?:\.[A-Za-z_][A-Za-z0-9_]*)?\.$/.test(source);
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[],flowReferences}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[],flowReferences,actionPages=[],actionCredentials=[]}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
  objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind;
  validate?:(formula:string)=>string|null;
  stateOptions?:readonly {source:'PageState'|'CollectionState';key:string;label:string}[];
  /** Action formula bar only: runnable Flows offered as $flow.ApiName. Omitted
   * everywhere else, so normal formula bars never suggest or accept $flow. */
+ actionPages?:readonly {apiName:string;label:string;pageType:string;status:string}[];
+ actionCredentials?:readonly {apiName:string;label:string}[];
  flowReferences?:readonly {apiName:string;label:string}[]
 }){
  const scope=usePageFormulaScope();
@@ -54,7 +57,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [activeSuggestion,setActiveSuggestion]=useState(0);
  const suggestionListId=useId();
  useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
- const functions=[...getFormulaFunctionNames('ribbon_binding'),...(flowReferences?['FLOW',...recordActionNames]:[])];
+ const functions=[...getFormulaFunctionNames('ribbon_binding'),...(flowReferences?[...recordActionNames,'AS']:[])];
  const functionSuggestions=functionMatch?functions.filter(name=>
    name.includes(functionMatch.query.toUpperCase())).slice(0,12):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
@@ -123,12 +126,13 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  // TABLE's first argument is an @Object. Subsequent arguments are bare
  // field API names: TABLE(@Product,Name,Price). Do not show unrelated mentions.
  const tableArg=Boolean(tableSourcePrompt||tableObject);
- const availableMentions=matches?.prefix==='$'
+ const actionArgs=flowReferences? actionArgumentSuggestions(draft.slice(0,caret),objects,flowReferences,actionPages,actionCredentials):null;
+ const availableMentions=actionArgs&&matches?.prefix===''?actionArgs.choices.map(item=>({reference:item.apiName,label:item.label})):matches?.prefix==='$'
   ?tableArg?[]:dollarMentions
   :tableArg?recordMentions:[...recordMentions,...collectionMentions,...collectionNames];
  const filtered=matches?availableMentions
     .filter(item=>item.reference.toLowerCase().includes(
-       (matches.prefix==='$'?'$':tableArg?'':'@')+matches.query.toLowerCase())||
+       (matches.prefix==='$'?'$':(tableArg||actionArgs)?'':'@')+matches.query.toLowerCase())||
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
  const isFormulaDraft=(source:string)=>source.startsWith('=')||
@@ -138,6 +142,9 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(!flowReferences&&/\$flow\b/i.test(next))return '$flow is only available in the Action formula bar';
   const custom=validate?.(next);
   if(custom)return custom;
+  if(flowReferences&&isScreenAction(next)){
+   try{parseScreenAction(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid screen';}
+  }
   if(flowReferences&&isRecordAction(next)){
    try{compileRecordActions(next);return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
   }
@@ -166,12 +173,13 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    // the canonical bare field name with no @.
    const tableField=tablePart&&/^@?[A-Za-z0-9_]*$/.test(last)
     ?{start:caret-last.length,end:caret,query:last.replace(/^@/,'')}:null;
-   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1],prefix:'@'}:
+   const args=flowReferences?actionArgumentSuggestions(before,objects,flowReferences,actionPages,actionCredentials):null;
+   setMatches(args?{start:caret-args.query.length,end:caret,query:args.query,prefix:''}:mention?{start:caret-mention[0].length,end:caret,query:mention[1],prefix:'@'}:
     dollar?{start:caret-dollar[0].length,end:caret,query:dollar[1],prefix:'$'}:
     tableField?{...tableField,prefix:''}:null);
    const name=next.trimStart().startsWith('=')&&!openString
       ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
-   setFunctionMatch(tablePart?null:name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
+   setFunctionMatch(tablePart||args?null:name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
  };
  const update=(next:string,caret:number)=>{
   setDraft(next);

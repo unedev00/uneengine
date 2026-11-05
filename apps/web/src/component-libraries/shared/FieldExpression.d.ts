@@ -39,3 +39,7 @@ export function evaluateCollectionFormula(
  sources?:Readonly<Record<string,ReadonlyArray<Record<string,unknown>>>>,
  context?:Readonly<Record<string,unknown>>
 ):{value:FormulaNamedCollection|null;error?:string};
+export function evaluateParsedExpression(
+ expression:import('../../../../server/src/expression-engine/FormulaParser.js').Expression,
+ record:Readonly<Record<string,unknown>>,context:FormulaBindingContext
+):unknown;

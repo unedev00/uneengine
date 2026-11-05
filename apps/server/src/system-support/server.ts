@@ -5,7 +5,7 @@ import {ConnectedAppService} from './connected-app-service.js';
 import {SecurityMonitorService} from './security-monitor-service.js';
 import {normalizedLoginIp} from './session-policy-service.js';
 import {registerConnectedPublicRoutes,registerGovernanceRoutes} from './security-governance-routes.js';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {ComponentLibraryService} from './component-library-service.js';
 import {DashboardSnapshotService} from './dashboard-snapshot-service.js';
 import {DashboardSubscriptionService} from './dashboard-subscription-service.js';
@@ -1402,11 +1402,12 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Vary','Authorization, Cookie');
     res.json({page});
   }));
-  app.get('/api/apps/:appId/in-screen-pages/:pageApiName',route(async(req,res)=>{
+  app.get(['/api/apps/:appId/in-screen-pages/:pageApiName','/api/apps/:appId/print-templates/:pageApiName'],route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'App:'+req.params.appId,'read');
     const page=await pages.resolveInScreenPage(actor.tenant_id,req.params.appId,
-      req.params.pageApiName,String(req.query.formFactor??'Desktop'));
+      req.params.pageApiName,String(req.query.formFactor??'Desktop'),
+      req.path.split('/').at(-2)==='print-templates'?'Print Template':'In-Screen Page');
     if(!page)throw new Error('In-Screen Page is not published or permitted for this app');
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
@@ -1889,6 +1890,40 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     res.setHeader('Cache-Control','no-store');
     res.json(await oauth.start(actor.tenant_id,actor.user_id,req.params.id));
+  }));
+  app.get('/api/action-formulas/credentials',route(async(req,res)=>{
+    const actor=req.actor!;
+    const credentials=await namedCredentials.list(actor.tenant_id,actor.user_id);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json(credentials.filter(item=>item.enabled).map(({name,label})=>({apiName:name,label})));
+  }));
+  app.post('/api/action-formulas/communication',route(async(req,res)=>{
+    const actor=req.actor!;
+    const {channel,credential,values}=req.body??{};
+    const minimum=channel==='EMAIL'?3:2;
+    if(!['EMAIL','WHATSAPP','SMS'].includes(channel)||typeof credential!=='string'
+      ||!Array.isArray(values)||values.length<minimum||values.length>(channel==='SMS'?2:minimum+20)
+      ||values.some(value=>typeof value!=='string'||!value.trim()||value.length>32768))
+      throw Error('Invalid communication formula arguments');
+    const selected=(await namedCredentials.list(actor.tenant_id,actor.user_id))
+      .find(item=>item.enabled&&item.name===credential);
+    if(!selected)throw Error('Named Credential unavailable');
+    const prefix='public_'+channel.toLowerCase();
+    const path=selected.configuration[prefix+'Path'];
+    const body=selected.configuration[prefix+'Body'];
+    if(typeof path!=='string'||!body?.trim().startsWith('{'))
+      throw Error('Configure '+prefix+'Path and '+prefix+'Body on the Named Credential');
+    const variables:Record<string,string>={to:values[0],recipient:values[0],message:values[minimum-1],body:values[minimum-1]};
+    if(channel==='EMAIL')variables.subject=values[1];
+    for(const [index,value] of values.slice(minimum).entries()){
+      const key='attachment'+(index+1);
+      if(!body.includes('{!'+key+'}'))throw Error('Provider mapping must include '+key);
+      variables[key]=value;
+    }
+    const result=await namedCredentials.callout(actor.tenant_id,actor.user_id,
+      {namedCredentialId:selected.id,method:'POST',path,body},variables,randomUUID());
+    if(result.status<200||result.status>=300)throw Error('Provider rejected the communication');
+    res.json({status:result.status});
   }));
   app.post('/api/named-credentials/:id/test',route(async(req,res)=>{
     const actor=req.actor!;

@@ -1,3 +1,6 @@
+import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
+import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {previewPrintTemplate,openFormulaScreen} from '../PageRuntime/screenFormula';
 import {useComponentFormulaState} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
@@ -390,7 +393,13 @@ export default function MetadataBoundPageComponent({
     // $flow formula: IF(..., $flow.A, $flow.B) picks the Flow, then the normal Flow
     // path runs it (same inputs/outputs, server RBAC). Blank result = do nothing.
     const authoredBinding = config as Record<string, unknown>;
-    const formulaFlow = flowActionFormulaTarget(authoredBinding, action.value, pageState, sessionId, availableFlows);
+    if(authoredBinding.actionType==='Formula'&&isScreenAction(String(authoredBinding.formula))){
+      const payload=action.value as {recordId?:unknown}|null;
+      return openFormulaScreen(String(authoredBinding.formula),{
+        objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
+      },onNavigate,pageSessionKey,sessionId,String(payload?.recordId??pageState.recordId??recordId??''));
+    }
+    const formulaFlow = isActionPlan(String(authoredBinding.formula))?undefined:flowActionFormulaTarget(authoredBinding, action.value, pageState, sessionId, availableFlows);
     if (formulaFlow === '') return { skipped: true };
     const binding: Record<string, unknown> = formulaFlow
       ? { ...authoredBinding, actionType: 'Flow', flowApiName: formulaFlow } : authoredBinding;
@@ -449,7 +458,13 @@ export default function MetadataBoundPageComponent({
         return {navigated:true};
       }
       const result=await executePageFormulaAction(apiRequest,binding,payload,
-        pageState,objects,objectApiName,sessionId);
+        pageState,objects,objectApiName,sessionId,(template,id)=>previewPrintTemplate(template,id,pageSessionKey,sessionId),
+        async(name,target,mode)=>{
+          if(name==='SCREEN')return openFormulaScreen('SCREEN('+target+(mode?','+mode:'')+')',{
+            objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
+          },onNavigate,pageSessionKey,sessionId,String(payload.recordId??pageState.recordId??recordId??''));
+          return runSequenceFlow(target,availableFlows,apiRequest,onLaunchFlow);
+        });
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}

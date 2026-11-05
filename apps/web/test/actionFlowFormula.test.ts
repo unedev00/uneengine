@@ -42,3 +42,12 @@ test('FLOW authoring and legacy branches select the same runnable flow',()=>{
  assert.equal(flowActionFormulaTarget({actionType:'Formula',formula},{},{Total:7},'s',flows),'ApplePay');
  assert.match(String(validateFlowActionFormula('FLOW(OldPay)',flows)),/inactive/);
 });
+
+test('action autocomplete suggests captured fields, credentials and published templates',async()=>{
+ const {actionArgumentSuggestions:suggest}=await import('../src/core/builders/PageBuilder/actionArgumentSuggestions');
+ const objects=[{apiName:'Sale',label:'Sale',fields:[{apiName:'Id',label:'Record ID'}]}];
+ const pages=[{apiName:'Ticket',label:'Ticket',status:'Active',pageType:'Print Template'}];
+ assert.equal(suggest('=ACTIONS(CREATERECORD(Sale,Name,"test",AS(sale)),PRINT(Ticket,sale.',objects,flows)?.choices[0].apiName,'sale.Id');
+ assert.equal(suggest('=PRINT(',objects,flows,pages)?.choices[0].apiName,'Ticket');
+ assert.equal(suggest('=EMAIL(',objects,flows,[],[{apiName:'Mail',label:'Mail'}])?.choices[0].apiName,'Mail');
+});

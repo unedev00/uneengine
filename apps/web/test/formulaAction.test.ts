@@ -109,3 +109,25 @@ test('record actions await results, preserve value types and stop after a failur
  assert.deepEqual(calls.map(call=>call.path),['/records/Item','/records/Item/r1']);
  assert.deepEqual(JSON.parse(String(calls[0].init?.body)),{Amount:12});
 });
+
+test('create, print and communication share sequential results',async()=>{
+ const events:string[]=[];
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  if(path==='/records/Booking'){events.push('create');return {record:{Id:'booking-1'}} as T;}
+  const body=JSON.parse(String(options?.body));
+  assert.deepEqual(body,{channel:'SMS',credential:'MyProvider',values:['447000','booking-1']});
+  events.push('sms');return {} as T;
+ };
+ const formula='=ACTIONS(CREATERECORD(Booking, Name, "Test", AS(row)),PRINT(BookingForm, row.Id),SMS(MyProvider,"447000",row.Id))';
+ await executePageFormulaAction(request,{formula},{},{},[],'','',async(template,id)=>{
+  assert.deepEqual([template,id],['BookingForm','booking-1']);events.push('print');
+ });
+ assert.deepEqual(events,['create','print','sms']);
+});
+
+test('invalid final action fails before the first mutation',async()=>{
+ let requests=0;
+ const request=async<T>():Promise<T>=>{requests++;return {} as T;};
+ await assert.rejects(executePageFormulaAction(request,{formula:'ACTIONS(CREATERECORD(Item),SMS(Provider,"recipient"))'},{},{},[],''),/Invalid SMS/);
+ assert.equal(requests,0);
+});

@@ -2319,7 +2319,7 @@ function PageBuilder({
       const saved = await onSave(nextPage, apiName, 'Lightning page draft created');
       if (!saved) return;
       if(saved.apiName!==apiName) onNotify('Page API name already reserved; created as '+saved.apiName);
-      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(saved.apiName,newPageAppId);
+      if (newPageAppId&&newPageType!=='In-Screen Page'&&newPageType!=='Print Template') onPrepareApp(saved.apiName,newPageAppId);
       savedPageApiName.current = saved.apiName;
       if (newPageAppId) setBuilderAppApiName(newPageAppId);
       setSelectedId('');
@@ -3355,8 +3355,11 @@ function PageBuilder({
             }}/>} 
 
           {ribbonTab==='Add Block' && insertRibbon}
+          {page.pageType==='Print Template'&&page.layoutMode==='template'&&selected&&ribbonTab==='Component Layout'&&
+            <label><input type="checkbox" checked={selected.properties.printBreakBefore===true} onChange={event=>
+              updateComponent(selected.id,{properties:{...selected.properties,printBreakBefore:event.target.checked}})}/>Page break before component</label>}
           {ribbonTab==='Component Action' &&
-            <PageBuilderActionRibbon
+            <PageBuilderActionRibbon objects={objects} pages={pages} request={request}
               api={selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??''}
               selectedApis={actionMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
@@ -4581,7 +4584,7 @@ function PageBuilder({
                         setNewPageTargetObject(choice.type === 'Record Page' ? (recordPageContext || '') : '');
                         setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
                         if(choice.type==='In-Screen Page')setNewPageLayoutMode('free-canvas');
-                        const size = newPageDeviceChoice === 'Phone' ? [390,844]
+                        const size = choice.type==='Print Template'?[794,1123]:newPageDeviceChoice === 'Phone' ? [390,844]
                           : newPageDeviceChoice === 'Tablet' ? [1024,768]
                           : newPageDeviceChoice === 'Custom' ? [1440,900]
                           : choice.type === 'In-Screen Page' ? [480,420] : [1440,900];
@@ -4591,6 +4594,14 @@ function PageBuilder({
                   </label>)}
                 </div>
               </fieldset>
+              {newPageType==='Print Template'&&<label className="form-label">Paper size
+                <select className="form-control" value={newPageCanvasWidth+'x'+newPageCanvasHeight}
+                  onChange={event=>{const [w,h]=event.target.value.split('x').map(Number);setNewPageCanvasWidth(w);setNewPageCanvasHeight(h);}}>
+                  <option value="794x1123">A4</option><option value="816x1056">Letter</option>
+                  <option value="559x794">A5</option>
+                  {!['794x1123','816x1056','559x794'].includes(newPageCanvasWidth+'x'+newPageCanvasHeight)&&
+                    <option value={newPageCanvasWidth+'x'+newPageCanvasHeight}>Custom canvas size</option>}
+                </select></label>}
               {recordPageContext && <label className="form-label">Record operation
                 <select className="form-control" value={newRecordMode} onChange={event=>setNewRecordMode(event.target.value as 'View'|'Edit')}>
                   <option value="View">View records</option><option value="Edit">Edit records</option>

@@ -1,7 +1,6 @@
-import {compileRecordActions,isRecordAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
-import type {Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
+import {isActionPlan} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
-import {evaluateParsedExpression,evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
+import {executeActionFormula,evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {adjustNumberRecord,type AdjustNumberBinding} from './adjustNumberRecord';
 
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
@@ -39,36 +38,13 @@ export async function executePageFormulaAction(
  request:Request,binding:Record<string,unknown>,payload:Record<string,unknown>,
  pageState:Readonly<Record<string,unknown>>,
  objects:ReadonlyArray<{apiName:string;fields:ReadonlyArray<FieldMetadata>}>,
- objectApiName:string,sessionId=''
+ objectApiName:string,sessionId='',print?:(template:string,id:string)=>Promise<void>,
+ runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>
 ):Promise<{changes:Change[];recordChanged:boolean}>{
  const formula=String(binding.formula??'');
- if(isRecordAction(formula)){
-  const steps=compileRecordActions(formula);
-  const variables:Record<string,unknown>=Object.create(null);
-  const context={pageState,sessionId,timeZone:'UTC',now:new Date()};
-  let completed=0;
-  for(const step of steps){
-   try{
-    const scope={...payload,state:pageState,event:payload,...variables};
-    const evaluate=(node:Expression):unknown=>evaluateParsedExpression(node,scope,context);
-    let path='/records/'+encodeURIComponent(step.object);
-    if(step.id){
-     const id=evaluate(step.id);
-     if(typeof id!=='string'||!id.trim()||id==='.'||id==='..')throw Error('Expected a record ID');
-     path+='/'+encodeURIComponent(id);
-    }
-    const method=step.name==='CREATERECORD'?'POST':step.name==='UPDATERECORD'?'PUT':'DELETE';
-    const values=Object.fromEntries([...step.fields].map(([field,node])=>[field,evaluate(node)]));
-    const response=await request<{record:Record<string,unknown>}>(path,{
-     method,...(method==='DELETE'?{}:{body:JSON.stringify(values)})
-    });
-    completed++;
-    if(step.alias)variables[step.alias]=response.record;
-   }catch(error){
-    throw Error(step.name+' failed after '+completed+' confirmed record action(s). '+(error instanceof Error?error.message:String(error)));
-   }
-  }
-  return {changes:[],recordChanged:true};
+ if(isActionPlan(formula)){
+  return executeActionFormula(formula,{...payload,state:pageState,event:payload},
+   {pageState,sessionId,timeZone:'UTC',now:new Date()},{request,print,runPageAction});
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');
