@@ -40,6 +40,9 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
  const cart=source('../src/component-libraries/smart_cart/SmartCart.jsx');
  const runtime=source('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(icons,/p\.tab==='Data'&&p\.components\.includes\(api\)/);
+ assert.match(icons,/p\.id!=='collectionFormula'/);
+ assert.match(ribbon,/aria-label="Select items source formula"/);
+ assert.match(ribbon,/setSelectedDataField\('collectionFormula'\)/);
  assert.match(icons,/onPointerDown=\{event=>event\.stopPropagation\(\)\}/);
  assert.match(builder,/!previewMode&&!libraryPreview&&selectedId===component\.id/);
  assert.match(builder,/setRibbonTab\('Component Data'\)/);
@@ -52,7 +55,7 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
  assert.doesNotMatch(ribbon,/<div className="smart-data-sections">/);
  for(const key of ['cartSupportingSource','cartColumn1Header','subtotalLabel',
   'lookupValueFormula','selectedDate','tabCaptionFormula'])assert.ok(sql.includes("'"+key+"'"));
- for(const attr of ['"collectionFormula label"','"imageSource"','"totalLabel"','"totalValue"'])
+ for(const attr of ['"label"','"imageSource"','"totalLabel"','"totalValue"'])
   assert.ok(cart.includes('data-md-bind={p.builderPreview?'+attr+':undefined}'),attr);
  for(const attr of ['"selectedDate"','"label lookupValueFormula"'])
   assert.ok(runtime.includes('data-md-bind={p.builderPreview?'+attr+':undefined}'),attr);
