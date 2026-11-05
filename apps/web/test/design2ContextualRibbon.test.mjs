@@ -444,3 +444,25 @@ test('all Design 2 areas project the same fixed Body+Image icon scaffold',()=>{
  assert.match(shared,/components:assigned\?assigned\.components:\[\]/);
  assert.match(shared,/design2Areas=\[\.\.\.new Map\(design2Slots/);
 });
+
+test('left Design dock groups existing controls without changing button identities or dimensions',()=>{
+ const actions=read('../src/core/builders/PageBuilder/Design2CanvasActions.tsx');
+ const dock=read('../src/core/builders/PageBuilder/PageBuilderDesignDock.css');
+ assert.match(shared,/className="smart-design2-dimensions"/);
+ assert.match(shared,/section="alignment"/);
+ assert.match(shared,/section="arrangement"/);
+ assert.match(shared,/section="dimensions"/);
+ assert.match(actions,/props\.section==='alignment'\?\[0,1,2,3,4,5\]/);
+ assert.match(actions,/props\.section==='arrangement'\?\[6,7,8,9,10,11\]/);
+ assert.match(actions,/props\.section==='dimensions'\?\[12,13,14\]/);
+ assert.match(actions,/data-design-column=\{index\+7\}/);
+ assert.match(dock,/content:"Dimensions"/);
+ assert.match(dock,/content:"Alignment"/);
+ assert.match(dock,/content:"Arrangement"/);
+ assert.match(dock,/content:"Appearance"/);
+ assert.match(dock,/content:"Position"/);
+ assert.match(dock,/content:"Typography"/);
+ assert.match(dock,/display:contents!important/);
+ assert.match(dock,/flex:0 0 80px!important/);
+ assert.match(dock,/flex:0 0 120px!important/);
+});
