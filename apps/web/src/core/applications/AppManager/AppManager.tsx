@@ -78,6 +78,8 @@ export default function AppManager({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
   const assignedPages = pages.filter((page) => page.status === 'Active'
     && (page.activationAssignments ?? []).some((assignment) => assignment.appId === selectedApiName));
 
@@ -185,7 +187,8 @@ export default function AppManager({
   };
 
   const remove = async () => {
-    if (!selectedApiName || !window.confirm(`Delete the ${draft.label} app?`)) return;
+    if (!selectedApiName) return;
+    setDeleteConfirmationOpen(false);
     setBusy(true);
     setError('');
     setNotice('');
@@ -235,28 +238,12 @@ export default function AppManager({
     if (changed && !window.confirm('Discard unsaved app changes and return to the app list?')) return;
     cancel();
   };
-  const cloneApp = async (source: AppDraft) => {
+  const cloneApp = (source: AppDraft) => {
     if (busy) return;
     const copy = cloneAppConfiguration(source, apps);
-    if (!window.confirm(
-      'Clone "' + source.label + '" as "' + copy.label + '" (' + copy.apiName + ')?\n\n' +
-      'Only app settings and navigation references are copied. Pages, business records, ' +
-      'licences, AppExchange ownership and permissions are not copied.'
-    )) return;
-    setBusy(true);
-    setError(''); setNotice('');
-    try {
-      await onSave(copy, false);
-      setSelectedApiName(copy.apiName);
-      setDraft(appDraftFromMetadata(copy));
-      setCreating(false);
-      setView('list');
-      setNotice('App cloned as ' + copy.label + '.');
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Unable to clone app.');
-    } finally {
-      setBusy(false);
-    }
+    setCreating(true); setSelectedApiName(''); setDraft(appDraftFromMetadata(copy));
+    setView('form'); setActiveStep(0); setError('');
+    setNotice('Review the copied settings, then select Create App to save the clone.');
   };
   const openSetupWorkspace = (destination: SetupDestination) => {
     const original = apps.find(app => app.apiName === selectedApiName);
@@ -288,13 +275,14 @@ export default function AppManager({
     {!embedded && view === 'list' ? <>
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="form-success" role="status">{notice}</p>}
-      <AppManagerList apps={apps} busy={busy} onEdit={editApp} onClone={app => void cloneApp(app)}/>
+      <AppManagerList apps={apps} busy={busy} onEdit={editApp} onClone={cloneApp}/>
     </> : <>
     <nav className="app-manager-stepper" aria-label="Application setup steps">
-      {steps.map((step, index) => <a href={'#' + step.id} key={step.id} className={'app-manager-step' + (index === 0 ? ' is-first' : '')}
+      {steps.map((step, index) => <a href={'#' + step.id} key={step.id} className={'app-manager-step' + (index === activeStep ? ' is-first' : '')} aria-current={activeStep === index ? 'step' : undefined}
         onClick={event => {
           event.preventDefault();
-          document.getElementById(step.id)?.scrollIntoView({behavior:'smooth',block:'center'});
+          setActiveStep(index);
+           document.getElementById(step.id)?.scrollIntoView({behavior:'smooth',block:'center'});
         }}>
         <span className="app-manager-step-number">{index + 1}</span>
         <span><strong>{step.name}</strong><small>{step.subtitle}</small></span>
@@ -434,9 +422,9 @@ export default function AppManager({
             <span>{draft.navigationItems.length} navigation items · {draft.navigationPageApiNames.length} App Pages</span>
           </div>
           <PlatformPageSlot slotKey="actions"><div className="app-manager-actions">
-            {creating && <button className="btn" type="button" disabled={busy} onClick={cancel}>Cancel</button>}
+            <button className="btn" type="button" disabled={busy} onClick={returnToList}>Cancel</button>
             {!creating && <button className="btn" type="button" disabled={busy || apps.length <= 1}
-              onClick={() => void remove()}><Trash2 size={14}/>Delete App</button>}
+              onClick={() => setDeleteConfirmationOpen(true)}><Trash2 size={14}/>Delete App</button>}
             <button className="btn btn-brand" type="submit"
               disabled={busy || (!draft.navigationItems.length && !draft.navigationPageApiNames.length)}>
               {busy ? 'Saving…' : creating ? 'Create App' : 'Save Changes'}
@@ -475,5 +463,13 @@ export default function AppManager({
       </aside>
     </div>
     </>}
+    {deleteConfirmationOpen && <div className="app-manager-confirm-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setDeleteConfirmationOpen(false); }}>
+      <section role="alertdialog" aria-modal="true" aria-labelledby="app-delete-title" aria-describedby="app-delete-description" className="app-manager-confirm" onKeyDown={event => { if (event.key === 'Escape') {event.stopPropagation(); setDeleteConfirmationOpen(false);} }}>
+        <h2 id="app-delete-title">Delete {draft.label}?</h2>
+        <p id="app-delete-description">This removes application configuration. Objects, Pages and records are not deleted.</p>
+        <div className="toolbar-actions"><button type="button" className="btn" autoFocus onClick={() => setDeleteConfirmationOpen(false)}>Cancel</button>
+          <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void remove()}>Delete App</button></div>
+      </section>
+    </div>}
   </div>;
 }
