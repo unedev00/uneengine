@@ -31,4 +31,30 @@ Environment=METADRIVE_PLATFORM_CANONICAL_DOMAIN=unesolutions.co.uk
 UNIT
 chmod 0644 /etc/systemd/system/metadrive-api.service.d/96-platform-deploy-owner.conf
 systemctl daemon-reload
+# Verify that the API service account can actually reach the root-owned
+# deployment broker. A running API alone does not prove deploy_status works.
+# This probe is read-only: it does not schedule or activate any release.
+/usr/sbin/runuser -u metadrive -- /usr/bin/python3 - <<'PY'
+import json
+import socket
+
+with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
+    conn.settimeout(12)
+    conn.connect("/run/metadrive-mcp-broker.sock")
+    conn.sendall(b'{"action":"deploy_status","service":"api"}\n')
+    line = bytearray()
+    while b"\n" not in line and len(line) < 262144:
+        chunk = conn.recv(8192)
+        if not chunk:
+            break
+        line.extend(chunk)
+    payload = json.loads(bytes(line).split(b"\n", 1)[0])
+    status = payload.get("output", "")
+    if not isinstance(status, str) or not any(
+        status.startswith("state=" + state + "\n")
+        for state in ("idle", "running", "succeeded", "failed")
+    ):
+        raise SystemExit("OCI operations broker deployment status probe failed")
+print("OCI operations broker deployment status verified.")
+PY
 echo 'OCI deployment control installed with existing restricted broker.'

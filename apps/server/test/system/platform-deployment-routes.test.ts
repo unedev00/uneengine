@@ -112,6 +112,26 @@ test('OCI deploy dispatch pins main and audits without GitHub write API',async()
   assert.ok(calls.every(url=>!url.includes('/dispatches')));
  }finally{reset();}
 });
+test('OCI scheduler rejection is a deployment error, not a SQL outage',async()=>{
+ enableOci();
+ fakeGithub();
+ const {db,actions}=fakeDatabase();
+ const oci=fakeOci();
+ const operate=async(input:{action:string;service:string;release?:string})=>{
+  if(input.action==='deploy_latest')throw Error('Operations broker unavailable');
+  return oci.operate(input);
+ };
+ try{
+  await assert.rejects(requestProductionDeployment(db,'tenant','user',latest,operate),
+   (error:unknown)=>error instanceof DeploymentControlError
+    && error.statusCode===503
+    && /OCI deployment scheduler unavailable/.test(error.message)
+    && !/SQL service unavailable/.test(error.message));
+  assert.ok(actions.includes('platform.production-deploy.requested'));
+  assert.ok(actions.includes('platform.production-deploy.failed'));
+  assert.ok(!actions.includes('platform.production-deploy.accepted'));
+ }finally{reset();}
+});
 test('OCI running, stale commit and duplicate dispatches are refused',async()=>{
  enableOci();
  fakeGithub();
