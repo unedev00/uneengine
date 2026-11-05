@@ -3198,8 +3198,208 @@ function PageBuilder({
             items={paletteComponents}
             onInsert={addPaletteComponent}
             renderIcon={renderPaletteIcon}/>);
-  const designInPanel = designDockedLeft && !previewMode && (ribbonTab==='Add Block' ||
-    (ribbonTab==='Component Design 2' && smartRibbonElement!==null));
+  const designInPanel = designDockedLeft && !previewMode;
+  const ribbonNavigation = (<nav className="office-ribbon-tabs" role="tablist" aria-label="Page Builder tabs">
+              {ribbonTabsVisible.map((tab,index) => {
+                const Icon = {
+                  'Add Block': Puzzle,
+                  'Component Data': Database,
+                  'Component Content': Type,
+                  'Component Design 2': SlidersHorizontal,
+
+                  Arrange: Layers3, Advanced: SlidersHorizontal,
+                  'Component Style': Type,
+                  'Component Responsive': Smartphone,
+                  'Component Layout': Layers3,
+                  'Component Action': Workflow,
+                  Preview: Eye, Filters: Filter, Source: Database
+                }[tab];
+                const label = {
+                  'Add Block': 'Insert',
+                  'Component Data': 'Data',
+                  'Component Content': 'Content',
+                  'Component Design 2': 'Design',
+
+                  Arrange: 'Arrange', Advanced: 'Advanced',
+                  'Component Style': 'Format',
+                  'Component Responsive': 'Responsive',
+                  'Component Layout': 'Layout',
+                  'Component Action': 'Actions',
+                  Preview: 'View', Filters: 'Filters', Source: 'Source'
+                }[tab];
+                return <button key={tab} id={`page-builder-tab-${index}`} type="button"
+                  role="tab" tabIndex={ribbonTab===tab?0:-1} aria-selected={ribbonTab === tab}
+                  aria-controls="page-builder-tab-content"
+                  className={ribbonTab===tab?'active':''} disabled={!selected && (tab.startsWith('Component ') && tab!=='Component Layout')} title={!selected && (tab.startsWith('Component ') && tab!=='Component Layout' )?'Select a component to edit its settings':label} onClick={() => selectRibbonTab(tab)}>
+                  <Icon size={16} aria-hidden="true"/><span>{label}</span>
+                </button>;
+              })}
+            </nav>);
+  const renderRibbonPanel = () => (<div id="page-builder-tab-content" ref={ribbonStripRef}
+          className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
+          aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
+            <PageComponentNavigator components={page.components} libraryComponents={libraryComponents}
+              pageKey={page.apiName+':'+(page.layoutVariant??'Desktop')}
+              selectedId={selectedId}
+              onSelect={id=>{
+                setSelectedId(id);setSelectionIds([id]);setSelectedRegion(null);setPageSettingsOpen(false);
+                window.requestAnimationFrame(()=>{
+                  const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
+                  Array.from(nodes??[]).find(node=>node.dataset.componentId===id)
+                    ?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+                });
+              }}
+              onRename={(id,name)=>{
+                const component=page.components.find(item=>item.id===id);
+                if(!component)return;
+                const proposed=name.trim();
+                const error=validateInstanceName(id,proposed);
+                if(error){onNotify(error);return;}
+                updateComponent(id,{properties:{...component.properties,navigatorName:proposed}});
+              }}/>
+            <span>Find</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools ribbon-view-zoom" aria-label="Zoom">
+            <div className="office-ribbon-stack">
+              <div className="ribbon-view-zoom-buttons">
+                <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(true);}}
+                  aria-pressed={fitCanvas&&fitFullPage}>Fit to Screen</button>
+                <button type="button" onClick={()=>{setFitCanvas(true);setFitFullPage(false);}}
+                  aria-pressed={fitCanvas&&!fitFullPage}>Fit Width</button>
+                <button type="button" onClick={()=>{setFitCanvas(false);setCanvasZoom(100);}}
+                  aria-pressed={!fitCanvas&&canvasZoom===100}>100%</button>
+              </div>
+              <label className="ribbon-view-zoom-number"><MoveHorizontal size={16} aria-hidden="true"/>
+                <input type="number" min={20} max={200} step={5} aria-label="Canvas zoom percentage"
+                  value={fitCanvas?Math.round(fitScale*100):canvasZoom}
+                  onChange={event=>{const value=Number(event.target.value);
+                    if(Number.isFinite(value)){setFitCanvas(false);setCanvasZoom(Math.min(200,Math.max(20,value)));}}}/>%
+              </label>
+            </div><span>Zoom</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group ribbon-view-canvas" aria-label="Canvas">
+            <div className="office-ribbon-stack"><span aria-live="polite">
+              {page.canvasWidth} × {page.canvasHeight}</span>
+            </div><span>Canvas</span>
+          </div>}
+          {ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group" aria-label="Conditional visibility">
+            <div className="preview-visibility-controls">
+              <label className="ribbon-small-checkbox"><input type="checkbox"
+                checked={selected?.visible??false} disabled={!selected}
+                onChange={event=>{if(selected)updateComponent(selected.id,{visible:event.target.checked});}}/>
+                Visible on this page</label>
+              <button type="button" className="office-ribbon-icon-button" aria-label="Edit conditional visibility"
+                title="Edit conditional visibility" disabled={!selected} onClick={openVisibilityEditor}>
+                <Filter size={17} aria-hidden="true"/></button>
+              <button type="button" disabled={!selected} onClick={openVisibilityEditor}>Conditions</button>
+            </div>
+            <span>Conditional visibility</span>
+          </div>}
+
+          {ribbonTab==='Advanced' && <PageBuilderAdvancedSections
+            section={advancedEditor} onInspectorHost={setRibbonPropertyHost}
+            layout={{
+              current:page.layoutVariant??'Desktop',
+              options:PAGE_LAYOUT_ORDER.map(variant=>({value:variant,
+                label:pageLayoutOptionLabel(variant,layoutSummaries[page.apiName])})),
+              busy:switchingLayout||saving,
+              onSwitch:variant=>void switchLayoutVariant(variant as PageLayoutVariant),
+              copySource:layoutCopySource,
+              onCopySource:variant=>setLayoutCopySource(variant as PageLayoutVariant|''),
+              onCopy:()=>{if(layoutCopySource)void copyLayoutFrom(layoutCopySource);}
+            }}
+            assignment={{
+              enabled:page.pageType==='Record Page'||page.pageType==='Home Page',
+              assigned:(page.activationAssignments??[]).length>0,
+              isDefault:(page.activationAssignments??[]).some(item=>item.scope===
+                (page.pageType==='Record Page'?'Org Default':'App Default')),
+              onAdd:()=>setPageDetailsApi(page.apiName)
+            }}
+            properties={{
+              selected:!!selected,nameEditable:!!selected&&!isCanvasLocked(selected),
+              apiName:selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??'',
+              instanceName:selected?componentInstanceNames(page.components).get(selected.id)??'':'',
+              validateInstanceName:value=>selected?validateInstanceName(selected.id,value):'Select a component.',
+              onInstanceName:value=>{
+                if(!selected)return;
+                const error=validateInstanceName(selected.id,value);
+                if(error){onNotify(error);return;}
+                updateComponent(selected.id,{properties:{...selected.properties,navigatorName:value.trim()}});
+              },
+              visible:selected?.visible!==false,
+              readOnly:!!selected&&(selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly')
+                ?selected.properties.readonly!==false:selected.properties.readOnlyOnLayout===true),
+              canReadOnly:!!selected&&(selected.type==='Record Field'
+                ||Boolean(selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly'))),
+              onVisible:value=>{if(selected)updateComponent(selected.id,{visible:value});},
+              onReadOnly:value=>{
+                if(!selected)return;
+                const metadataReadonly=selectedCustomDefinition?.propertyDefinitions?.some(def=>def.propertyKey==='readonly');
+                updateComponent(selected.id,{properties:metadataReadonly
+                  ?{...selected.properties,readonly:value}
+                  :{...selected.properties,readOnlyOnLayout:value,requiredOnLayout:false}});
+              }
+            }}
+            nesting={{
+              accepted:!!selected&&isLayoutContainer(selected),
+              canChange:!!selected&&(!!selectedCustomDefinition||isLayoutContainer(selected)),
+              onAccepted:value=>{
+                if(!selected)return;
+                if(!value&&childrenOf(page.components,selected.id).length){
+                  onNotify('Move children out before disabling nesting.');return;
+                }
+                updateComponent(selected.id,{properties:{...selected.properties,layoutContainer:value}});
+              }
+            }}/>} 
+
+          {ribbonTab==='Add Block' && insertRibbon}
+          {ribbonTab==='Component Action' &&
+            <PageBuilderActionRibbon
+              api={selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??''}
+              selectedApis={actionMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
+              actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
+              stateOptions={pageStateChoices(page.components)}
+              dataFields={objects.find(item=>item.apiName===
+                String(selected?.properties.objectApiName||page.targetObject||''))?.fields??[]}
+              selectedEvent={activeActionEvent} disabled={!selected||actionSelectionDisabled}
+              onSelectEvent={setInlineActionEvent}
+              onChange={applyActionFlows}
+              buttonVisibility={{
+                qtyIncrease:selected?.properties.qtyIncreaseVisible!==false,
+                qtyDecrease:selected?.properties.qtyDecreaseVisible!==false,
+                customButton1:selected?.properties.customButton1Visible!==false,
+                customButton2:selected?.properties.customButton2Visible!==false
+              }}
+              onButtonVisibilityChange={applyCartButtonVisibility}/>}
+          {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Design 2' &&
+            <SmartIconGallery value={String(selected.properties.iconId??'house')}
+              disabled={ribbonSelectedMembers.some(item=>item.type!=='Custom:smart_icon'||isCanvasLocked(item))}
+              onChange={iconId=>{
+                if(ribbonSelectedMembers.length>1){
+                  const ids=new Set(ribbonSelectedMembers.map(item=>item.id));
+                  applyPage({...page,components:page.components.map(item=>ids.has(item.id)
+                    ?{...item,properties:{...item.properties,iconId}}:item)});
+                }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
+              }}/>}
+          {smartRibbonElement}
+          {!designInPanel && ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"
+            aria-label="Canvas" data-shared-group="Canvas">
+            <div className="office-ribbon-stack">
+              <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
+                title="Canvas Width"><span className="une-ribbon-embedded-icon"><MoveHorizontal size={17}/></span>
+                {homeValue('canvasWidth')}</label>
+              <label data-ribbon-property="canvasHeight" className="une-sql-home-control une-ribbon-size-with-icon"
+                title="Canvas Height"><span className="une-ribbon-embedded-icon"><MoveVertical size={17}/></span>
+                {homeValue('canvasHeight')}</label>
+              <div data-ribbon-property="canvasFillColor" className="une-sql-home-control une-ribbon-canvas-colour">
+                <RibbonColorPalette variant="property" kind="fill" label="Canvas Fill Color"
+                  value={page.canvasFillColor??'#ffffff'}
+                  onChange={colour=>applyPage({...page,canvasFillColor:colour})}/>
+              </div>
+            </div><span>Canvas</span>
+          </div>}
+        </div>);
   return (
     <PageFormulaScope key={page?.apiName} components={page?.components} catalog={libraryComponents}><div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
       {editorMode&&selected?.type==='Related List'&&(()=>{
