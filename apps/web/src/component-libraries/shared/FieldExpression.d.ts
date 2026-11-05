@@ -1,5 +1,6 @@
 export const componentReaderKey:unique symbol;
 export type FormulaBindingContext={
+  flowReferences?:readonly string[];
   readComponent?:(name:string,key:string)=>string|number|boolean;
   timeZone?:string;
   now?:Date|string;

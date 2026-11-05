@@ -5,6 +5,7 @@ import {metadataReference,metadataSelection} from '../../metadata/Definitions/me
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
 import type {PageStateChoice} from './pageStateChoices';
+import {isFlowActionFormula,validateFlowActionFormula} from '../../pages/PageRuntime/actionFlowFormula';
 
 type Binding=Record<string,unknown>;
 type EventOption={apiName:string;label:string};
@@ -90,6 +91,13 @@ export default function PageBuilderActionRibbon({
  const numericFields=dataFields.filter(field=>
   /^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)(\(|$)/i.test(field.dataType));
  const formulaFields=numericFields.map(field=>({...field,required:false,unique:false}));
+ // The Flow dropdown and the formula bar are one action: a chosen Flow shows as
+ // $flow.ApiName, and editing it (e.g. IF(..., $flow.A, $flow.B)) makes it a Formula.
+ const selectedFlow=active&&selected.actionType==='Flow'?metadataSelection(flows,selected.flowApiName):undefined;
+ const selectedFlowName=String(selectedFlow?.apiName??(active&&selected.actionType==='Flow'?selected.flowApiName??'':''));
+ const formulaValue=!active?'':selected.actionType==='Formula'?String(selected.formula??'')
+  :selected.actionType==='Flow'&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedFlowName)?'$flow.'+selectedFlowName:'';
+ const formulaEditable=active&&(selected.actionType==='Formula'||selected.actionType==='Flow');
  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
   ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
  const eventLabels=new Map(eventDefinitions.map(item=>[item.apiName,item.label]));
@@ -201,12 +209,17 @@ export default function PageBuilderActionRibbon({
      <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
        <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
        <span className="page-action-formula-symbol" aria-hidden="true"
-         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"'}>ƒx</span>
+         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"; IF($state.Total > 500, $flow.ApplePay, $flow.CardMachine)'}>ƒx</span>
        <SmartFormulaField label="Selected action formula" fields={formulaFields}
          stateOptions={stateOptions}
-         disabled={disabled||!active||selected.actionType!=='Formula'}
-         value={active&&selected.actionType==='Formula'?String(selected.formula??''):''}
-         onChange={value=>patch({formula:value})}/>
+         flowReferences={availableFlows.map(flow=>({apiName:flow.apiName,label:flow.label}))}
+         validate={value=>isFlowActionFormula(value)?validateFlowActionFormula(value,flows):null}
+         disabled={disabled||!formulaEditable}
+         value={formulaValue}
+         onChange={value=>{
+           if(value===formulaValue)return;
+           patch(selected.actionType==='Formula'?{formula:value}:{actionType:'Formula',formula:value});
+         }}/>
      </div>
      <div className="page-action-compact-sections">
        <section className="page-action-compact-group page-action-compact-custom" aria-label="Component Custom">

@@ -96,7 +96,8 @@ test('one functional Actions formula bar sits above exactly two-row sections',()
  const runtime=read('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
  assert.match(action,/aria-label="Actions formula bar"/);
  assert.match(action,/label="Selected action formula"/);
- assert.match(action,/onChange=\{value=>patch\(\{formula:value\}\)\}/);
+ // Editing the bar saves the formula; a dropdown Flow edited here becomes a $flow Formula.
+ assert.match(action,/patch\(selected\.actionType==='Formula'\?\{formula:value\}:\{actionType:'Formula',formula:value\}\)/);
  for(const label of ['+ Icon','− Icon','Custom Button 2'])
   assert.ok(action.includes(label),'missing supported control '+label);
  assert.doesNotMatch(action,/CompactActionFlowBindings|onInputsChange|onOutputsChange/);

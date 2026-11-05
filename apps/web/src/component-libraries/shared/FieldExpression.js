@@ -319,6 +319,17 @@ function parse(source,record,formulaContext){
     throw Error('Unsupported tenant reference: '+reference+' (use $tenant.name or $tenant.logo)');
    if(reference==='$state'||reference.startsWith('$session.'))
     throw Error('Unsupported Page State or session reference: '+reference);
+   // $flow.ApiName exists only in the Action formula bar, which passes the runnable
+   // Flow names. It evaluates to the text "$flow.ApiName" for the action runtime.
+   if(/^\$flow(?:\.|$)/i.test(reference)){
+    const flows=formulaContext.flowReferences;
+    if(!Array.isArray(flows))
+     throw Error('$flow is only available in the Action formula bar');
+    const name=reference.slice(6);
+    const match=flows.find(item=>typeof item==='string'&&item.toLowerCase()===name.toLowerCase());
+    if(!match)throw Error('Unknown or inactive Flow: '+name);
+    return '$flow.'+match;
+   }
    const named=formulaContext.namedCollections;
    if(named&&typeof named==='object'&&!Array.isArray(named)&&!reference.includes('.')){
     const collection=Object.entries(named).find(([key])=>key.toLowerCase()===reference.toLowerCase())?.[1];
@@ -637,7 +648,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
  if(explicit&&!input)return {value:'',error:'Complete the formula after ='};
  if(!explicit&&!options?.collectionResult&&/^COLLECTION\s*\(/i.test(input))
   return {value:expression};
- if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:component|state|session|tenant)(?:\.|$)/i.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
+ if(!/^(?:TRUE|FALSE|NULL|PI)$/i.test(input)&&!/@[A-Za-z]/.test(input)&&!input.startsWith('@')&&!/^\$(?:component|state|session|tenant|flow)(?:\.|$)/i.test(input)&&!/^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(input)
   &&!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+(?:\s*\(|$)/.test(input)
   &&!/^(?:["(]|[-+]?\d+(?:\.\d+)?\s*[+*\/%^<>=!-])/.test(input)
   &&!/\s(?:[&+*/%^<>=!]|AND\b|OR\b)\s/i.test(input))return {value:expression};
@@ -659,6 +670,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    collectionRows:options.collectionRows,
    readComponent:options.readComponent??options.pageState?.[componentReaderKey],
    pageState:options.pageState,sessionId:options.sessionId,tenant:options.tenant,
+   flowReferences:options.flowReferences,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
    if(!result||typeof result!=='object'||Array.isArray(result)

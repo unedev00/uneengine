@@ -71,7 +71,7 @@ test('shared Formula Bar keeps @ fields and TABLE column suggestions separate fr
  const ribbon=files('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const actions=files('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
  const page=files('../src/core/builders/PageBuilder/pageBuilderView.tsx');
- assert.match(editor,/formulaDollarSuggestions\(stateOptions,matches\.query\)/);
+ assert.match(editor,/formulaDollarSuggestions\(stateOptions,matches\.query,flowReferences\)/);
  assert.match(editor,/prefix:'\$'/);
  assert.match(editor,/tableArg\?\[\]:dollarMentions/);
  assert.match(ribbon,/stateOptions=\{stateOptions\}/);

@@ -24,6 +24,7 @@ import RegisteredComponent from '../../components/RegisteredComponent/Registered
 import {behaviorValidation,behaviorAction,pageBehaviors,type BehaviorContext} from '../PageRuntime/pageBehaviorRuntime';
 import type {LibraryComponentMetadata,PageComponentMetadata,ObjectMetadata,FieldMetadata,LightningAppMetadata,LightningPageMetadata,ReportMetadata,FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 import type {AppRoute} from '../../workspace/Navigation/appRouting';
+import {flowActionFormulaTarget} from '../PageRuntime/actionFlowFormula';
 
 export default function MetadataBoundPageComponent({
   apiRequest, definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', behaviorContext, initialPageState, sessionIdOverride
@@ -386,7 +387,13 @@ export default function MetadataBoundPageComponent({
       if(hasInteraction||selectedCollection)return {updated:true};
       throw new Error('No metadata event action is configured for "' + action.event + '".');
     }
-    const binding = config as Record<string, unknown>;
+    // $flow formula: IF(..., $flow.A, $flow.B) picks the Flow, then the normal Flow
+    // path runs it (same inputs/outputs, server RBAC). Blank result = do nothing.
+    const authoredBinding = config as Record<string, unknown>;
+    const formulaFlow = flowActionFormulaTarget(authoredBinding, action.value, pageState, sessionId, availableFlows);
+    if (formulaFlow === '') return { skipped: true };
+    const binding: Record<string, unknown> = formulaFlow
+      ? { ...authoredBinding, actionType: 'Flow', flowApiName: formulaFlow } : authoredBinding;
     if (binding.actionType === 'SetFilter') {
       const filterKey = String(binding.filterKey || 'category');
       if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(filterKey)) throw new Error('Invalid filter key');

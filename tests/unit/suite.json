@@ -161,6 +161,7 @@
     "apps/web/test/aceAppsContrast.test.mjs",
     "apps/web/test/acekiosk/contract.test.ts",
     "apps/web/test/actionRibbonFrozenLayout.test.ts",
+    "apps/web/test/actionFlowFormula.test.ts",
     "apps/web/test/adaptiveUi.test.ts",
     "apps/web/test/adjustNumberRecord.test.ts",
     "apps/web/test/auditRemediationContract.test.ts",
