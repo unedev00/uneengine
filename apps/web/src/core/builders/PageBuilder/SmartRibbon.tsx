@@ -214,7 +214,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // the current area/component has no matching supported property).
  // Existing SQL still owns each selected area's semantic property binding.
  const design2TemplateSlots=[
-   ...design2Slots.filter(slot=>slot.area==='Body'),
+   ...design2Slots.filter(slot=>slot.area==='Body'&&!slot.slotKey.startsWith('extra_')),
    ...design2Slots.filter(slot=>slot.area==='Image'&&
      (slot.slotKey==='placement'||slot.slotKey==='imageFill'))
  ].sort((a,b)=>a.row-b.row||a.order-b.order);
