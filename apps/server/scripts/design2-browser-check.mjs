@@ -79,12 +79,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(slot('Body','radius')?.row_no,1,'Body Radius must be R1');
  assert.equal(slot('Body','radius')?.order_no,5,'Body Radius must be C5');
  assert.equal(slot('Body','radius')?.width_px,80,'Body Radius must be 80px');
- assert.equal(slot('Focused','selection')?.property_key,'selectionMode');
+ assert.equal(slot('Body','extra_selectionMode')?.property_key,'selectionMode');
+ assert.equal(slot('Body','extra_cardGap')?.property_key,'gap');
+ assert.equal(slot('Body','extra_tabIndex')?.property_key,'tabIndex');
  assert.equal(slot('Row Supporting','text')?.property_key,'rowSupportingTextColor');
- assert.equal(slot('Custom Button 1','shape')?.property_key,'customButton1Shape');
- assert.equal(slot('Custom Button 2','shape')?.property_key,'customButton2Shape');
-
- assert.equal(slot('Tabs','focused')?.property_key,'selectedTabColor');
+ for(const retired of ['Tabs','Card Grid','Focused','Custom Button 1','Custom Button 2','Calendar'])
+  assert.equal(listed.rows.some(row=>row.area===retired),false,
+    'Retired inspector area remains: '+retired);
  assert.equal(slot('Row','fill')?.property_key,'backgroundColor',
   'Approved Row Body Color must occupy its own fixed slot');
  assert.equal(slot('Body','wrap')?.property_key,'wrapText','Body Wrap must occupy R3C4');
@@ -93,7 +94,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(definitions.rows.find(row=>row.property_key==='backgroundColor')?.tab,'Design',
   'Original Design property moved during Design 2 migration');
  assert.equal(definitions.rows.find(row=>row.property_key==='rowBold')?.tab,'Design2');
- console.info('Design 2 SQL migration replay, legacy Design isolation and Focused mapping verified');
+ console.info('Design 2 SQL migration replay and consolidated Body mapping verified');
  await db.query(`INSERT INTO md_component_definitions (tenant_id,api_name,renderer_key,enabled)
  VALUES ($1,'smart_cart','one-bundled:smart_cart',true),
         ($1,'smart_tabs','one-bundled:smart_tabs',true),
@@ -223,15 +224,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  };
  assert.equal(await page.locator('.smart-design2-area-section[data-design-area="Body"] > button')
   .getAttribute('aria-expanded'),'true');
- // Excel's 14 dropdown sections are always shown. The per-component
- // Yes/No rules disable controls, never filter sections from the dropdown.
+ // The SQL catalog orders the consolidated sections for every component.
  const allAreas=(await areaButtons().allTextContents()).map(value=>value.trim());
- for(const required of ['Body','Header','Badge','Header Supporting','Table',
-  'Row','Summary','Summary 2','Footer','Tabs','Button','Card Grid','Button 2',
-  'Focused','Button 3','Row Supporting','Button 4','Custom Button 1',
-  'Button 5','Image','Custom Button 2']){
-  assert.ok(allAreas.includes(required),'Missing Excel section: '+required);
- }
+ assert.deepEqual(allAreas,['Body','Badge','Image','Header','Header Supporting',
+  'Table','Row','Row Supporting','Summary','Summary 2','Footer',
+  'Button','Button 2','Button 3','Button 4','Button 5']);
  assert.equal(new Set(allAreas).size,allAreas.length,
   'Every metadata area must appear exactly once in the collapsible inspector');
  // FIXED TEMPLATE CONTRACT: The actual on-screen 17 control icons must
@@ -513,8 +510,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  }
  await chooseArea('Body');
  const tabsFocus=row.locator('[data-design-row="2"] [data-design-slot="focused"]');
- assert.equal(await tabsFocus.getAttribute('data-supported'),'false',
-   'Do not enable unapproved Focus Color for Smart Tabs');
+ assert.equal(await tabsFocus.getAttribute('data-supported'),'true',
+   'Selected Tab colour must remain editable in Body');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await chooseArea('Row');
  assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),1,
@@ -638,11 +635,17 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   const tiles=[...el.querySelectorAll('.smart-insert-tile')];
   const rows=new Set(tiles.map(tile=>Math.round(tile.getBoundingClientRect().top)));
   const style=getComputedStyle(el);
-  return {count:tiles.length,rows:rows.size,overflowY:style.overflowY,
-   height:el.clientHeight,scrollHeight:el.scrollHeight};
+  const tops=tiles.slice(0,4).map(tile=>Math.round(tile.getBoundingClientRect().top));
+  return {count:tiles.length,rows:rows.size,
+   columns:style.gridTemplateColumns.split(' ').filter(Boolean).length,tops,
+   overflowY:style.overflowY,height:el.clientHeight,scrollHeight:el.scrollHeight};
  });
  assert.ok(gallery.count>10,'Registered Smart components missing: '+JSON.stringify(gallery));
  assert.ok(gallery.rows>=3,'Extra Insert component rows are clipped: '+JSON.stringify(gallery));
+ assert.equal(gallery.columns,3,'Insert must use three columns at 100% zoom');
+ assert.deepEqual(gallery.tops.slice(0,3),Array(3).fill(gallery.tops[0]),
+  'First three Insert components must share one row');
+ assert.ok(gallery.tops[3]>gallery.tops[0],'Fourth Insert component must wrap to row two');
  assert.equal(gallery.overflowY,'visible','Insert grid must not hide lower rows');
  assert.ok(gallery.scrollHeight<=gallery.height+2,'Insert grid still clips lower rows: '+JSON.stringify(gallery));
  await page.getByRole('tab',{name:'Design',exact:true}).click();
