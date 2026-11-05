@@ -313,7 +313,7 @@ export function renderSetupShell(ctx: any) {
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' &&
-            <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} />}
+            <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} onOpenAuditTrail={()=>navigateRoute({kind:'setup',workspace:'company-settings',resourceApiName:'security',resourceId:'audit-trail'})} />}
           {route.kind === 'setup' && workspace === 'data-loader' &&
            <React.Suspense fallback={<section className="setup-card">Loading Universal Data Loader…</section>}>
             <UniversalDataLoaderWorkspace apiRequest={apiRequest}
