@@ -42,7 +42,8 @@ export function validateActionFormulaTree(tree:Expression):void {
     }
     if(node.name==='CREATERECORD'||node.name==='UPDATERECORD'){
       const start=node.name==='CREATERECORD'?1:2;
-      const captured=node.args.at(-1)?.kind==='call'&&node.args.at(-1)?.name==='AS';
+      const finalArgument=node.args.at(-1);
+      const captured=finalArgument?.kind==='call'&&finalArgument.name==='AS';
       const pairs=node.args.length-start-(captured?1:0);
       if(pairs<2||pairs%2!==0)throw Error('Record actions require Field, Value pairs');
     }

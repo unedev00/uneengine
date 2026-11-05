@@ -67,8 +67,8 @@ export class FormulaActionExecutor{
    const record=await this.records.get(actor.tenantId,actor.userId,objectName,id);
    if(record&&typeof record==='object'&&!Array.isArray(record))
     for(const [key,value] of Object.entries(record as Record<string,unknown>))
-     if(identifier.test(key)&&scalar(value)&&typeof value!=='string'||
-       identifier.test(key)&&typeof value==='string'&&value.length<=4096)
+     if(identifier.test(key)&&scalar(value)
+       &&(typeof value!=='string'||value.length<=4096))
       output[alias+'.'+key]=value as ActionScalar;
   }catch {
    // A write permission never grants permission to see restricted record fields.
@@ -135,10 +135,20 @@ export class FormulaActionExecutor{
   const variables:ActionVariables={...initial,'$session':actor.sessionId,
     '$session.id':actor.sessionId};
   let completed=0,recordChanged=false;
+  const completedSteps:string[]=[];
   for(const [index,node] of actions.entries()){
    if(node.kind!=='call')throw Error('ACTIONS entries must be action calls');
-   if(node.name==='WAIT'){
-    const minutes=this.value(node.args[0],variables),seconds=this.value(node.args[1],variables);
+   const current=node.name==='IF'
+     ?(this.value(node.args[0],variables)===true?node.args[1]:node.args[2])
+     :node;
+   if(current?.kind==='literal'&&(current.value===''||current.value===null)){
+    completed++;
+    completedSteps.push(actionExpressionText(node));
+    continue;
+   }
+   if(current?.kind!=='call')throw Error('Action must evaluate to an action call');
+   if(current.name==='WAIT'){
+    const minutes=this.value(current.args[0],variables),seconds=this.value(current.args[1],variables);
     waitDelaySeconds(minutes,seconds);
     const remaining=actions.slice(index+1);
     if(!remaining.length)throw Error('WAIT needs a following action');
@@ -149,15 +159,16 @@ export class FormulaActionExecutor{
      tenantId:actor.tenantId,userId:actor.userId,sessionId:actor.sessionId,
      ...(actor.pageApi?{sourcePageApi:actor.pageApi}:{}),
      minutes:Number(minutes),seconds:Number(seconds),
-     remainingSteps:remaining.map(actionExpressionText),
+     completedSteps,remainingSteps:remaining.map(actionExpressionText),
      variables
     });
     return {scheduledActionId:scheduled.id,completed,recordChanged,variables};
    }
-   const updates=await this.executeCall(node,actor,variables);
+   const updates=await this.executeCall(current,actor,variables);
    for(const [name,value] of Object.entries(updates))variables[name]=value;
-   recordChanged ||= ['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(node.name);
+   recordChanged ||= ['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(current.name);
    completed++;
+   completedSteps.push(actionExpressionText(node));
   }
   return {completed,recordChanged,variables};
  }

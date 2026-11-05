@@ -13,7 +13,7 @@ const FIELDS=[
 ] as const;
 export async function seedScheduledActionObject(client:PoolClient,tenantId:string){
  await client.query(`INSERT INTO md_object_definitions(tenant_id,api_name,label,is_system)
-   VALUES($1,'Scheduledaction','Scheduled Actions',true)
+   VALUES($1,'Scheduledaction','Scheduled Actions',false)
    ON CONFLICT(tenant_id,api_name) DO NOTHING`,[tenantId]);
  await client.query(`INSERT INTO md_sharing_settings(tenant_id,object_api,default_access,use_hierarchy)
    VALUES($1,'Scheduledaction','Private',false)

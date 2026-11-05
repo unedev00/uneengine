@@ -14,6 +14,7 @@ type Scalar=string|number|boolean|null;
 export type ScheduledActionInput={
   tenantId:string;userId:string;sessionId:string;sourcePageApi?:string;
   minutes:number;seconds:number;remainingSteps:readonly string[];
+  completedSteps?:readonly string[];
   variables?:Readonly<Record<string,Scalar>>;
 };
 type ScheduledRow={id:string;job_id:string;status:string;initiated_by:string;session_id:string;
@@ -31,9 +32,12 @@ export class ScheduledActionService {
     ||sourcePageApi!==undefined&&!source.test(sourcePageApi))
     throw Error('Invalid scheduled action source');
   const delay=waitDelaySeconds(minutes,seconds);
-  if(!Array.isArray(remainingSteps)||!remainingSteps.length||remainingSteps.length>128)
-    throw Error('WAIT requires remaining actions');
-  for(const formula of remainingSteps){
+  const completedSteps=input.completedSteps??[];
+  if(!Array.isArray(completedSteps)||completedSteps.length>128
+    ||!Array.isArray(remainingSteps)||!remainingSteps.length
+    ||completedSteps.length+remainingSteps.length>128)
+    throw Error('WAIT requires 1–128 actions');
+  for(const formula of [...completedSteps,...remainingSteps]){
    if(typeof formula!=='string'||formula.length>4000)throw Error('Invalid scheduled action');
    validateFormulaFunctions(new Parser(tokenize(formula)).parse(),'action_formula');
   }
@@ -51,13 +55,16 @@ export class ScheduledActionService {
     actorUserId:userId,resourceId:id,scheduledAt:dueAt,maxAttempts:1
    },client);
    await client.query(`INSERT INTO md_scheduled_actions
-    (id,tenant_id,job_id,initiated_by,session_id,source_page_api,due_at)
-    VALUES($1,$2,$3,$4,$5,$6,$7)`,
-    [id,tenantId,job,userId,sessionId,sourcePageApi??null,dueAt]);
-   for(const [index,formula] of remainingSteps.entries())
+    (id,tenant_id,job_id,initiated_by,session_id,source_page_api,due_at,current_step)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [id,tenantId,job,userId,sessionId,sourcePageApi??null,dueAt,completedSteps.length]);
+   for(const [index,formula] of [...completedSteps,...remainingSteps].entries()){
+    const finished=index<completedSteps.length;
     await client.query(`INSERT INTO md_scheduled_action_steps
-      (tenant_id,scheduled_action_id,step_index,formula_text)
-      VALUES($1,$2,$3,$4)`,[tenantId,id,index,formula]);
+      (tenant_id,scheduled_action_id,step_index,formula_text,status,finished_at)
+      VALUES($1,$2,$3,$4,$5,CASE WHEN $5='completed' THEN now() ELSE NULL END)`,
+       [tenantId,id,index,formula,finished?'completed':'pending']);
+   }
    for(const [name,value] of values)
     await client.query(`INSERT INTO md_scheduled_action_values
      (tenant_id,scheduled_action_id,name,value_text,value_number,value_boolean)
@@ -77,7 +84,7 @@ export class ScheduledActionService {
      (tenant_id,record_id,object_api,field_api,value_text)
      VALUES($1,$2,'Scheduledaction',$3,$4)`,[tenantId,id,field,value]);
    for(const [field,value] of [['ScheduledAt',dueAt.toISOString()],
-     ['CurrentStep','0'],['TotalSteps',String(remainingSteps.length)]] as const)
+     ['CurrentStep',String(completedSteps.length)],['TotalSteps',String(completedSteps.length+remainingSteps.length)]] as const)
     await client.query(`INSERT INTO md_record_values
      (tenant_id,record_id,object_api,field_api,value_text,
        value_number,value_datetime) VALUES($1,$2,'Scheduledaction',$3,NULL,$4,$5)`,
