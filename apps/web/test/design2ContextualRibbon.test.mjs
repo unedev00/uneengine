@@ -76,7 +76,7 @@ test('Design 2 replaces the retired Design tab and is labelled Design',()=>{
 test('Design 2 uses current icon widgets, not alternate icons',()=>{
  for(const component of ['RibbonColorPalette','SmartIconDropdown','SmartIconGallery','RibbonTextSizeIcon','RibbonCornerRadiusIcon'])
   assert.ok(shared.includes(component),component);
- assert.match(shared,/smart-design2-area-picker/);
+ assert.match(shared,/smart-design2-area-section/);
  assert.match(shared,/<span aria-hidden="true">Select it<\/span>/);
  assert.match(shared,/\[1,2,3\]\.map\(row/);
  assert.match(shared,/smart-design2-context/);
