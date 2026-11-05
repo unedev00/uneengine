@@ -259,6 +259,7 @@
     "apps/web/test/productionDeploymentVisibility.test.mjs",
     "apps/web/test/recordActionPlacement.test.ts",
     "apps/web/test/recordChoices.test.ts",
+    "apps/web/test/tenantImageTextField.test.ts",
     "apps/web/test/recordCsvUtils.test.ts",
     "apps/web/test/recordCustomLinks.test.ts",
     "apps/web/test/recordInlineFieldRules.test.ts",
