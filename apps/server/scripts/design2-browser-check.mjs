@@ -564,12 +564,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.top)),140,
   'Dock Y edit did not update the same canvas position');
  await replaceNumeric(dockY,'68');
- const dockCount=dock.locator('.smart-design2-count input.smart-office-number');
- if(!await dockCount.isDisabled()){
-  const original=await dockCount.inputValue();
+ const dockCountInput=dock.locator('.smart-design2-count input.smart-office-number');
+ if(!await dockCountInput.isDisabled()){
+  const original=await dockCountInput.inputValue();
   const replacement=original==='3'?'4':'3';
-  await replaceNumeric(dockCount,replacement);
-  await replaceNumeric(dockCount,original);
+  await replaceNumeric(dockCountInput,replacement);
+  await replaceNumeric(dockCountInput,original);
  }
  const editableBodyNumber=dock.locator('.smart-ribbon-row .smart-property[data-kind="number"] input:not([disabled])').first();
  if(await editableBodyNumber.count()){
