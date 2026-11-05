@@ -71,18 +71,18 @@
   position:absolute;top:30px;z-index:20;flex:none;
 }
 
-/* ---------- Source object selectors after Typography ---------- */
+/* ---------- First Design section: collapsible Object Source ---------- */
 /* Horizontal ribbon: Source sits to the right of Design instead of being pushed off. */
 .office-builder-ribbon #page-builder-tab-content
   >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]:has(+.smart-design-source){
   min-width:0!important;
 }
-/* Left dock: a "Data source" section below Typography, one selector per line. */
+/* Left dock: Object Source above the dimensions and visual property sections. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content>.smart-ribbon.smart-design-source{
   display:block!important;box-sizing:border-box!important;
   width:420px!important;min-width:0!important;max-width:420px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
-  margin:12px 0 0!important;padding:0!important;overflow:visible!important;
+  margin:0!important;padding:0!important;overflow:visible!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content
   >.smart-ribbon.smart-design-source>.smart-ribbon-group{
