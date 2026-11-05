@@ -487,7 +487,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await chooseArea('Row');
- assert.equal(await page.locator('.smart-design2-group [data-property="rowBold"] button')
+ // SQL draft is already verified above. The editor may still be hydrating its
+ // selected-component metadata after navigation; wait for that same saved
+ // value to render instead of asserting against the intermediate default.
+ await page.waitForFunction(()=>
+  document.querySelector('.smart-design2-ribbon[data-smart-api="smart_cart"] [data-property="rowBold"] button')
+   ?.getAttribute('aria-pressed')==='true',undefined,{timeout:10000});
+ assert.equal(await page.locator('.smart-design2-ribbon[data-smart-api="smart_cart"] [data-property="rowBold"] button')
   .getAttribute('aria-pressed'),'true','Design 2 saved value did not reload');
 
  // All sections stay visible for Smart Tabs, too. The unsupported Image
