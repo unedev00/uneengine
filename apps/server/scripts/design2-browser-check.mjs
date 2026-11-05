@@ -525,7 +525,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await chooseArea('Body');
  const dock=page.locator('.page-builder-design-dock');
- await dock.locator('.smart-design2-area-select').waitFor({state:'visible'});
+ await dock.locator('.smart-design2-area-section[data-design-area="Body"] > button').waitFor({state:'visible'});
  assert.equal(await page.locator('.office-ribbon-topbar .office-ribbon-tabs').count(),0,
   'The top bar must not duplicate left-side tabs');
  for(const label of ['Collapse the ribbon','Pin the ribbon','Show tabs in the top ribbon','Show tabs in the left panel'])
