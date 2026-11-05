@@ -3,11 +3,12 @@
 import { X } from 'lucide-react';
 export default function SetupObjectDialogs({ context }: { context: any }) {
   const { showNewObject, setShowNewObject, setShowCustomTabWizard, newObjectLabel, setNewObjectLabel, newObjectPluralLabel, setNewObjectPluralLabel, newObjectRecordNameLabel, setNewObjectRecordNameLabel, newObjectSettings, setNewObjectSettings, newObjectDescription, setNewObjectDescription, launchCustomTabWizard, setLaunchCustomTabWizard, createObject, showCustomTabWizard, customTabObject, setCustomTabObject, customTabStyle, setCustomTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, apps, saveCustomTab } = context;
+  const closeNewObject=()=>{setShowNewObject(false);window.requestAnimationFrame(()=>Array.from(document.querySelectorAll('button')).find(button=>button.textContent?.trim()==='New Object')?.focus());};
   return <>
       {showNewObject && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowNewObject(false); }}>
-          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="new-object-title">
-            <div className="modal-header"><h2 id="new-object-title">New Custom Object</h2><button className="icon-button dark" onClick={() => setShowNewObject(false)} aria-label="Close"><X size={18} /></button></div>
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeNewObject(); }}>
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="new-object-title" onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();closeNewObject();}}}>
+            <div className="modal-header"><h2 id="new-object-title">New Custom Object</h2><button className="icon-button dark" onClick={closeNewObject} aria-label="Close"><X size={18} /></button></div>
             <p className="modal-copy">Define the object labels and description. A required record-name field and default layouts are created with it.</p>
             <label className="form-label" htmlFor="new-object-label">Label</label>
             <input className="form-control" id="new-object-label" value={newObjectLabel} onChange={(event) => setNewObjectLabel(event.target.value)} placeholder="For example, Project" autoFocus />
@@ -27,7 +28,7 @@ export default function SetupObjectDialogs({ context }: { context: any }) {
               ['allowInChatter', 'Allow in Chatter']
             ] as const).map(([key, label]) => <label className="metadata-row" key={key}><span>{label}</span><input type="checkbox" checked={newObjectSettings[key]} onChange={(event) => setNewObjectSettings((current) => ({ ...current, [key]: event.target.checked }))} /></label>)}<label className="form-label">Deployment Status<select className="form-control" value={newObjectSettings.deploymentStatus} onChange={(event) => setNewObjectSettings((current) => ({ ...current, deploymentStatus: event.target.value as ObjectSettingsMetadata['deploymentStatus'] }))}><option>In Development</option><option>Deployed</option></select></label></div>
             <label className="checkbox-row"><input type="checkbox" checked={launchCustomTabWizard} onChange={(event) => setLaunchCustomTabWizard(event.target.checked)} />Launch New Custom Tab Wizard after saving this custom object</label>
-            <div className="modal-actions"><button className="btn" onClick={() => setShowNewObject(false)}>Cancel</button><button className="btn btn-brand" onClick={createObject} disabled={!newObjectLabel.trim() || !newObjectPluralLabel.trim() || (newObjectSettings.recordNameType === 'Auto Number' && !newObjectSettings.recordNameFormat.trim())}>Save</button></div>
+            <div className="modal-actions"><button type="button" className="btn" onClick={closeNewObject}>Cancel</button><button type="button" className="btn btn-brand" onClick={createObject} disabled={!newObjectLabel.trim() || !newObjectPluralLabel.trim() || (newObjectSettings.recordNameType === 'Auto Number' && !newObjectSettings.recordNameFormat.trim())}>Save</button></div>
           </section>
         </div>
       )}
