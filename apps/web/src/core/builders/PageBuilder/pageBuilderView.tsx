@@ -457,7 +457,7 @@ function PageBuilder({
     catch { return false; }
   });
   const [designDockedLeft, setDesignDockedLeft] = useState<boolean>(() => {
-    try { return window.localStorage.getItem('metadrive:page-builder:design-dock') === 'left'; }
+    try { return window.localStorage.getItem('metadrive:page-builder:design-dock') !== 'ribbon'; }
     catch { return false; }
   });
   useEffect(() => {
@@ -3194,7 +3194,12 @@ function PageBuilder({
                 }}/>
               {ribbonTab==='Component Design 2'&&selectedHasSourceRibbon&&dataRibbon('source')}
   </>) : null;
-  const designInPanel = designDockedLeft && ribbonTab==='Component Design 2' && !previewMode && smartRibbonElement!==null;
+  const insertRibbon = (<SmartInsertRibbon
+            items={paletteComponents}
+            onInsert={addPaletteComponent}
+            renderIcon={renderPaletteIcon}/>);
+  const designInPanel = designDockedLeft && !previewMode && (ribbonTab==='Add Block' ||
+    (ribbonTab==='Component Design 2' && smartRibbonElement!==null));
   return (
     <PageFormulaScope key={page?.apiName} components={page?.components} catalog={libraryComponents}><div className={`builder-page ${editorMode ? "builder-editor-mode" : "builder-list-mode"} ${isPhoneBuilder ? 'builder-phone-read-mode' : ''} ${previewMode ? 'builder-interactive-preview' : ''}`}>
       {editorMode&&selected?.type==='Related List'&&(()=>{
@@ -3538,8 +3543,8 @@ function PageBuilder({
             <div className="office-ribbon-layout-toggles" role="group" aria-label="Ribbon layout">
               <button type="button" className={'office-ribbon-layout-toggle'+(designDockedLeft?' is-on':'')}
                 aria-pressed={designDockedLeft}
-                title={designDockedLeft?'Show Design in the ribbon':'Show Design in a left panel'}
-                aria-label={designDockedLeft?'Show Design in the ribbon':'Show Design in a left panel'}
+                title={designDockedLeft?'Show Insert and Design in the ribbon':'Show Insert and Design in a left panel'}
+                aria-label={designDockedLeft?'Show Insert and Design in the ribbon':'Show Insert and Design in a left panel'}
                 onClick={()=>setDesignDockedLeft(value=>!value)}><PanelLeft size={16} aria-hidden="true"/></button>
               <button type="button" className="office-ribbon-layout-toggle"
                 aria-pressed={!ribbonCollapsed}
@@ -3686,10 +3691,7 @@ function PageBuilder({
               }
             }}/>} 
 
-          {ribbonTab==='Add Block' && <SmartInsertRibbon
-            items={paletteComponents}
-            onInsert={addPaletteComponent}
-            renderIcon={renderPaletteIcon}/>}
+          {ribbonTab==='Add Block' && !designInPanel && insertRibbon}
           {ribbonTab==='Component Action' &&
             <PageBuilderActionRibbon
               api={selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??''}
@@ -3754,19 +3756,24 @@ function PageBuilder({
 
       <div className={`page-builder-layout canvas-unified-builder reference-builder-layout ${page.layoutMode === 'free-canvas' ? 'modern-canvas-builder' : ''} ${activePanel === null ? 'unified-panel-collapsed' : ''} ${designInPanel ? 'has-design-dock' : ''}`}
         style={{ '--component-panel-width': `${componentPanelWidth}px` } as React.CSSProperties}>
-        {designInPanel && <aside className="page-builder-design-dock" aria-label="Design panel">
+        {designInPanel && <aside className="page-builder-design-dock" aria-label="Insert and Design panel">
           <div className="page-builder-design-dock-header">
-            <SlidersHorizontal size={16} aria-hidden="true"/><span>Design</span>
+            <div className="builder-dock-tabs" role="group" aria-label="Panel view">
+              <button type="button" aria-pressed={ribbonTab==='Add Block'}
+                onClick={()=>selectRibbonTab('Add Block')}>Insert</button>
+              <button type="button" aria-pressed={ribbonTab==='Component Design 2'} disabled={!selected}
+                onClick={()=>selectRibbonTab('Component Design 2')}>Design</button>
+            </div>
             <button type="button" className="office-ribbon-layout-toggle"
-              title="Show Design in the ribbon" aria-label="Show Design in the ribbon"
+              title="Show Insert and Design in the ribbon" aria-label="Show Insert and Design in the ribbon"
               onClick={()=>setDesignDockedLeft(false)}><X size={16} aria-hidden="true"/></button>
           </div>
           {/* Same ribbon classes and tabpanel id as the top strip, so the light grey
               ribbon styling, controls and Design 2 slot matrix are reused, not copied. */}
-          <section className="office-builder-ribbon page-builder-design-dock-ribbon" aria-label="Design properties">
+          <section className="office-builder-ribbon page-builder-design-dock-ribbon" aria-label={ribbonTab==='Add Block'?'Insert components':'Design properties'}>
             <div id="page-builder-tab-content" className="office-ribbon-content" role="tabpanel"
               aria-label={ribbonTab} aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
-              {smartRibbonElement}
+              {ribbonTab==='Add Block' ? insertRibbon : smartRibbonElement}
             </div>
           </section>
         </aside>}
