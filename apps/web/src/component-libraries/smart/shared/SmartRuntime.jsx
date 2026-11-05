@@ -100,6 +100,10 @@ const selectedCard=(selection,record)=>{
 };
 function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=false}){
  const image=boundImage(p,record);
+ // Distinguish an unset tenant brand from an unbound image in Builder previews.
+ const tenantLogoReference=/^=?\s*\$tenant\.logo$/i.test(String(p.imageSource??p.src??"").trim());
+ const missingImageLabel=tenantLogoReference
+  ?"Tenant logo unavailable — Company Settings › Branding":"Image Here";
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
  const sample=Boolean(p.builderPreview===true&&record?.__builderSample===true);
  const header=scopedExpression(p,"textSource",p.textSource??p.title??p.label??"",record)||(sample?"Product Name":p.kind==="smart_card_grid"&&preview?"Text here":"");
@@ -181,10 +185,10 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
     ...(grid?{overflow:"hidden",maxHeight:horizontal?undefined:imageHeight,
       backgroundColor:p.imageBackgroundColor||undefined}:{} )}}>
    {single&&p.builderPreview&&!image
-     ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label="Image Here"
+     ?<div className="smart-image-empty smart-editor-image-placeholder" aria-label={missingImageLabel}
         style={{height:"100%",width:"100%",border:nativeImageBorder,
           borderRadius:number(p.radius,12),boxSizing:"border-box",overflow:"hidden"}}>
-        <span>Image Here</span>
+        <span>{missingImageLabel}</span>
       </div>
      // Builder only: an unbound image keeps a visible "Image Here" box on real
      // rows too, so its Data Source icon stays reachable after an object is chosen.
