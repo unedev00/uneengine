@@ -120,7 +120,7 @@ export function usePageCollectionFormula(
  const referencesNamed=Boolean(namedCollectionNames(source).length);
  // Source slots are metadata properties, not a fixed three-object limit.
  // The same RBAC-protected Object API read is used for every selected source.
- const selected=Object.keys(properties).filter(key=>/^objectApiName(?:[2-9][0-9]*)?$/.test(key))
+ const selected=Object.keys(properties).filter(key=>/^objectApiName(?:[2-9]|[1-9][0-9]+)?$/.test(key))
   .sort((a,b)=>(a==='objectApiName'?1:Number(a.slice(13)))-
     (b==='objectApiName'?1:Number(b.slice(13))))
   .map(key=>String(properties[key]??'')).filter(Boolean);
