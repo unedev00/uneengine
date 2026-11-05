@@ -157,6 +157,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
   ...sourceObjectKeys.filter(key=>fallback(properties[key])).map(key=>
     key==='objectApiName'?1:Number(key.slice(13)))));
  const sourceBaseProperty=definitions.find(item=>item.id==='objectApiName'&&item.tab==='Data');
+ const additionalSourceProperty=definitions.find(item=>item.id==='objectApiName2'&&item.tab==='Data');
+ const canAddSources=Boolean(additionalSourceProperty?.components.includes(api)&&
+  (!sharedPropertyIds||sharedPropertyIds.includes('objectApiName2')));
  const sourceKey=(index:number)=>index===1?'objectApiName':'objectApiName'+index;
  const updateSourceCount=(next:number)=>onChange({...properties,objectSourceCount:next,
    [sourceKey(next)]:properties[sourceKey(next)]??''});
@@ -384,7 +387,8 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const controls=(property:UneRibbonProperty)=>{
    const slotPlacement=tab==='Design2'?design2RenderedSlots.find(slot=>
      slot.area===property.group&&slot.row===property.designRow&&slot.order===property.designOrder):undefined;
-   const sharedKey=tab==='Data'&&/^objectApiName[0-9]+$/.test(property.id)?'objectApiName':property.id;
+   const sharedKey=tab==='Data'&&/^objectApiName(?:[4-9]|[1-9][0-9]+)$/.test(property.id)
+    ?'objectApiName2':property.id;
    const supported=property.components.includes(api)&&(!sharedPropertyIds||
      sharedPropertyIds.includes(property.id)||sharedPropertyIds.includes(sharedKey));
    const kind=api==='smart_calendar'&&property.id==='shadow'
@@ -737,7 +741,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <ChevronDown size={15} aria-hidden="true"/>Object Source ({sourceCount})
           </button>
           <button type="button" className="smart-source-add" aria-label="Add Object"
-            title="Add another source Object" disabled={!sourceBaseProperty||sourceCount>=100}
+            title="Add another source Object" disabled={!canAddSources||sourceCount>=100}
             onClick={()=>{updateSourceCount(sourceCount+1);onInspectorSectionChange?.('Object Source');}}>
             <Plus size={15} aria-hidden="true"/>
           </button>
@@ -746,7 +750,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           <div className="smart-source-entries">
             {sourceBaseProperty&&Array.from({length:sourceCount},(_,i)=>{
               const index=i+1;
-              const objectProperty:UneRibbonProperty={...sourceBaseProperty,id:sourceKey(index),
+              const declared=definitions.find(item=>item.id===sourceKey(index)&&item.tab==='Data');
+              const objectProperty:UneRibbonProperty={...(declared??sourceBaseProperty),id:sourceKey(index),
+                components:declared?.components??(index>3&&canAddSources?sourceBaseProperty.components:[]),
                 label:'Object '+index,designCaption:'Object '+index,
                 designWidth:150,designCaptionWidth:52,default:'',
                 valueKeys:undefined,defaultsOverrides:undefined};
@@ -759,7 +765,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             })}
           </div>
           <button type="button" className="smart-source-add-label"
-            disabled={!sourceBaseProperty||sourceCount>=100}
+            disabled={!canAddSources||sourceCount>=100}
             onClick={()=>updateSourceCount(sourceCount+1)}><Plus size={14} aria-hidden="true"/> Add Object</button>
         </div>}
       </section>)}
