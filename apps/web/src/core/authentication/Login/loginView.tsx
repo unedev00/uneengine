@@ -4,6 +4,7 @@ import type { ObjectMetadata, LightningPageMetadata, LightningAppMetadata } from
 import { apiRequest, setAccessToken } from '../Client/authClient';
 import LoginRecovery from './LoginRecovery';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
+import { Eye, EyeOff } from 'lucide-react';
 import './standaloneLogin.css';
 
 type LandingBootstrap = {
@@ -44,7 +45,10 @@ export function createLoginView(logoUrl: string) {
     const [challenge,setChallenge]=useState<{challenge_token:string;setup_secret?:string;enrollment_required?:boolean}|null>(null);
     const [code,setCode]=useState('');
     const [providers,setProviders]=useState<Array<{id:string;label:string}>>([]);
-    const [recovering,setRecovering]=useState(()=>new URLSearchParams(window.location.search).has('resetToken'));
+    const [recovering,setRecovering]=useState(()=>{const q=new URLSearchParams(window.location.search);return q.has('resetToken')||q.has('recover');});
+    useEffect(()=>{const onPopState=()=>{const q=new URLSearchParams(window.location.search);setRecovering(q.has('recover')||q.has('resetToken'));setPassword('');setPasswordVisible(false);};window.addEventListener('popstate',onPopState);return()=>window.removeEventListener('popstate',onPopState);},[]);
+    const openRecovery=()=>{setRecovering(true);setPassword('');setPasswordVisible(false);window.history.pushState(null,'','/login?recover=1');};
+    const closeRecovery=()=>{setRecovering(false);setPassword('');setPasswordVisible(false);window.history.replaceState(null,'','/login');};
     const accept=(session:{access_token?:string;landing?:LandingBootstrap;landingAppApi?:string;mfa_required?:boolean;challenge_token?:string;setup_secret?:string;enrollment_required?:boolean},startedAt:number)=>{
       if(session.mfa_required&&session.challenge_token){setPassword('');setChallenge({...session,challenge_token:session.challenge_token});return;}
       if(!session.access_token)throw Error('Authentication did not return an access token');
@@ -103,7 +107,7 @@ export function createLoginView(logoUrl: string) {
     };
 
     const loginStyle=branding?{'--standalone-accent':branding.accent} as CSSProperties:undefined;
-    if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card"><LoginRecovery onClose={()=>setRecovering(false)}/></div></main>;
+    if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card"><LoginRecovery onClose={closeRecovery}/></div></main>;
     return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}>
       <form className="auth-card" onSubmit={(event) => void signIn(event)}
         onInvalid={(event) => {
@@ -117,6 +121,7 @@ export function createLoginView(logoUrl: string) {
             setFieldErrors(current => ({...current, code: 'Enter your authenticator or backup code.'}));
           }
           setMessage('Correct the highlighted fields to continue.');
+          window.requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('.auth-card input:invalid')?.focus());
         }}>
         {branding && <div className="auth-product-identity"><div className="auth-product-monogram" aria-hidden="true">{branding.label.slice(0,1)}</div><div><div className="eyebrow">{branding.eyebrow}</div><h1>{branding.label}</h1></div></div>}
         {!branding && <UneBrandLogo className="auth-brand-logo" src={logoUrl} />}
@@ -132,29 +137,26 @@ export function createLoginView(logoUrl: string) {
           <label className="form-label" htmlFor="login-mfa">Authenticator or backup code</label>
           <input className="form-control" id="login-mfa" autoComplete="one-time-code" value={code} onChange={e=>{setCode(e.target.value);setFieldErrors(current=>({...current,code:undefined}));}} required maxLength={23}
             aria-invalid={Boolean(fieldErrors.code)} aria-describedby={fieldErrors.code?'login-mfa-error':undefined}/>
-          {fieldErrors.code&&<small id="login-mfa-error" className="auth-field-error" role="alert">{fieldErrors.code}</small>}
+          {fieldErrors.code&&<small id="login-mfa-error" className="auth-field-error">{fieldErrors.code}</small>}
           {!challenge.enrollment_required&&<button type="button" className="btn" disabled={submitting} onClick={()=>void passkey()}>Use a passkey</button>}
           <button type="button" className="text-action" onClick={()=>{setChallenge(null);setCode('');setMessage('');}}>Start again</button>
         </>:<>
         <label className="form-label" htmlFor="login-email">Email</label>
         <input className="form-control" id="login-email" name="email" type="email" value={email}
-          onChange={(event) => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}} autoComplete="username" required
+          onChange={(event) => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}} autoComplete="username" spellCheck={false} required
           aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email?'login-email-error':undefined}/>
-        {fieldErrors.email&&<small id="login-email-error" className="auth-field-error" role="alert">{fieldErrors.email}</small>}
+        {fieldErrors.email&&<small id="login-email-error" className="auth-field-error">{fieldErrors.email}</small>}
         <label className="form-label" htmlFor="login-password">Password</label>
-        <input className="form-control" id="login-password" name="password"
-          type={passwordVisible ? 'text' : 'password'} value={password}
-          onChange={(event) => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}} autoComplete="current-password" required
-          aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password?'login-password-error':undefined}/>
-        {fieldErrors.password&&<small id="login-password-error" className="auth-field-error" role="alert">{fieldErrors.password}</small>}
-        <div className="auth-inline-actions">
-          <button className="text-action" type="button" aria-controls="login-password" onClick={(event) => {
-            const field = event.currentTarget.form?.elements.namedItem('password');
-            if (field instanceof HTMLInputElement) setPassword(field.value);
-            setPasswordVisible((value) => !value);
-          }}>{passwordVisible ? 'Hide password' : 'Show password'}</button>
-          <button className="text-action" type="button" onClick={()=>setRecovering(true)}>Forgot password?</button>
+        <div className="auth-password-field">
+          <input className="form-control" id="login-password" name="password"
+            type={passwordVisible ? 'text' : 'password'} value={password}
+            onChange={(event) => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}} autoComplete="current-password" required
+            aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password?'login-password-error':undefined}/>
+          <button className="auth-reveal" type="button" aria-label={passwordVisible?'Hide password':'Show password'} aria-pressed={passwordVisible} aria-controls="login-password"
+            onClick={()=>setPasswordVisible(value=>!value)}>{passwordVisible?<EyeOff size={18} aria-hidden="true"/>:<Eye size={18} aria-hidden="true"/>}</button>
         </div>
+        {fieldErrors.password&&<small id="login-password-error" className="auth-field-error">{fieldErrors.password}</small>}
+        <div className="auth-inline-actions"><button className="text-action" type="button" onClick={openRecovery}>Forgot password?</button></div>
         {providers.map(provider=><button key={provider.id} type="button" className="btn" disabled={submitting} onClick={()=>{
           setSubmitting(true);void apiRequest<{url:string}>('/auth/federation/start',{method:'POST',body:JSON.stringify({providerId:provider.id})})
             .then(r=>{
