@@ -511,15 +511,17 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
 
- // Trial left Design dock: the topbar toggle moves the same Design 2 controls into a
- // left panel; the collapse toggle hides the ribbon strip. Both must return to normal.
+ // The shared editor is permanently docked left. No top ribbon switching
+ // or collapse controls may hide editable metadata properties.
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await page.getByLabel('Select Design 2 area').selectOption('Body');
- // Initial dock mode is already active for fresh preferences.
  const dock=page.locator('.page-builder-design-dock');
- if(!await dock.isVisible())
-  await page.getByRole('button',{name:'Show tabs in the left panel'}).click();
  await dock.locator('.smart-design2-area-select').waitFor({state:'visible'});
+ assert.equal(await page.locator('.office-ribbon-topbar .office-ribbon-tabs').count(),0,
+  'The top bar must not duplicate left-side tabs');
+ for(const label of ['Collapse the ribbon','Pin the ribbon','Show tabs in the top ribbon','Show tabs in the left panel'])
+  assert.equal(await page.getByRole('button',{name:label,exact:true}).count(),0,
+   'Retired ribbon switch remains: '+label);
  // Existing handlers remain a 15-button set; the left dock adds only headings.
  const dockGroups=await dock.evaluate(root=>
   [['Dimensions','.smart-design2-dimensions',0],
@@ -545,11 +547,33 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
 
  assert.equal(await page.locator('.smart-design2-ribbon').count(),1,'Design 2 must render once, in the dock');
  await page.screenshot({path:new URL('../artifacts/design2-left-dock.png',import.meta.url).pathname});
- await page.getByRole('button',{name:'Collapse the ribbon'}).click();
- await page.screenshot({path:new URL('../artifacts/design2-left-dock-ribbon-collapsed.png',import.meta.url).pathname});
- await page.getByRole('button',{name:'Pin the ribbon'}).click();
- await page.getByRole('button',{name:'Show tabs in the top ribbon'}).first().click();
- await page.locator('.office-builder-ribbon[aria-label="Page Builder ribbon"] .smart-design2-ribbon').waitFor({state:'visible'});
+
+ // Formula uses twice the previous 440px target width and shifts into the
+ // space vacated by the top tab switches, without moving Quick Access.
+ const formulaBar=await page.locator('.office-ribbon-topbar-formula').evaluate(el=>{
+  const style=getComputedStyle(el),rect=el.getBoundingClientRect();
+  return {basis:style.flexBasis,maxWidth:style.maxWidth,width:rect.width};
+ });
+ assert.equal(formulaBar.basis,'880px');
+ assert.equal(formulaBar.maxWidth,'880px');
+ assert.ok(formulaBar.width>440,'Formula bar did not expand into the free topbar space: '+JSON.stringify(formulaBar));
+
+ // The left Insert gallery must show every registered Smart tile, not just the
+ // first two rows of the retired horizontal ribbon.
+ await page.getByRole('tab',{name:'Insert',exact:true}).click();
+ const gallery=await dock.locator('.smart-insert-tiles').evaluate(el=>{
+  const tiles=[...el.querySelectorAll('.smart-insert-tile')];
+  const rows=new Set(tiles.map(tile=>Math.round(tile.getBoundingClientRect().top)));
+  const style=getComputedStyle(el);
+  return {count:tiles.length,rows:rows.size,overflowY:style.overflowY,
+   height:el.clientHeight,scrollHeight:el.scrollHeight};
+ });
+ assert.ok(gallery.count>10,'Registered Smart components missing: '+JSON.stringify(gallery));
+ assert.ok(gallery.rows>=3,'Extra Insert component rows are clipped: '+JSON.stringify(gallery));
+ assert.equal(gallery.overflowY,'visible','Insert grid must not hide lower rows');
+ assert.ok(gallery.scrollHeight<=gallery.height+2,'Insert grid still clips lower rows: '+JSON.stringify(gallery));
+ await page.getByRole('tab',{name:'Design',exact:true}).click();
+ await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
 
  // Verify real selected-component binding icon geometry in Chromium, not
  // just the existence of SQL properties or hard-coded source attributes.
