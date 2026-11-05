@@ -5,6 +5,8 @@ import type {RecordEngine} from '../system-files/record-engine.js';
 import type {ObjectDefinitionService} from '../system-files/object-definition.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {ExternalIdUpsert} from '../system-files/external-id-upsert.js';
+import type {SqlPersistence} from '../system-files/sql-persistence.js';
+import {resolveImportLookupValue} from '../relationship-engine/LookupResolver.js';
 import {readLoaderWorkbook,writeLoaderWorkbook,type LoaderTable} from './metadata-loader-xlsx.js';
 
 type Actor={tenant_id:string;user_id:string};
@@ -48,7 +50,8 @@ function report(table:LoaderTable,items:Item[]){
 const summary=(items:Item[])=>({total:items.length,valid:items.filter(i=>i.status==='Valid').length,
  success:items.filter(i=>i.status==='Success').length,error:items.filter(i=>i.status==='Error').length,
  skipped:items.filter(i=>i.status==='Skipped').length});
-type Field={apiName:string;dataType:string;required:boolean;externalId?:boolean;caseSensitive?:boolean;picklistRestricted?:boolean;picklistValues?:string[]};
+type Field={apiName:string;dataType:string;required:boolean;externalId?:boolean;caseSensitive?:boolean;picklistRestricted?:boolean;picklistValues?:string[];relationship?:{targetObject:string}};
+type ResolveReference=(field:Field,raw:string)=>Promise<string>;
 function convert(raw:string,field:Field):unknown{
  if(raw==='<CLEAR>')return null;
  const type=field.dataType.toLowerCase();
@@ -79,7 +82,7 @@ function convert(raw:string,field:Field):unknown{
  }
  return raw;
 }
-function typedValues(row:ExcelRow,fields:Field[],headers:string[],create:boolean){
+async function typedValues(row:ExcelRow,fields:Field[],headers:string[],create:boolean,resolveReference:ResolveReference){
  const known=new Map(fields.map(f=>[f.apiName,f]));
  const values:Record<string,unknown>={};
  for(const key of headers){
@@ -90,7 +93,8 @@ function typedValues(row:ExcelRow,fields:Field[],headers:string[],create:boolean
   if(!raw)continue; // blank on update means unchanged; <CLEAR> explicitly clears a field
   if(isComputed(field.dataType))throw Error(field.apiName+' is read-only');
   if(raw==='<CLEAR>'&&field.required)throw Error('Cannot clear required field '+key);
-  values[key]=convert(raw,field);
+  values[key]=field.dataType.toLowerCase()==='lookup'&&raw!=='<CLEAR>'
+   ?await resolveReference(field,raw):convert(raw,field);
  }
  if(create){
   for(const field of fields)if(field.required&&!isComputed(field.dataType)
@@ -101,7 +105,7 @@ function typedValues(row:ExcelRow,fields:Field[],headers:string[],create:boolean
  }
  return values;
 }
-export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
+export function registerDataLoaderRecordRoutes(app:Express,db:SqlPersistence,records:RecordEngine,
  definitions:ObjectDefinitionService,rbac:RbacEngine,externalIds:ExternalIdUpsert){
  const route=(fn:(req:Req,res:Response)=>Promise<void>)=>(req:Request,res:Response,next:NextFunction)=>
   void fn(req as Req,res).catch(next);
@@ -149,10 +153,11 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
   const columns=['Action','Id',...fields.map(f=>f.apiName)];
   const guide=readable.map(f=>({FieldApiName:f.apiName,Label:f.label,DataType:f.dataType,
    Required:String(f.required),ExternalId:String(f.externalId===true),Writable:String(!isComputed(f.dataType)),
-   PicklistValues:(f.picklistValues??[]).join(';')}));
+   PicklistValues:(f.picklistValues??[]).join(';'),RelationshipTarget:f.relationship?.targetObject??'',
+   RelationshipImport:f.relationship?'Existing record UUID or unique exact Name':''}));
   const result=writeLoaderWorkbook([
    {name:'Records',columns,rows},
-   {name:'Field Guide',columns:['FieldApiName','Label','DataType','Required','ExternalId','Writable','PicklistValues'],
+   {name:'Field Guide',columns:['FieldApiName','Label','DataType','Required','ExternalId','Writable','PicklistValues','RelationshipTarget','RelationshipImport'],
     rows:guide},
   ]);
   res.set('Cache-Control','private, no-store');res.json({workbook:result.toString('base64'),count:rows.length,total,truncated:!selectedIds&&total>rows.length,
@@ -160,6 +165,17 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
  }));
  const prepare=async(actor:Actor,objectApi:string,bytes:Buffer,externalField:string)=>{
   const object=await meta(actor,objectApi);
+  const cache=new Map<string,Promise<string>>();
+  const resolveReference:ResolveReference=(field,raw)=>{
+   const key=JSON.stringify([field.apiName,field.relationship?.targetObject,raw]);
+   let value=cache.get(key);
+   if(!value){
+    value=resolveImportLookupValue(db,rbac,actor.tenant_id,actor.user_id,
+     field.apiName,field.relationship?.targetObject,raw);
+    cache.set(key,value);
+   }
+   return value;
+  };
   const data=readRows(bytes),known=new Map(object.fields.map(f=>[f.apiName,f]));
   const allowed=new Set(['Action','Id',...object.fields.map(f=>f.apiName),'Status','Result','Message','ExcelRow']);
   const unknown=data.table.columns.filter(c=>!allowed.has(c));
@@ -178,7 +194,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
      ?'external:'+(matchField?.caseSensitive?trim(i.cells[externalField]):trim(i.cells[externalField]).toLowerCase()):'';
     if(key){if(keys.has(key))throw Error('Duplicate match key in workbook');keys.add(key);}
     const create=!i.id&&(i.action==='Create'||i.action==='Upsert');
-    const values=i.action==='Delete'?{}:typedValues(i.cells,object.fields,data.table.columns,false);
+    const values=i.action==='Delete'?{}:await typedValues(i.cells,object.fields,data.table.columns,false,resolveReference);
     if(i.action!=='Delete'&&!Object.keys(values).length)throw Error('Row has no field changes');
     if(i.action==='Upsert'&&!i.id&&externalField&&!trim(i.cells[externalField]))
      throw Error('External ID value is missing (or select no matching field for create-only)');
@@ -203,7 +219,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
     i.result=create?'Create':i.action;i.message='Validated (database rules rechecked on execution)';
    }catch(e){i.status='Error';i.message=e instanceof Error?e.message:String(e);}
   }
-  return data;
+  return {...data,resolveReference};
  };
  app.post('/api/data-loader/records/validate',route(async(req,res)=>{
   const actor=req.actor!,bytes=parse(req.body?.workbook),objectApi=trim(req.body?.objectApi);
@@ -224,7 +240,7 @@ export function registerDataLoaderRecordRoutes(app:Express,records:RecordEngine,
   for(const i of data.rows){
    if(i.status!=='Valid')continue;
    try{
-    const values=i.action==='Delete'?{}:typedValues(i.cells,object.fields,data.table.columns,false);
+    const values=i.action==='Delete'?{}:await typedValues(i.cells,object.fields,data.table.columns,false,data.resolveReference);
     if(i.action==='Delete'){
      await records.remove(actor.tenant_id,actor.user_id,objectApi,i.id);
      i.result=i.id;
