@@ -44,6 +44,19 @@ test('the most recently saved designed layout is the default; inheriting layouts
  assert.equal(mobile.components,10);
  assert.equal(summary.layouts.find(item=>item.variant==='Desktop')!.published,true);
 });
+test('original creation mode remains default after later edits to other layouts',()=>{
+ const originalMobile=[
+  {...row('Desktop',5,19,false,'2026-11-05T10:00:00Z'),creation_layout_variant:'Mobile'},
+  {...row('Mobile',3,8,false,'2026-11-02T10:00:00Z'),creation_layout_variant:'Mobile'}
+ ];
+ assert.equal(summarisePageLayouts('created-mobile',originalMobile).primary,'Mobile');
+ const originalCustom=[
+  {...row('Desktop',8,40,false,'2026-11-05T10:00:00Z'),creation_layout_variant:'Custom'},
+  {...row('Custom',2,10,false,'2026-11-01T10:00:00Z'),creation_layout_variant:'Custom'}
+ ];
+ assert.equal(summarisePageLayouts('created-custom',originalCustom).primary,'Custom');
+});
+
 test('summary route is tenant-scoped, read-permissioned and validates page names',()=>{
  const controller=readFileSync(new URL('../../src/api/PageApiController.ts',import.meta.url),'utf8');
  const service=readFileSync(new URL('../../src/system-support/page-layout-summary.ts',import.meta.url),'utf8');
