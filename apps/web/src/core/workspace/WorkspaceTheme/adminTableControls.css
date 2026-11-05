@@ -191,3 +191,9 @@
  .lightning .page-manager-table .page-manager-design-layout-trigger{width:16px;min-width:16px}
 }
 @media(max-width:600px){.lightning .page-manager-header-actions{display:flex;flex-wrap:wrap;gap:8px}.lightning .page-manager-header-actions .btn{min-height:44px}.lightning .page-manager-view .page-manager-filters{min-width:0;max-width:100%}}
+
+/* Increase the design layout menu trigger from the reported 16x32 target. */
+.lightning .page-manager-table .page-manager-design-split{flex-basis:64px;min-width:64px;height:32px}
+.lightning .page-manager-table .page-manager-design-layout-trigger{min-width:32px;width:32px;height:32px}
+@media(min-width:1024px) and (max-width:1500px){.lightning .page-manager-table .page-manager-design-split{min-width:64px;flex-basis:64px}.lightning .page-manager-table .page-manager-design-layout-trigger{min-width:32px;width:32px}.lightning .page-manager-table :is(th.page-manager-actions-heading,td.page-manager-actions){min-width:200px!important;max-width:200px!important;width:200px!important}}
+@media(pointer:coarse){.lightning .page-manager-table .page-manager-design-layout-trigger{min-height:44px;height:44px;min-width:44px;width:44px}}
