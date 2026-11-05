@@ -1,3 +1,4 @@
+import {usePageFormulaScope,PublishedFormulaProperties} from './PageFormulaScope';
 import * as React from 'react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
@@ -54,7 +55,9 @@ function RegisteredComponentBody({ definition, props, appearanceProps, layoutTra
   </div>;
 }
 
-export default function RegisteredComponent({ definition, props, layoutTransparent=false, editorPreview=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; layoutTransparent?:boolean; editorPreview?:boolean }) {
+export default function RegisteredComponent({ definition, props, formulaInstanceId, layoutTransparent=false, editorPreview=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; layoutTransparent?:boolean; editorPreview?:boolean;formulaInstanceId?:string }) {
+  const [rendered,setRendered]=useState<Readonly<Record<string,string>>>({});
+  const formulaScope=usePageFormulaScope();
   const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>}|null>(null);
   const [assetError, setAssetError] = useState('');
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
@@ -102,25 +105,26 @@ export default function RegisteredComponent({ definition, props, layoutTranspare
   if(issues.length)return <div role="alert" className="registered-component-error">Invalid component settings: {issues.map(i=>i.path+' '+i.message).join('; ')}</div>;
   let effectiveProps:Record<string,unknown>;
   try{
-    effectiveProps=resolveRegisteredTextProperties(definitions,applyRecordViewAdapter(configuredProps));
+    effectiveProps=resolveRegisteredTextProperties(definitions,applyRecordViewAdapter(configuredProps),undefined,formulaScope?.read);
   }catch(error){
     if(error instanceof FieldExpressionEvaluationError)
       return <div className="registered-component-error" role="alert">Formula error: {error.message}</div>;
     throw error;
   }
+  const published=<PublishedFormulaProperties id={formulaInstanceId} rendered={rendered} values={{...effectiveProps,kind:definition.apiName}}/>;
   const primitive = definition.primitiveMetadata;
   const primitiveCheck = primitive ? validatePrimitiveMetadata(primitive) : null;
   if (primitiveCheck && !primitiveCheck.valid) return <div className="registered-component-error" role="alert">Invalid primitive metadata: {primitiveCheck.errors.join('; ')}</div>;
   const accessibility = primitive ? primitiveAccessibilityProps(primitive) : {};
   if (definition.trustedBundled !== true) return <div {...accessibility}
     style={effectiveProps.fillRegion === true ? {height:'100%',minHeight:0,minWidth:0} : undefined}>
-    <ComponentSandbox definition={definition} props={effectiveProps} />
+    {published}<ComponentSandbox definition={definition} props={effectiveProps} />
   </div>;
   const hydratedDefinition = definition.compiledJs ? definition : asset
     ? {...definition,compiledJs:asset.compiledJs,scopedCss:asset.scopedCss}
     : null;
   if(!hydratedDefinition)return <div role="alert" className="registered-component-error">Bundled renderer is unavailable.</div>;
-  return <div {...accessibility} style={layoutTransparent?{display:'contents'}:undefined}><ComponentRenderBoundary key={`${definition.apiName}-${definition.version}`}>
-    <RegisteredComponentBody definition={hydratedDefinition} props={effectiveProps} appearanceProps={props} layoutTransparent={layoutTransparent} />
+  return <div {...accessibility} style={layoutTransparent?{display:'contents'}:undefined}>{published}<ComponentRenderBoundary key={`${definition.apiName}-${definition.version}`}>
+    <RegisteredComponentBody definition={hydratedDefinition} props={{...effectiveProps,readComponent:formulaScope?.read,onFormulaDisplay:setRendered}} appearanceProps={props} layoutTransparent={layoutTransparent} />
   </ComponentRenderBoundary></div>;
 }

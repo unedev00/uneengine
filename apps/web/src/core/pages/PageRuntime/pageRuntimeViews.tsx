@@ -1,3 +1,4 @@
+import {PageFormulaScope,useComponentFormulaState} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
@@ -301,7 +302,8 @@ function MetadataBoundPageComponent({
   });
   // Generic, page-scoped visual state for metadata-configured local actions.
   // Never grants data permissions or persists cross-tenant information.
-  const [pageState, setPageState] = useState<Record<string, unknown>>(()=>initialPageState??{});
+  const [storedPageState, setPageState] = useState<Record<string, unknown>>(()=>initialPageState??{});
+  const pageState=useComponentFormulaState(storedPageState);
   const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
   useEffect(() => {
@@ -852,7 +854,7 @@ function MetadataBoundPageComponent({
     {dataError && dataErrorForQueryKey === recordQueryKey && <div className="records-message" role="alert">{dataError}</div>}
     {actionError && <div className="records-message" role="alert">{actionError}</div>}
     {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
-    <RegisteredComponent definition={definition} layoutTransparent props={{
+    <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent props={{
       ...resolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(definition.apiName.startsWith('smart_') && component.position
         ? {canvasFrameSized:true}:{}),
@@ -1108,7 +1110,7 @@ function LightningAppRuntime({
             sessionIdOverride={inScreenPage?inScreenContext?.sessionId:undefined}
             children={nestedChildren}
             onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} />
-        : <RegisteredComponent definition={definition} layoutTransparent props={{
+        : <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent props={{
             ...component.properties, pageState:layoutState,
             ...componentLayoutProps(component.properties, layoutDevice),
             ...(definition.apiName.startsWith('smart_') && component.position
@@ -1259,11 +1261,11 @@ function LightningAppRuntime({
         ? <div key={component.id} data-page-appearance={pageAppearanceTarget(component.type)} data-page-style={pageAppearanceStyleKeys(resolvePageComponentStyle(component.properties, component.type, layoutDevice))} style={{...resolvePageComponentStyle(component.properties, component.type, layoutDevice),...behaviorAppearance(component.properties,appVisibilityContext)}}>{content}</div>
         : content;
     });
-  return <><TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
+  return <PageFormulaScope key={appId+":"+page.apiName} components={page.components} catalog={libraryComponents}><TemplatePageRuntimeLayout apiName={page.apiName} label={page.label}
     pageType={page.pageType} template={page.template} canvasFillColor={page.canvasFillColor}
     fullscreen={isStandaloneRuntime && page.layoutMode === 'template'} phone={formFactor === 'Phone'} layoutVariant={page.components.find(component => component.properties?.standalonePresentation === true)?.properties?.presentationLayout as string | undefined}
     overlayOpen={layoutState.basketOpen===true}
-    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />{inScreenHost}</>;
+    header={renderRegion('header')} main={renderRegion('main')} sidebar={renderRegion('sidebar')} />{inScreenHost}</PageFormulaScope>;
 }
 
 

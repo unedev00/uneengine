@@ -1,4 +1,6 @@
+export const componentReaderKey:unique symbol;
 export type FormulaBindingContext={
+  readComponent?:(name:string,key:string)=>string|number|boolean;
   timeZone?:string;
   now?:Date|string;
   /** Already-authorised page-local scalar state values. */

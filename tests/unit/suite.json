@@ -198,6 +198,7 @@
     "apps/web/test/flowSubflowMappings.test.ts",
     "apps/web/test/formulaAction.test.ts",
     "apps/web/test/formulaDollarSuggestions.test.ts",
+    "apps/web/test/pageComponentFormula.test.ts",
     "apps/web/test/fourLayoutRibbon.test.mjs",
     "apps/web/test/freeCanvasComponentOverflow.test.mjs",
     "apps/web/test/grokCanvasRibbon.test.mjs",

@@ -231,16 +231,16 @@ function ItemGrid({ p, rows }) {
       >
         {visibleRows.map((r, i) => {
           const image = p.imageSource ? (Object.prototype.hasOwnProperty.call(r,p.imageSource)
-            ? String(r[p.imageSource]??"") : evaluateFieldExpression(p.imageSource,r)) :
-            p.imageExpression ? evaluateFieldExpression(p.imageExpression,r) : r?.[imageField],
+            ? String(r[p.imageSource]??"") : evaluateFieldExpression(p.imageSource,r,{readComponent:p.readComponent})) :
+            p.imageExpression ? evaluateFieldExpression(p.imageExpression,r,{readComponent:p.readComponent}) : r?.[imageField],
             validImage =
               typeof image === "string" && (/^https:\/\//i.test(image) || /^asset:[0-9a-f-]{36}$/i.test(image));
-          const name = p.textSource ? evaluateFieldExpression(p.textSource,r) :
-            p.headingExpression ? evaluateFieldExpression(p.headingExpression,r) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
+          const name = p.textSource ? evaluateFieldExpression(p.textSource,r,{readComponent:p.readComponent}) :
+            p.headingExpression ? evaluateFieldExpression(p.headingExpression,r,{readComponent:p.readComponent}) : view(r?.[titleField] ?? r?.Name ?? r?.name ?? "Record"),
             price = r?.[priceField];
-          const badge = p.badgeText ? evaluateFieldExpression(p.badgeText,r) :
-            p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r) : badgeField ? String(r?.[badgeField] ?? "") : "";
-          const description = p.descriptionExpression ? evaluateFieldExpression(p.descriptionExpression,r) : descriptionField ? String(r?.[descriptionField] ?? "") : "";
+          const badge = p.badgeText ? evaluateFieldExpression(p.badgeText,r,{readComponent:p.readComponent}) :
+            p.badgeExpression ? evaluateFieldExpression(p.badgeExpression,r,{readComponent:p.readComponent}) : badgeField ? String(r?.[badgeField] ?? "") : "";
+          const description = p.descriptionExpression ? evaluateFieldExpression(p.descriptionExpression,r,{readComponent:p.readComponent}) : descriptionField ? String(r?.[descriptionField] ?? "") : "";
           const isFeatured = featuredField && (r?.[featuredField] === true || r?.[featuredField] === "true");
           const span = isFeatured ? Math.max(1, Math.min(count, Number(p.featuredColumnSpan) || 2)) : 1;
           const rowSpan = isFeatured ? Math.max(1, Math.min(6, Number(p.featuredRowSpan) || 1)) : 1;

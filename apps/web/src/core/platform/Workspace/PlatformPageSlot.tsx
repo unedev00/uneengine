@@ -50,7 +50,7 @@ export function PlatformPageSlot({slotKey,children}:{
  // Only the trusted bundled, published panel may host live privileged controls.
  // Existing operations still use the originating OneEngine-authorised handlers.
  const content=panel?.trustedBundled===true
-  ?<RegisteredComponent definition={panel} props={{...instance.properties,children}} layoutTransparent/>:children;
+  ?<RegisteredComponent formulaInstanceId={instance!.id} definition={panel} props={{...instance.properties,children}} layoutTransparent/>:children;
  return <div data-page-instance={instance.id} data-platform-slot={slotKey}
   aria-label={typeof instance.properties.controlLabel==='string' && instance.properties.controlLabel ? instance.properties.controlLabel : instance.label} style={style}>{content}</div>;
 }

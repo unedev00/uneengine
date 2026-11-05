@@ -1,3 +1,4 @@
+import {PageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import React,{type ReactNode} from 'react';
 import {platformNavigationEntries} from './platformWorkspaceMetadata';
 import type {LightningPageMetadata,LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
@@ -56,7 +57,7 @@ export default function PlatformWorkspaceSurface({
   .map(instance=>({
     instance,component:findRegisteredComponent(libraryComponents,instance.type.slice('Custom:'.length),'page')
   })).filter(item=>item.component)??[];
- return <section className="platform-workspace-surface" data-workspace={definition.id}
+ return <PageFormulaScope key={pageName} components={page?.components} catalog={libraryComponents}><section className="platform-workspace-surface" data-workspace={definition.id}
    aria-label={definition.label} data-metadata-source="platform-workspace-registry">
    {page&&<div className="platform-system-page" aria-label={page.label}>
      {canEditSystemPage&&onEditSystemPage&&<button type="button" className="btn btn-small"
@@ -70,10 +71,10 @@ export default function PlatformWorkspaceSurface({
              ?<MetadataBoundPageComponent {...componentRuntime} definition={component!}
                component={instance} pageSessionKey={'platform:'+pageName} pageComponents={page.components}/>
              :<div role="alert">Page action runtime unavailable</div>
-           :<RegisteredComponent definition={component!} props={instance.properties}/>}
+           :<RegisteredComponent formulaInstanceId={instance.id} definition={component!} props={instance.properties}/>}
        </div>)}
      </div>
    </div>}
    {page?<PlatformPageSlotsProvider page={page} libraryComponents={libraryComponents}>{children}</PlatformPageSlotsProvider>:children}
- </section>;
+ </section></PageFormulaScope>;
 }
