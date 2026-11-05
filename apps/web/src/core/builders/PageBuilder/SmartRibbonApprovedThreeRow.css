@@ -174,8 +174,13 @@
  .smart-property :is(button,input,select):focus-visible{
  outline:2px solid #2377c9!important;outline-offset:1px!important;
 }
+/* Keep the shared numeric editor's text cursor visible. The surrounding
+ * wrapper owns the focus ring; hiding the caret made mouse text editing appear
+ * impossible even though the native spinner arrows still worked. */
 .office-builder-ribbon #page-builder-tab-content .smart-property[data-numeric-icon="true"] input.smart-office-number:focus-visible{
- outline:none!important;box-shadow:none!important;caret-color:transparent!important;
+ outline:none!important;box-shadow:none!important;
+ caret-color:#263b56!important;cursor:text!important;
+ user-select:text!important;-webkit-user-select:text!important;
 }
 .office-builder-ribbon #page-builder-tab-content .smart-property[data-numeric-icon="true"] .smart-numeric:focus-within{
  outline:2px solid #2377c9!important;outline-offset:0!important;
@@ -313,7 +318,7 @@
  background:#fff!important;box-shadow:none!important;
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon input:focus-visible{
- outline:0!important;box-shadow:none!important;caret-color:transparent!important;
+ outline:0!important;box-shadow:none!important;caret-color:auto!important;cursor:text!important;
 }
 .office-builder-ribbon .office-ribbon-page-layout-groups .une-ribbon-size-with-icon:focus-within{
  outline:2px solid #2377c9!important;outline-offset:0!important;

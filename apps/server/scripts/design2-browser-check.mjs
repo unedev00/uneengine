@@ -559,6 +559,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  };
  const dockX=dock.locator('.smart-design2-dimensions [data-property="x"] input');
  const dockY=dock.locator('.smart-design2-dimensions [data-property="y"] input');
+ // Real pointer click must focus the number's text area and reveal its caret,
+ // not merely activate native spinner arrows. Programmatic focus missed this.
+ await dockX.click({position:{x:12,y:12}});
+ const numericFocus=await dockX.evaluate(input=>({
+  focused:document.activeElement===input,
+  caret:getComputedStyle(input).caretColor,
+  cursor:getComputedStyle(input).cursor
+ }));
+ assert.equal(numericFocus.focused,true,'Mouse click did not focus numeric text input');
+ assert.ok(numericFocus.caret!=='transparent' &&
+  numericFocus.caret!=='rgba(0, 0, 0, 0)' &&
+  numericFocus.caret!=='auto',
+  'Text caret must be visible after clicking the numeric field: '+JSON.stringify(numericFocus));
+ assert.equal(numericFocus.cursor,'text','Numeric text area must show text cursor');
  await replaceNumeric(dockX,'120');
  assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.left)),120,
   'Dock X edit did not update the same canvas position');
