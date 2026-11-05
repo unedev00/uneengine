@@ -48,9 +48,13 @@ function WorkspaceLoadingFallback() {
     const timer=window.setTimeout(()=>setSlow(true),12000);
     return ()=>window.clearTimeout(timer);
   },[]);
-  return <main role="status" style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'system-ui,sans-serif'}}>
+  return <main role="status" aria-live="polite" style={{minHeight:'100dvh',display:'grid',placeItems:'center',fontFamily:'system-ui,sans-serif',background:'#f6f8fb',padding:16,color:'#24354d',boxSizing:'border-box'}}>
     <div style={{textAlign:'center',maxWidth:480,padding:24}}>
-      <p>Loading your workspace…</p>
+      <img src={import.meta.env.BASE_URL + 'une-solutions-logo.webp'} alt="UNE Solutions" style={{display:'block',width:148,maxWidth:'70%',height:'auto',margin:'0 auto 18px'}}/>
+      <div className="md-workspace-loading-indicator" aria-hidden="true" style={{width:30,height:30,margin:'0 auto 16px',borderRadius:'50%',border:'3px solid #dce7f8',borderTopColor:'#0b57d0',animation:'md-loading-spin .9s linear infinite'}}/>
+      <style>{'@keyframes md-loading-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.md-workspace-loading-indicator{animation:none!important}}'}</style>
+      <h1 style={{fontSize:20,margin:'0 0 6px'}}>Loading your workspace…</h1>
+      <p style={{fontSize:13,color:'#475569',margin:0}}>Preparing your applications and settings.</p>
       {slow && <><p>The workspace is taking longer than expected. You can request the latest application files without losing saved data.</p>
         <button type="button" onClick={reloadLatestWorkspace}>Reload latest version</button></>}
     </div>
