@@ -1,5 +1,5 @@
 import {PanelsTopLeft} from 'lucide-react';
-import {PAGE_LAYOUT_ORDER,primaryPageLayout,pageLayoutOptionLabel,type PageLayoutSummary,type PageLayoutVariantName} from './pageLayoutSummary';
+import {primaryPageLayout,pageLayoutOptionLabel,type PageLayoutSummary,type PageLayoutVariantName} from './pageLayoutSummary';
 
 type Props={
   label:string;
@@ -12,7 +12,7 @@ type Props={
  * The select does not save or change the page's original layout metadata. */
 export default function PageDesignSplitAction({label,summary,onOpenDefault,onOpenLayout}:Props){
   const primary=primaryPageLayout(summary);
-  const ordered=[primary,...PAGE_LAYOUT_ORDER.filter(variant=>variant!==primary)];
+  const ordered=[primary,...(['Desktop','Mobile','Tablet','Custom'] as const).filter(variant=>variant!==primary)];
   return <span className="page-manager-design-split">
     <button className="page-manager-icon-action" type="button"
       aria-label={'Design '+label} title={'Open '+primary+' page designer'}
