@@ -252,3 +252,42 @@ test('Smart Card Grid keeps one viewport row at a time and scrolls narrow column
  assert.ok(source.includes('gridViewportHeight-(rows-1)*gap'));
  assert.ok(source.includes('gridViewportRef'));
 });
+
+
+test('Smart Image uses image height on vertical placements and width on side placements',async()=>{
+ const base={imageSource:'https://example.com/photo.png',textSource:'Caption',
+   imageHeight:100,imageWidth:150};
+ for(const imagePlacement of ['left','right']){
+  const html=await renderSmart('smart_image',{...base,imagePlacement});
+  assert.match(html,/flex:0 0 150px/,'side image uses authored image width');
+  assert.match(html,/max-width:calc\(100% - 96px\)/,'side image preserves caption space');
+  assert.doesNotMatch(html,/flex:0 1 100px/,'image height is ignored on the sides');
+ }
+ for(const imagePlacement of ['top','bottom']){
+  const html=await renderSmart('smart_image',{...base,imagePlacement});
+  assert.match(html,/flex:0 1 100px/,'vertical image uses authored image height');
+  assert.doesNotMatch(html,/flex:0 0 150px/,'image width is ignored above/below');
+ }
+ const defaultSide=await renderSmart('smart_image',{imageSource:base.imageSource,
+   textSource:'Caption',imagePlacement:'left'});
+ assert.match(defaultSide,/flex:1 1 50%/,'legacy unconfigured side split remains');
+ const defaultTop=await renderSmart('smart_image',{imageSource:base.imageSource,
+   textSource:'Caption',imagePlacement:'top'});
+ assert.match(defaultTop,/flex:1 1 auto/,'legacy unconfigured image height still fills');
+ const hiddenSide=await renderSmart('smart_image',{...base,imagePlacement:'left',imageWidth:0});
+ assert.doesNotMatch(hiddenSide,/<img\b/,'zero width hides side image');
+ const hiddenTop=await renderSmart('smart_image',{...base,imagePlacement:'top',imageHeight:0});
+ assert.doesNotMatch(hiddenTop,/<img\b/,'zero height hides vertical image');
+});
+
+test('Image dropdown dimensions use SQL-controlled orientation conditions for both image renderers',()=>{
+ const sql=read('../../server/src/system-support/migrations/20271115-smart-image-placement-axis-dimensions.sql');
+ assert.match(sql,/INSERT INTO md_builder_ribbon_component_rules/);
+ assert.match(sql,/INSERT INTO md_builder_design2_slot_rules/);
+ assert.match(sql,/\('smart_image'\),\('smart_card_grid'\)/);
+ assert.match(sql,/\('height','imageHeight'\),\('width','imageWidth'\)/);
+ assert.match(sql,/"property":"imagePlacement","in":\["left","right"\]/);
+ assert.match(sql,/"property":"imagePlacement","in":\["","top","bottom"\]/);
+ assert.doesNotMatch(sql,/(?:DELETE FROM|UPDATE|DROP TABLE)\s+md_page_/i,
+  'existing page records and instance properties are preserved');
+});
