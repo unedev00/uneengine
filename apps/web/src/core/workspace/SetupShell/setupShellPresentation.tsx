@@ -258,7 +258,7 @@ export function renderSetupShell(ctx: any) {
                           || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
                           || (workspace === 'flow-logs' && item === 'Flow History')
                           || (workspace === 'report-builder' && item === (route.kind==='setup' && route.resourceApiName==='viewer'?'Reports View':'Reports Builder'))
-                          || (workspace === 'dashboard-builder' && item === (route.kind==='setup' && route.dashboardView?'Dashboard View':'Dashboard Builder'))) ? 'tree-item selected' : 'tree-item'}
+                          || (workspace === 'dashboard-builder' && item === (route.kind==='setup' && (route.dashboardView || route.resourceApiName==='viewer')?'Dashboard View':'Dashboard Builder'))) ? 'tree-item selected' : 'tree-item'}
                         aria-label={item === "Tenant Management" && !canManagePlatformTenants ? "Open My Tenant Management" : `Open ${item}`}
                         title={item}
                         data-short-label={item.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('')}
@@ -544,11 +544,15 @@ export function renderSetupShell(ctx: any) {
             userId={dashboardUserId}
             canCreate={canCreateDashboards}
             canManageAll={canManageDashboards}
-            viewerMode={route.kind === 'setup' && route.dashboardView === true}
-            selectedApiName={route.kind === 'setup' ? route.resourceApiName : undefined}
-            onSelect={selectDashboard}
+            viewerMode={route.kind === 'setup' && (route.dashboardView === true || route.resourceApiName==='viewer')}
+            selectedApiName={route.kind === 'setup' ? (route.resourceApiName==='viewer'?dashboards[0]?.apiName:route.resourceApiName) : undefined}
+            onSelect={(apiName:string)=>setupPermissions.includes('setup:DashboardBuilder:view')
+              ?selectDashboard(apiName)
+              :navigateRoute({kind:'setup',workspace:'dashboard-builder',resourceApiName:apiName,dashboardView:true})}
             onOpenViewer={openDashboardViewer}
-            onExitViewer={exitDashboardViewer}
+            onExitViewer={(apiName:string)=>setupPermissions.includes('setup:DashboardBuilder:view')
+              ?exitDashboardViewer(apiName)
+              :navigateRoute({kind:'setup',workspace:'dashboard-builder',resourceApiName:'viewer'})}
             onLoadRecords={loadDashboardRecords}
             onRunReport={runReport}
             onLoadSnapshots={loadDashboardSnapshots}
