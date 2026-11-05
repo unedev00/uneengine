@@ -589,6 +589,7 @@ function PageBuilder({
   useEffect(()=>setSelectedConversationPart('parent'),[selectedId]);
   const [canvasBinding,setCanvasBinding]=useState<CanvasBindingTarget|null>(null);
   const [ribbonTab, setRibbonTab] = useState<'Add Block' | 'Component Content' | 'Component Design 2' | 'Component Style' | 'Component Data' | 'Component Action' | 'Component Layout' | 'Component Responsive' | 'Preview' | 'Filters' | 'Source' | 'Arrange' | 'Advanced'>('Add Block');
+  const [inspectorSection,setInspectorSection]=useState<string|null>('Body');
   const componentNeedsData = (type: string) => {
     const metadata = type.startsWith('Custom:') ? findRegisteredComponent(libraryComponents,type.slice('Custom:'.length),'page') : undefined;
     return Boolean(type.startsWith('Custom:')&&isUneBuilderApi(type.slice(7),ribbonCatalog?.components??[])
@@ -3114,6 +3115,7 @@ function PageBuilder({
   // object selectors after Typography in Design. The Data tab itself is retired.
   const dataRibbon = (part:'formulaBar'|'source') => selected && ribbonCatalog && selectedHasDataRibbon ? (
     <SmartRibbon key={'smart-data-'+part} tab="Data" part={part} api={selectedRibbonApi}
+      inspectorSection={inspectorSection} onInspectorSectionChange={setInspectorSection}
       definitions={ribbonCatalog.properties}
       properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
       componentId={selected.id} pageComponents={page.components}
@@ -3129,6 +3131,7 @@ function PageBuilder({
       position={selected.position} layoutMode={page.layoutMode}/>
   ) : null;
   const smartRibbonElement = (selected && ribbonCatalog && ((selectedNewUne && (ribbonTab==='Component Design 2'||ribbonTab==='Component Layout')) ||(!selectedNewUne && ribbonTab==='Component Design 2'))) ? (<>
+              {ribbonTab==='Component Design 2'&&selectedHasSourceRibbon&&dataRibbon('source')}
               <SmartRibbon
                 tab={ribbonTab==='Component Layout'?'Layout':
                   ribbonTab==='Component Design 2'?'Design2':'Design'}
@@ -3137,6 +3140,7 @@ function PageBuilder({
                 design2Slots={ribbonCatalog.design2Slots}
                 design2SlotRules={ribbonCatalog.design2SlotRules}
                 design2Arrange={canvasArrangeProps}
+                inspectorSection={inspectorSection} onInspectorSectionChange={setInspectorSection}
                 properties={selected.properties} objects={objects} pageObjectApiName={page.targetObject}
                 componentId={selected.id} pageComponents={page.components}
                 canvasBinding={canvasBinding}
@@ -3177,7 +3181,6 @@ function PageBuilder({
                       page.components,selected.id,ribbonSelectedMembers,ribbonCatalog.properties,position)});
                   else updateComponent(selected.id,{position});
                 }}/>
-              {ribbonTab==='Component Design 2'&&selectedHasSourceRibbon&&dataRibbon('source')}
   </>) : null;
   const insertRibbon = (<SmartInsertRibbon
             items={paletteComponents}
