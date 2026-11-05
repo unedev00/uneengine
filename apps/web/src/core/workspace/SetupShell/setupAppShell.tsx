@@ -783,6 +783,21 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
       navigateRoute({kind:'setup', workspace:'named-credentials', ...(item === 'Webhook Endpoints' ? {resourceApiName:'Webhooks'} : {})});
       return;
     }
+    if (item === 'Records') {
+      const firstObject=readableRecordObjects[0];
+      if(!firstObject){notify('No readable record objects are assigned');return;}
+      navigateRoute({kind:'record-list',objectApiName:firstObject.apiName,appId:'Records'});
+      return;
+    }
+    if (item === 'Reports View') {
+      navigateRoute({kind:'setup',workspace:'report-builder',resourceApiName:'viewer'});return;
+    }
+    if (item === 'Reports Builder') {openSetupWorkspace('report-builder');return;}
+    if (item === 'Dashboard View') {
+      navigateRoute({kind:'setup',workspace:'dashboard-builder',
+        ...(dashboards[0]?{resourceApiName:dashboards[0].apiName}:{}),dashboardView:true});return;
+    }
+    if (item === 'Dashboard Builder') {openSetupWorkspace('dashboard-builder');return;}
     if (item === 'Universal Data Loader') {openSetupWorkspace('data-loader');return;}
     if (item === 'Object Manager' || item === 'Objects' || objectSettings.includes(item)) {
       navigateRoute({
