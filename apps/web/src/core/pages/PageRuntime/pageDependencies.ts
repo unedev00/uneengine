@@ -108,6 +108,19 @@ export function inspectPageDependencies(page: LightningPageMetadata, scope: Depe
         continue;
       }
 
+      // A Formula action may choose Flows: IF(..., $flow.A, $flow.B). Each one is a dependency.
+      if (binding.actionType === 'Formula' && typeof binding.formula === 'string') {
+        for (const match of binding.formula.matchAll(/\$flow\.([A-Za-z][A-Za-z0-9_]{0,79})/gi)) {
+          const flow = scope.flows.find(item => item.apiName.toLowerCase() === match[1].toLowerCase());
+          const executable = flow?.status === 'Active'
+            && ['Screen Flow', 'Autolaunched Flow', 'In-Screen Flow'].includes(flow.flowType);
+          add('Flow', flow?.apiName ?? match[1], component.id,
+            !flow ? 'Missing' : executable ? 'Ready' : 'Inactive',
+            'Component event formula: ' + event);
+        }
+        continue;
+      }
+
       // PageState and SetFilter are local actions, not Flow dependencies.
       if (binding.actionType !== 'Navigate') continue;
       const target = binding.navigationTargetType ?? 'Record List';

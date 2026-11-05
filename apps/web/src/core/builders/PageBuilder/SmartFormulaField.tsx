@@ -15,7 +15,7 @@ import type {MentionKind} from '../../../component-libraries/shared/primitives/S
  */
 export function splitSmartFormula(value:string){
  const parts:{value:string;kind:'field'|'string'|'operator'|'text'}[]=[];
- const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$state\.[A-Za-z][A-Za-z0-9_]*|\$session|[+*\/&-])/g;
+ const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$state\.[A-Za-z][A-Za-z0-9_]*|\$flow\.[A-Za-z][A-Za-z0-9_]*|\$session|[+*\/&-])/g;
  let cursor=0;let match:RegExpExecArray|null;
  while((match=token.exec(value))){
   if(match.index>cursor)parts.push({value:value.slice(cursor,match.index),kind:'text'});
@@ -26,11 +26,14 @@ export function splitSmartFormula(value:string){
  if(cursor<value.length)parts.push({value:value.slice(cursor),kind:'text'});
  return parts;
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[]}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[],flowReferences}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
  objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind;
  validate?:(formula:string)=>string|null;
- stateOptions?:readonly {source:'PageState'|'CollectionState';key:string;label:string}[]
+ stateOptions?:readonly {source:'PageState'|'CollectionState';key:string;label:string}[];
+ /** Action formula bar only: runnable Flows offered as $flow.ApiName. Omitted
+  * everywhere else, so normal formula bars never suggest or accept $flow. */
+ flowReferences?:readonly {apiName:string;label:string}[]
 }){
  const input=useRef<HTMLInputElement>(null);
  const [draft,setDraft]=useState(value);
@@ -82,7 +85,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const collectionNames=[...new Set(stateOptions.filter(entry=>entry.source==='CollectionState')
   .map(entry=>entry.key.split('.')[0]))].map(name=>({reference:'@'+name,label:name+' Collection'}));
  const dollarMentions=matches?.prefix==='$'
-  ?formulaDollarSuggestions(stateOptions,matches.query):[];
+  ?formulaDollarSuggestions(stateOptions,matches.query,flowReferences):[];
  // Inside TABLE(@Object, ...), field choices follow that Object, not the
  // Page Builder's first object or another selected independent source.
  const tableOpen=/\bTABLE\s*\(\s*@([A-Za-z][A-Za-z0-9_]*)\s*,([^)]*)$/i.exec(draft.slice(0,caret));
@@ -110,9 +113,10 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
  const isFormulaDraft=(source:string)=>source.startsWith('=')||
-  /^\$(?:state\.|session(?:\b|\.))/.test(source)||
+  /^\$(?:state\.|session(?:\b|\.)|flow\.)/.test(source)||
   /^@[A-Za-z][A-Za-z0-9_.]*\s*(?:==|=|<>|!=|>=|<=|>|<)/.test(source);
  const errorFor=(next:string):string|null=>{
+  if(!flowReferences&&/\$flow\b/i.test(next))return '$flow is only available in the Action formula bar';
   const custom=validate?.(next);
   if(custom)return custom;
   const source=next.trim();

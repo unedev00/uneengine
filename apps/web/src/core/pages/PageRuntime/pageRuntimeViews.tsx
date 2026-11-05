@@ -194,6 +194,7 @@ import {
   type UserMetadata,
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
+import {flowActionFormulaTarget} from './actionFlowFormula';
 
 
 export function createPageRuntimeViews(apiRequest: <T>(path:string, init?:RequestInit) => Promise<T>) {
@@ -621,7 +622,13 @@ function MetadataBoundPageComponent({
       if(hasInteraction||selectedCollection)return {updated:true};
       throw new Error('No metadata event action is configured for "' + action.event + '".');
     }
-    const binding = config as Record<string, unknown>;
+    // $flow formula: IF(..., $flow.A, $flow.B) picks the Flow, then the normal Flow
+    // path runs it (same inputs/outputs, server RBAC). Blank result = do nothing.
+    const authoredBinding = config as Record<string, unknown>;
+    const formulaFlow = flowActionFormulaTarget(authoredBinding, action.value, pageState, sessionId, availableFlows);
+    if (formulaFlow === '') return { skipped: true };
+    const binding: Record<string, unknown> = formulaFlow
+      ? { ...authoredBinding, actionType: 'Flow', flowApiName: formulaFlow } : authoredBinding;
     setActionError('');
     if(binding.actionType==='SetFilter'){
       const filterKey=String(binding.filterKey||'category');

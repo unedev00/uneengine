@@ -7,7 +7,9 @@ import type {PageStateChoice} from './pageStateChoices';
  */
 export type DollarFormulaSuggestion={reference:string;label:string};
 export function formulaDollarSuggestions(
- choices:readonly PageStateChoice[],query=''
+ choices:readonly PageStateChoice[],query='',
+ // Action formula bar only: $flow.ApiName for each runnable Flow.
+ flows?:readonly {apiName:string;label:string}[]
 ):DollarFormulaSuggestion[]{
  const suggestions:DollarFormulaSuggestion[]=[
   {reference:'$session',label:'Current page session ID'},
@@ -22,6 +24,9 @@ export function formulaDollarSuggestions(
   unique.add(choice.key);
   suggestions.push({reference:'$state.'+choice.key,label:choice.label+' · Page State'});
  }
+ for(const flow of flows??[])
+  if(/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(flow.apiName))
+   suggestions.push({reference:'$flow.'+flow.apiName,label:flow.label+' · Flow'});
  const match='$'+query.toLowerCase();
  return suggestions.filter(item=>item.reference.toLowerCase().includes(match)
    ||item.label.toLowerCase().includes(query.toLowerCase())).slice(0,200);
