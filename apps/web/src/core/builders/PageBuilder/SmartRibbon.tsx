@@ -272,14 +272,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  const design2SupplementalProperties:UneRibbonProperty[]=tab==='Design2'?design2Slots
    .filter(slot=>slot.area==='Body'&&slot.slotKey.startsWith('extra_'))
    .sort((a,b)=>a.order-b.order)
-   .map(slot=>{
+   .flatMap(slot=>{
      const rule=design2SlotRules.find(item=>item.componentApi===api&&
        item.area===slot.area&&item.slotKey===slot.slotKey);
      const property=definitions.find(item=>item.id===rule?.propertyKey);
-     return property?.components.includes(api)?{...property,
+     return property?.components.includes(api)?[{...property,
        tab:'Design2' as const,group:'Body',designRow:slot.row,designOrder:slot.order,
-       designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}:null;
-   }).filter((entry):entry is UneRibbonProperty=>entry!==null):[];
+       designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}]:[];
+   }):[];
  // The Excel specifies the WIDTH of each control at its R/C coordinate,
  // NOT one uniform 80px column width shared across all three rows.
  // R1C3 Shape and R3C3 Bold are 40px, so their C4 neighbours must start
