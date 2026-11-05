@@ -11,6 +11,13 @@
 .smart-formula-list{z-index:6000!important;overflow-y:auto;pointer-events:auto}
 
 .smart-formula-signature{max-width:min(650px,calc(100vw - 12px));padding:7px 10px;border-radius:5px;border:1px solid #9eb5d0;background:#fff;color:#223b5c;box-shadow:0 6px 22px #0002;font:12px/1.5 Consolas,monospace;pointer-events:none;overflow-wrap:anywhere}
+/* When autocomplete is open, argument help belongs inside the SAME dropdown.
+ * Never float the signature over the formula input or its visible typing caret. */
+.smart-formula-list .smart-formula-signature-inline{
+ position:sticky;top:0;z-index:1;box-sizing:border-box;width:100%;max-width:100%;
+ padding:7px 9px;margin:0;border:0;border-bottom:1px solid #b7c9e0;
+ border-radius:0;background:#f4f8ff;box-shadow:none;pointer-events:none;
+}
 .smart-formula-signature strong{margin-right:3px;color:#1766c4}
 .smart-formula-signature .is-current{font-weight:800;color:#132b4c;background:#dcecff;border-radius:3px}
 
