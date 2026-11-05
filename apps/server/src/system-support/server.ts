@@ -21,6 +21,7 @@ import {seedLocationSrnForExistingTenants} from '../app-seeders/core-location-sr
 import {seedAppointmentObjectsForExistingTenants} from '../app-seeders/core-appointment-objects.js';
 import {seedCoreCashLedgerForExistingTenants} from '../app-seeders/core-cash-ledger.js';
 import {seedCommunicationObjectsForExistingTenants} from '../app-seeders/core-communication-objects.js';
+import {seedScheduledActionObjectsForExistingTenants} from '../app-seeders/core-scheduled-action-objects.js';
 import {seedAcetillLockFlows} from '../app-seeders/acetill-lock-flow.js';
 import {backfillAcetillOperationalFlows} from '../app-seeders/acetill-operational-backfill.js';
 import {seedAcetillAppCatalog} from '../app-seeders/acetill-app-catalog.js';
@@ -107,6 +108,7 @@ import {registerInboundWebhookPublicRoutes,registerInboundWebhookAdminRoutes} fr
 import {createIntegrationCommunicationWriter,IntegrationCommunicationOutbox} from './integration-api-log.js';
 import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-inspection-routes.js';
 import {registerDurableJobAdminRoutes} from './durable-job-admin-routes.js';
+import {registerScheduledActionRoutes} from './scheduled-action-routes.js';
 import {registerSeederManagerRoutes} from './seeder-manager-routes.js';
 import {registerPlatformDeploymentRoutes} from './platform-deployment-routes.js';
 import {assertMetadataPackageEditable,MetadataPackageService} from './metadata-package-service.js';
@@ -2774,6 +2776,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerPackageApiController(app,metadataPackages);
   registerOpenApiExternalServiceRoutes(app,externalServices);
   registerDurableJobAdminRoutes(app,db,rbac);
+  registerScheduledActionRoutes(app,db,rbac);
   registerSeederManagerRoutes(app,db,platformTenants);
   registerPlatformDeploymentRoutes(app,db,rbac);
   registerDeclarativeRuleRoutes(app,db,rbac);
@@ -2883,6 +2886,7 @@ export async function startSystemServer() {
     await seedCoreCashLedgerForExistingTenants(db);
     await seedAceAssistCrudFlows(db); // Installed tenants only; preserves edited Flow metadata.
     await seedCommunicationObjectsForExistingTenants(db);
+    await seedScheduledActionObjectsForExistingTenants(db);
     console.info('Core metadata seeder: existing tenants backfilled:',seededTenants);
     await bootstrapFreshTenant(db);
     const deploymentPermission=await seedPlatformOneEngineDeploymentPermission(db);
