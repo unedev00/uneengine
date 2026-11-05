@@ -1,4 +1,5 @@
 import type {Expression} from './FormulaParser.js';
+import {actionFormulaFunctions,formulaCategory,formulaAllowedInContext} from './FormulaCategories.js';
 
 export type FormulaExpressionContext='formula_field'|'validation_rule'|'flow_formula'
   |'component_visibility'|'record_filter'|'ribbon_binding';
@@ -129,6 +130,15 @@ export const supportedFunctions:ReadonlySet<string>=new Set(definitions.keys());
 export function getFormulaFunctionNames(context:FormulaExpressionContext):string[] {
   return [...definitions.values()].filter(definition=>definition.allowedContexts.includes(context))
     .map(definition=>definition.name);
+}
+/** Scope-specific completion: Action sees all functions; Data excludes
+ * side effects; Universal is only the pure function family. */
+export function getFormulaNamesForEditor(context:'action'|'data'|'universal'):string[] {
+ const pureAndData=getFormulaFunctionNames('ribbon_binding');
+ const allowed=pureAndData.filter(name=>formulaAllowedInContext(name,context));
+ return context==='action'
+  ?[...new Set([...allowed,...actionFormulaFunctions])]
+  :context==='universal'?allowed.filter(name=>formulaCategory(name)==='universal'):allowed;
 }
 export function validateFormulaFunctions(expression:Expression,context:FormulaExpressionContext):void {
   const visit=(node:Expression):void=>{
