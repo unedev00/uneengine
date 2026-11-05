@@ -419,3 +419,33 @@
  :is(.smart-source-add,.smart-source-remove,.smart-source-add-label):disabled{
  opacity:.46!important;cursor:not-allowed!important;
 }
+
+/* The permanent inspector nests the original three-row matrix one level under
+ * an accordion panel. Reapply the ORIGINAL fixed SQL grid-area contract at the
+ * nested path: generic grid-area:auto!important otherwise pushes Image R2C5
+ * away from Width R2C4 even though both icons retain their correct widths. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ >.smart-ribbon-group.smart-design2-group
+ .smart-design2-area-section .smart-ribbon-items
+ >.smart-ribbon-row[data-design-row]{
+ box-sizing:border-box!important;display:grid!important;
+ grid-auto-flow:row!important;grid-template-rows:26px!important;
+ grid-auto-rows:26px!important;column-gap:4px!important;row-gap:0!important;
+ justify-content:start!important;align-items:center!important;
+ width:420px!important;min-width:420px!important;max-width:420px!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
+ >.smart-ribbon-group.smart-design2-group
+ .smart-design2-area-section .smart-ribbon-items
+ >.smart-ribbon-row[data-design-row]>.smart-property{
+ grid-area:1 / var(--smart-slot-column,1) / span 1 / span 1!important;
+ grid-column:var(--smart-slot-column,1) / span 1!important;
+ grid-row:1 / span 1!important;justify-self:start!important;
+ box-sizing:border-box!important;
+ width:var(--smart-control-width)!important;min-width:var(--smart-control-width)!important;
+ max-width:var(--smart-control-width)!important;
+ height:26px!important;min-height:26px!important;max-height:26px!important;
+}
