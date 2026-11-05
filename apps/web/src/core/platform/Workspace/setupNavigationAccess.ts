@@ -10,6 +10,7 @@ export const setupMenuTokens: Readonly<Record<string, readonly string[]>> = {
   'Connected Apps':['setup:ConnectedApps:view'],
   'Audit Trail':['setup:AuditTrail:view'],
   'Object Manager':['setup:ObjectManager:view'],
+  'Records':['setup:Records:view'],
   'Universal Data Loader':['setup:DataLoader:view'],
   'Page Builder':['setup:PageBuilder:view'],
   'App Manager':['setup:AppManager:view'],
