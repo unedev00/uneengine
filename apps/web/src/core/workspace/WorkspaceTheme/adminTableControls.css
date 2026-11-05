@@ -24,9 +24,9 @@
 /* A narrow, non-frozen first column with four borderless icon actions. */
 .lightning .page-manager-table :is(th.page-manager-actions-heading, td.page-manager-actions) {
   box-sizing: border-box;
-  width: var(--md-actions-col-width);
-  min-width: var(--md-actions-col-width);
-  max-width: var(--md-actions-col-width);
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
   padding: 8px;
 }
 .lightning .page-manager-table .page-manager-action-icons {
@@ -86,4 +86,49 @@
 }
 .lightning .page-manager-table code {
   font-size: .92em;
+}
+
+/* Keep the existing 32px Design icon; its adjacent arrow is a native, keyboard
+   accessible select. Native options escape the scrollable table viewport. */
+.lightning .page-manager-table .page-manager-design-split {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 48px;
+  min-width: 48px;
+  height: 32px;
+  position: relative;
+}
+.lightning .page-manager-table .page-manager-design-layout-select {
+  appearance: none;
+  box-sizing: border-box;
+  width: 16px;
+  min-width: 16px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lightning .page-manager-table .page-manager-design-split::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  right: 4px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--md-text-secondary, #475569);
+  border-bottom: 1.5px solid var(--md-text-secondary, #475569);
+  transform: rotate(45deg);
+}
+.lightning .page-manager-table .page-manager-design-layout-select:focus-visible {
+  outline: 2px solid var(--md-focus-ring, var(--md-primary, #1d4ed8));
+  outline-offset: -2px;
+}
+.lightning .page-manager-table .page-manager-design-layout-select:hover {
+  background: color-mix(in srgb, var(--md-primary, #1d4ed8) 9%, transparent);
 }
