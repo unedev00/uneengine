@@ -531,7 +531,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  for(const label of ['Collapse the ribbon','Pin the ribbon','Show tabs in the top ribbon','Show tabs in the left panel'])
   assert.equal(await page.getByRole('button',{name:label,exact:true}).count(),0,
    'Retired ribbon switch remains: '+label);
- // Existing handlers remain a 15-button set; the left dock adds only headings.
+ // The Dimensions & Alignment accordion owns the original 15 commands.
+ // Body collapses while Dimensions opens; opening Body again restores its matrix.
+ await page.getByRole('button',{name:'Dimensions & Alignment',exact:true}).click();
+ assert.equal(await dock.locator('.smart-design2-area-section[data-design-area="Body"] > button')
+  .getAttribute('aria-expanded'),'false');
  const dockGroups=await dock.evaluate(root=>
   [['Dimensions','.smart-design2-dimensions',0],
    ['Alignment','[data-design-section="alignment"]',6],
@@ -575,6 +579,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await cart.evaluate(element=>Number.parseFloat(element.style.top)),140,
   'Dock Y edit did not update the same canvas position');
  await replaceNumeric(dockY,'68');
+ await chooseArea('Body');
+ assert.equal(await dock.locator('.smart-design2-dimensions').count(),0,
+  'Dimensions controls must collapse when Body is expanded');
  const dockCountInput=dock.locator('.smart-design2-count input.smart-office-number');
  if(!await dockCountInput.isDisabled()){
   const original=await dockCountInput.inputValue();
@@ -921,7 +928,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await arrangeOne.waitFor({state:'visible'});
  await arrangeOne.click({position:{x:18,y:18}});
  await page.getByRole('tab',{name:'Design',exact:true}).click();
- await page.getByRole('button',{name:'Dimensions & Alignment',exact:true}).click();
+ const dimensionToggleArrange=page.getByRole('button',{name:'Dimensions & Alignment',exact:true});
+ if(await dimensionToggleArrange.getAttribute('aria-expanded')!=='true')await dimensionToggleArrange.click();
  const actionRow=page.locator('.smart-design2-arrange-actions');
  const buttons=actionRow.locator('button.smart-design2-arrange-action');
  assert.equal(await buttons.count(),15,'Exactly 15 R0 Arrange actions are required');
@@ -1021,7 +1029,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.ok(stagedGroupTitle.includes('Group cart only'),
   'Selected Cart title must update without applying to grouped siblings');
  await page.getByRole('tab',{name:'Design',exact:true}).click();
- await page.getByRole('button',{name:'Dimensions & Alignment',exact:true}).click();
+ const dimensionToggle=page.getByRole('button',{name:'Dimensions & Alignment',exact:true});
+ if(await dimensionToggle.getAttribute('aria-expanded')!=='true')await dimensionToggle.click();
  assert.equal(await buttons.nth(11).isDisabled(),false,'Ungroup must enable for a persisted canvas group');
  await buttons.nth(11).click();
  assert.equal(await buttons.nth(11).isDisabled(),true,'Ungroup must clear the canvas group');
