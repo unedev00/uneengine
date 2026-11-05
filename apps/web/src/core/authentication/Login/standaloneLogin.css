@@ -98,3 +98,73 @@
   border-color: #b42318;
   box-shadow: 0 0 0 1px #b42318;
 }
+
+/* UX-0001–0003, UX-0014–0018: compact, reflow-safe authentication screens. */
+.auth-screen {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  padding: 16px;
+  overflow-x: clip;
+}
+.auth-screen .auth-card {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: clamp(18px, 3vw, 28px);
+}
+.auth-screen .auth-card .auth-brand-logo {
+  display: block;
+  width: min(160px, 65%);
+  max-height: 82px;
+  object-fit: contain;
+  margin-inline: auto;
+}
+.auth-screen .auth-card :is(.text-action, .auth-recovery-channel) {
+  min-height: 44px;
+}
+.auth-screen .auth-card .auth-recovery-channels {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.auth-screen .auth-card .auth-recovery-channel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.auth-screen .auth-card .auth-recovery :is(input, button) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.auth-recovery-unavailable {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.auth-recovery-unavailable a {
+  color: #075b95;
+  text-decoration: underline;
+}
+@media (max-width: 360px) {
+  .auth-screen { padding: 12px 16px; }
+  .auth-screen .auth-card { padding: 18px; }
+  .auth-screen .auth-card .auth-brand-logo { max-height: 64px; }
+  .auth-screen .auth-card :is(h1, h2) { margin-block: 6px 8px; }
+  .auth-screen .auth-card > p { margin-block: 6px 10px; }
+}
+@media (max-height: 460px) and (orientation: landscape) {
+  .auth-screen { align-items: start; padding-block: 8px; }
+  .auth-screen .auth-card { padding: 12px 20px; }
+  .auth-screen .auth-card .auth-brand-logo { max-height: 40px; }
+  .auth-screen .auth-card :is(h1, h2) { margin-block: 4px; font-size: 20px; }
+  .auth-screen .auth-card > p { margin-block: 4px; }
+  .auth-screen .auth-card .form-control { min-height: 36px; }
+}
