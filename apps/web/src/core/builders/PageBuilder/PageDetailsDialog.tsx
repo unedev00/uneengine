@@ -74,6 +74,8 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  const assignmentError=changedAssignments?assignmentValidationError(page,assignments,apps,profiles,recordTypes):'';
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
+ const [detailsTab,setDetailsTab]=useState<'properties'|'history'>('properties');
+ useEffect(()=>{const origin=document.activeElement;return()=>{if(origin instanceof HTMLElement)window.requestAnimationFrame(()=>origin.focus());};},[]);
  // An open builder layout wins; from the page list, open the layout the page was designed in.
  const initialVariant:Variant=page.layoutVariant??primaryPageLayout(layoutSummary);
  const [variant,setVariant]=useState<Variant>(initialVariant);
@@ -176,18 +178,18 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  };
  return <div className="modal-backdrop" role="presentation">
   <section className="modal page-details-dialog" role="dialog" aria-modal="true"
-   aria-label="Edit page properties and versions">
+   aria-label="Edit page properties and versions" onKeyDown={event=>{if(event.key==='Escape'&&!busy){event.stopPropagation();onClose();}}}>
    <header className="modal-header page-details-header">
     <h2><Pencil size={19}/> Edit Page — {page.label}</h2>
     <button type="button" className="icon-button" aria-label="Close page details"
      onClick={onClose} disabled={busy}>×</button>
    </header>
    <div className="page-details-body">
-    <nav className="page-details-nav" aria-label="Page edit sections">
-     <a href="#page-details-properties">Page Properties</a>
-     <a href="#page-details-history">Versions</a>
-    </nav>
-    <div id="page-details-properties" className="page-details-grid">
+    <div className="page-details-nav" role="tablist" aria-label="Page edit sections">
+      <button role="tab" type="button" id="page-details-tab-properties" aria-selected={detailsTab==='properties'} aria-controls="page-details-properties" onClick={()=>setDetailsTab('properties')}>Page Properties</button>
+      <button role="tab" type="button" id="page-details-tab-history" aria-selected={detailsTab==='history'} aria-controls="page-details-history" onClick={()=>setDetailsTab('history')}>Versions</button>
+     </div>
+    <div id="page-details-properties" className="page-details-grid" role="tabpanel" aria-labelledby="page-details-tab-properties" hidden={detailsTab!=='properties'}>
      <div className="page-details-main">
       <section className="page-details-section" aria-label="Basic Information">
        <h3>Basic Information</h3>
@@ -253,7 +255,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
      </aside>
     </div>
     <section id="page-details-history" className="page-details-section page-details-versions"
-     aria-label="Page Versions">
+      role="tabpanel" aria-labelledby="page-details-tab-history" hidden={detailsTab!=='history'}>
      <div className="page-details-version-heading">
       <h3><History size={17}/> Page Versions</h3>
       <label className="form-label">Layout
