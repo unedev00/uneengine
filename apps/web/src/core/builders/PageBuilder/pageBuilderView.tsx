@@ -3656,7 +3656,7 @@ function PageBuilder({
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
 
-        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : 'No pages match the selected filter. Create a new page to begin.'}</div>}</div>
+        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : (!pageListSearch.trim()&&!pageListObject&&pageListDeviceTab==='all'&&pageListAppTab==='all' ? 'No '+(pageListTypeTab==='all'?'saved':pageListTypeTab.toLowerCase())+' pages exist yet. Select New Page to create one.' : 'No pages match the selected filters. Adjust the filters or search to see more pages.')}</div>}</div>
         <nav className="flow-existing-pagination" aria-label="Page list pagination">
           <span>{visiblePages.length} {visiblePages.length===1?'page':'pages'} · Page {safePageListPage} of {pageListPageCount}</span>
           <button className="btn" disabled={safePageListPage<=1} onClick={()=>setPageListPage(safePageListPage-1)}>Previous</button>
