@@ -523,6 +523,29 @@ export default function SmartRuntime(p){
  const buttonIcon=name==="smart_button"?icons.find(icon=>icon.id===p.shapeId):null;
  // Preserve selections when a data-driven category filter temporarily hides records.
  const [gridSelectedIds,setGridSelectedIds]=React.useState([]);
+ // Measure the actual inner viewport, not the configured canvas height. Percentage
+ // grid tracks can resolve to their min-content size inside an overflow scroller,
+ // exposing part of a second row even when the author selects one visible row.
+ const gridViewportRef=React.useRef(null);
+ const [gridViewportHeight,setGridViewportHeight]=React.useState(0);
+ React.useEffect(()=>{
+  if(name!=="smart_card_grid")return;
+  const grid=gridViewportRef.current;
+  if(!grid)return;
+  const measureGridViewport=()=>{
+   const height=grid.clientHeight;
+   setGridViewportHeight(previous=>previous===height?previous:height);
+  };
+  measureGridViewport();
+  if(typeof ResizeObserver!=="undefined"){
+   const observer=new ResizeObserver(measureGridViewport);
+   observer.observe(grid);
+   return ()=>observer.disconnect();
+  }
+  // Older browsers still update when their window changes size.
+  window.addEventListener("resize",measureGridViewport);
+  return ()=>window.removeEventListener("resize",measureGridViewport);
+ },[name]);
  const shadowStyle={boxShadow:p.calendarShadowColor?"0 4px 10px "+p.calendarShadowColor:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none",borderRadius:number(p.radius,12)};
  const fire=(event,value)=>{if(p.previewOnly||p.builderPreview)return;
   if(typeof p.onAction==="function")void Promise.resolve(p.onAction({event,value})).catch(()=>{});
@@ -631,6 +654,9 @@ export default function SmartRuntime(p){
   const columns=Math.max(1,Math.floor(number(p.cardsPerRow,3,1,12)));
   const gap=number(p.gap,12,0,160);
   const minimumCardHeight=number(p.cardMinHeight,96,96,1200);
+  // The requested column count remains exact, but cards never collapse below
+  // a usable minimum width. Excess columns scroll horizontally in this grid.
+  const minimumCardWidth=number(p.cardMinWidth??p.cardWidth,180,96,1200);
   const boundRows=recordsOf(p);
   const selection=p.selectedCardColor||p.focusedCardWidth||p.focusedCardHeight||p.focusedCardBorderColor||p.focusedCardShadow||
    p.focusedTextColor||p.focusedTextBold!==undefined||p.focusedTextSize
@@ -639,7 +665,7 @@ export default function SmartRuntime(p){
   const previewRows=(p.previewOnly===true||p.builderPreview===true||p.preview===true)&&boundRows.length===0
     ?Array.from({length:columns*rows},(_,i)=>({Id:"card-preview-"+i,Name:"Sample item "+(i+1)}))
     :boundRows;
-  content=<div data-md-bind={p.builderPreview&&p.collectionFormula?"collectionFormula":undefined} className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
+  content=<div ref={gridViewportRef} data-md-bind={p.builderPreview&&p.collectionFormula?"collectionFormula":undefined} className="smart-grid" role="region" aria-label="Product cards" tabIndex={0}
    onKeyDown={event=>{
      // The inner grid is an independent keyboard scroller. Never steal
      // arrow/action keys from a focused card or from the Page Builder.
@@ -652,12 +678,16 @@ export default function SmartRuntime(p){
    }}
    style={{
    boxSizing:"border-box",width:"100%",height:"100%",minHeight:0,minWidth:0,
-   overflowY:"auto",overflowX:"hidden",overscrollBehavior:"contain",
+   overflowY:"auto",overflowX:"auto",overscrollBehavior:"contain",
    gap,
-   gridTemplateColumns:"repeat("+columns+",minmax(0,1fr))",
-   // Cards per column specifies the number of visible rows, never a record limit.
-   // The authored canvas height owns the viewport; additional rows scroll inside it.
+   gridTemplateColumns:"repeat("+columns+",minmax("+minimumCardWidth+"px,1fr))",
+   // Keep every authorised record; 'Rows' controls the *visible* viewport only.
+   // A measured pixel row height avoids percentage tracks shrinking to their
+   // min-content size and painting a second row within a one-row viewport.
    gridAutoRows:"max("+minimumCardHeight+"px, calc((100% - "+(rows-1)*gap+"px) / "+rows+"))",
+   ...(gridViewportHeight>0?{
+    gridAutoRows:Math.max(minimumCardHeight,(gridViewportHeight-(rows-1)*gap)/rows)+"px"
+   }:{}),
    alignContent:"start"
   }}>
    {previewRows.map((r,i)=>{
