@@ -25,6 +25,10 @@ export const setupMenuTokens: Readonly<Record<string, readonly string[]>> = {
   // A view grant reveals the destination, but does not grant Builder mutation APIs.
   'Reports':['setup:ReportsView:view','setup:ReportsBuilder:view'],
   'Dashboards':['setup:DashboardsView:view','setup:DashboardBuilder:view'],
+  'Reports Builder':['setup:ReportsBuilder:view'],
+  'Reports View':['setup:ReportsView:view'],
+  'Dashboard Builder':['setup:DashboardBuilder:view'],
+  'Dashboard View':['setup:DashboardsView:view'],
   'Users':['setup:Users:view'],
   'Roles':['setup:Roles:view'],
   'Public Groups':['setup:PublicGroups:view'],
@@ -46,10 +50,13 @@ export function canOpenSetupRoute(route:AppRoute,permissions:readonly string[]):
     'page-builder':'Page Builder','app-manager':'App Manager','app-exchange':'AppExchange',
     'flow-builder':'Flows','flow-interviews':'Paused and Waiting Interviews',
     'scheduled-flows':'Scheduled Flows','flow-logs':'Flow History',
-    'automation-settings':'Process Automation Settings','report-builder':'Reports',
-    'dashboard-builder':'Dashboards','tenant-management':'Tenant Management'
+    'automation-settings':'Process Automation Settings','tenant-management':'Tenant Management'
   };
   if(simple[route.workspace])return canSeeSetupItem(simple[route.workspace]!,permissions);
+  if(route.workspace==='report-builder')
+    return canSeeSetupItem(route.resourceApiName==='viewer'?'Reports View':'Reports Builder',permissions);
+  if(route.workspace==='dashboard-builder')
+    return canSeeSetupItem(route.dashboardView?'Dashboard View':'Dashboard Builder',permissions);
   if(route.workspace==='named-credentials')
     return canSeeSetupItem(route.resourceApiName==='Webhooks'?'Webhook Endpoints':
       route.resourceApiName==='NamedDevices'?'Named Devices':'Named Credentials',permissions);
