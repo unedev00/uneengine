@@ -891,7 +891,6 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // top-ribbon pixel offset. Its controls must fit the dock without x-scroll.
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await page.getByRole('button',{name:'Show Design in a left panel'}).click();
- const dock=page.locator('.page-builder-design-dock');
  await dock.waitFor({state:'visible'});
  const dockArea=dock.getByLabel('Select Design 2 area');
  const dockHand=dock.locator('.smart-design2-count-field');
