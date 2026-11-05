@@ -10,6 +10,7 @@ const migration=read('../../server/src/system-support/migrations/20271114-page-b
 const card=read('../src/component-libraries/shared/CardCore.jsx');
 const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
 const visibility=read('../src/core/builders/PageBuilder/layoutRibbonVisibility.ts');
+const dockCss=read('../src/core/builders/PageBuilder/PageBuilderDesignDock.css');
 
 test('Retire Layout only after remapping all component property definitions to Design2',()=>{
  assert.match(migration,/SET tab='Design2'/);
@@ -24,9 +25,18 @@ test('Retire Layout only after remapping all component property definitions to D
 test('Hand control edits the existing count metadata, not a new counter',()=>{
  assert.match(design,/<Hand size=\{16\}/);
  assert.match(design,/['"]tabCount['"]/);
- assert.match(design,/['"]cardsPerRow['"],['"]cardsPerColumn['"]/);
- assert.match(design,/\[property!\.valueKeys\?\.\[api\]\?\?key\]:number/);
+ for(const key of ['cardsPerRow','cardsPerColumn'])
+  assert.ok(design.includes(key),key+' remains supported');
+ assert.match(design,/\[property!\.valueKeys\?\.\[api\]\?\?key\]:next/);
  assert.match(css,/smart-design2-count/);
+ assert.match(css,/position:relative;grid-column:7;grid-row:1/);
+ assert.match(design,/row===1&&\(\(\)=>\{/);
+ assert.match(design,/gridTemplateColumns:design2GridColumns\(row\)\+\(row===1\?' 79px':''\)/);
+ assert.match(design,/className="smart-design2-count-field"/);
+ assert.match(design,/className="smart-office-number" step=\{1\}/);
+ assert.doesNotMatch(design,/value="tabIndex"/);
+ assert.match(design,/data-source-bound=\{sourceBound\?'true':'false'\}/);
+ assert.match(design,/activeDesign2Area==='Body'&&supported&&!sourceBound/);
 });
 
 test('Tab dimensions, orientation and count resize canvas frame together',()=>{
@@ -61,4 +71,12 @@ test('Removed defaultCheck and columnVisibility stay out of all ribbons',()=>{
  assert.match(migration,/SET enabled=false/);
  assert.match(migration,/WHERE property_key IN \('defaultCheck','columnVisibility'\)/);
  assert.match(migration,/RAISE EXCEPTION 'Layout retirement failed: component metadata remains'/);
+});
+
+test('Vertical Design dock keeps every control inside its width without a horizontal scrollbar',()=>{
+ assert.match(dockCss,/overflow-x:hidden;overflow-y:auto/);
+ assert.match(dockCss,/grid-column:7!important;grid-row:1!important/);
+ assert.match(dockCss,/position:relative!important/);
+ assert.match(dockCss,/\.smart-design2-count-choice/);
+ assert.match(dockCss,/\.smart-design2-calendar-controls,\.smart-design2-image-border/);
 });
