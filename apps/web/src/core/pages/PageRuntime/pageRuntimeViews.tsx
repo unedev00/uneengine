@@ -259,7 +259,7 @@ function RuntimeReportChart({ report, objects, recordContext }: {
 }
 
 function MetadataBoundPageComponent({
-  definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
+  definition, component, objects, apps, pages, currentAppId, pageSessionKey, pageComponents, reports, availableFlows, formFactor, onNavigate, onLaunchFlow, disableActions = false, builderPreview = false, defaultObjectApiName = '', recordId = '', initialPageState, sessionIdOverride, children
 }: {
   definition: LibraryComponentMetadata;
   component: PageComponentMetadata;
@@ -275,6 +275,8 @@ function MetadataBoundPageComponent({
   onNavigate: (route: AppRoute) => void;
   onLaunchFlow: (flowApiName: string, inputs?: Record<string, unknown>, context?:{requestId?:string}) => void;
   disableActions?: boolean;
+  /** Page Builder canvas: renders field anchors (data-md-bind) for the data icons. */
+  builderPreview?: boolean;
   defaultObjectApiName?: string;
   recordId?: string;
   initialPageState?:Record<string,unknown>;
@@ -854,7 +856,8 @@ function MetadataBoundPageComponent({
     {dataError && dataErrorForQueryKey === recordQueryKey && <div className="records-message" role="alert">{dataError}</div>}
     {actionError && <div className="records-message" role="alert">{actionError}</div>}
     {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
-    <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent props={{
+    <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent
+      editorPreview={builderPreview===true&&disableActions} props={{
       ...resolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(definition.apiName.startsWith('smart_') && component.position
         ? {canvasFrameSized:true}:{}),
@@ -876,6 +879,9 @@ function MetadataBoundPageComponent({
           void onAction({ event: 'change', value }).catch(() => {});
       },
       loading: dataLoading, sessionId, stateChannel,
+      // Page Builder only: the same builder flags the unbound canvas render passes, so a
+      // component bound to an object still shows its Data Source icons on the canvas.
+      ...(builderPreview===true&&disableActions?{previewOnly:true,builderPreview:true}:{}),
       // Only bind scalar expressions when one authorised record is in scope.
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(visibleRecords.length===1 ? {record:visibleRecords[0]} : {}),

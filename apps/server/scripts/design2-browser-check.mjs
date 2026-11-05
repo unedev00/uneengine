@@ -134,6 +134,40 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  })).status,guestToken);
  assert.equal(forbidden,403,'Design 2 catalog bypassed OneEngine PageDefinition RBAC');
 
+ // A Card Grid BOUND to an Object with real records must still show its canvas
+ // Data Source icons (the bound path renders through Page Runtime's component).
+ {
+  const boundObject='BrowserRecycle__c';
+  const known=await db.query(`SELECT 1 FROM md_object_definitions WHERE tenant_id=$1 AND api_name=$2`,[tenantId,boundObject]);
+  if(known.rowCount){
+   const created=await page.evaluate(async({token,name})=>{const out=[];for(const label of ['Desserts','Wraps','Drinks']){
+    const r=await fetch('/api/records/'+name,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+     body:JSON.stringify({Name:label})});out.push(r.status);}return out;},{token,name:boundObject});
+   assert.deepEqual(created,[201,201,201],'Cannot seed bound Card Grid records');
+   const boundPage={apiName:'browserboundgrid',label:'Bound Grid Icons',targetObject:'',pageType:'App Page',
+    layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,status:'Draft',devices:['Desktop'],
+    activationAssignments:[],components:[{id:'bound-grid',type:'Custom:smart_card_grid',label:'Bound grid',
+     region:'main',visible:true,properties:{objectApiName:boundObject,textSource:'@Name'},
+     position:{x:20,y:20,width:900,height:300}}]};
+   const saved=await page.evaluate(async({token,payload})=>(await fetch('/api/metadata/pages/'+payload.apiName,{method:'PUT',
+    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)})).status,
+    {token,payload:boundPage});
+   assert.equal(saved,200,'Cannot seed bound Card Grid page');
+   await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+   await page.getByLabel('Search pages').fill('Bound Grid Icons');
+   await page.getByRole('button',{name:'Design Bound Grid Icons',exact:true}).click();
+   await page.getByRole('tab',{name:'Design',exact:true}).waitFor({timeout:20000});
+   const grid=page.locator('[data-component-id="bound-grid"]').first();
+   await grid.getByText('Desserts').first().waitFor({state:'visible',timeout:20000});
+   await grid.click({position:{x:6,y:6}});
+   await grid.locator('.canvas-data-icon-button[data-binding-property="textSource"]').first()
+    .waitFor({state:'visible',timeout:10000});
+   const {mkdir}=await import('node:fs/promises');
+   await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
+   await page.screenshot({path:new URL('../artifacts/bound-card-grid-data-icons.png',import.meta.url).pathname});
+  }
+ }
+
  // A persisted page with two real smart components, not mocked React widgets.
  const pageName='browserdesign2';
  const payload={

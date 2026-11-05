@@ -69,6 +69,7 @@ jobs:
         with:
           name: design2-browser-e2e
           path: |
+            apps/server/artifacts/bound-card-grid-data-icons.png
             apps/server/artifacts/design2-contextual-ribbon.png
             apps/server/artifacts/design2-left-dock.png
             apps/server/artifacts/design2-left-dock-ribbon-collapsed.png
