@@ -3,7 +3,6 @@ import WorkspaceFormulaScreen from '../../pages/PageRuntime/WorkspaceFormulaScre
 import SetupLoadingState from './SetupLoadingState';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
-import MobileSettingsHome from '../../settings/MobileSettingsHome';
 import SettingsNavigationIcon from '../../settings/SettingsNavigationIcon';
 import NotificationBell from '../../automation/Notifications/NotificationBell';
 // Shared shell presentation, composed from registered metadata-driven runtime and tools.
@@ -314,24 +313,9 @@ export function renderSetupShell(ctx: any) {
               .map(({ id, apiName, label, flowType, status, startConfig, resources }) => ({ id, apiName, label, flowType, status, startConfig, resources }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
-          {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
-            ? route.resourceApiName==='overview'?
-              <section className="mobile-setup-overview"><button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'home'})}><ChevronLeft size={16}/>Back to Settings</button>
-                <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)}/></section>
-              : <MobileSettingsHome
-                request={apiRequest}
-                loading={!metadataLoaded}
-                permissions={setupPermissions}
-                onOpen={navigateSetupItem}
-                onOpenOverview={()=>navigateRoute({kind:'setup',workspace:'home',resourceApiName:'overview'})}
-                rights={{
-                  viewMetadata:canReadMetadata, editMetadata:canManageApps,
-                  viewSecurity:canReadSecurity, manageSecurity:canManageUserIdentities,
-                  manageFlows:canManageFlows, manageTenants:canManagePlatformTenants,
-                  namedDevices:readableRecordObjects.some(item=>item.apiName==='NamedDevice__c')
-                }} />
-            : <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} />
-          )}
+          {route.kind === 'setup' && workspace === 'home' &&
+            <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} />
+          }
           {route.kind === 'setup' && workspace === 'data-loader' &&
            <React.Suspense fallback={<section className="setup-card">Loading Universal Data Loader…</section>}>
             <UniversalDataLoaderWorkspace apiRequest={apiRequest}
