@@ -55,7 +55,7 @@ jobs:
         run: npm run build --workspace apps/web
       - name: Install Chromium
         run: |
-          npm install --no-save playwright
+          npm install --no-save playwright@1.64.1
           npx playwright install --with-deps chromium
       - name: Verify Object Manager relationship metadata through browser and SQL
         env:

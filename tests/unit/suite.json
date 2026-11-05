@@ -135,6 +135,7 @@
     "apps/server/test/system/record-list-view.test.ts",
     "apps/server/test/system/record-matching.test.ts",
     "apps/server/test/system/record-overlap-guard.test.ts",
+    "apps/server/test/system/record-page-field-placement.test.ts",
     "apps/server/test/system/record-recycle-bin.test.ts",
     "apps/server/test/system/record-related-list.test.ts",
     "apps/server/test/system/record-retention.test.ts",
