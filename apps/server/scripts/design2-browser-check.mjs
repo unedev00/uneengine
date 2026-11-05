@@ -952,7 +952,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    await sourceToggle.click();
    assert.equal(await sourceToggle.getAttribute('aria-expanded'),'true');
    assert.equal(await sourceSection.getByRole('combobox',{name:'Object 1'}).count(),1);
-   assert.equal(await sourceSection.getByRole('button',{name:'Add Object'}).count(),1);
+   assert.equal(await sourceSection.locator('button.smart-source-add').count(),1);
+   assert.equal(await sourceSection.locator('button.smart-source-add-label').count(),1);
    const after=await measureCanvas();
    assert.ok(Math.abs(after.width-before.width)<1,
     'Expanding Object Source must not alter canvas zoom or width');
