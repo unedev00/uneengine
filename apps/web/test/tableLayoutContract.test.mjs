@@ -56,25 +56,25 @@ test('page list has a compact leading Actions column without a frozen edge', () 
 
 test('portalled page-layout menu uses an opaque readable surface outside workspace theme scope', () => {
   const css = source('core/workspace/WorkspaceTheme/adminTableControls.css');
-  const menu = css.match(/\\.page-manager-design-layout-menu\\s*\\{([^}]+)\\}/)?.[1] ?? '';
-  assert.match(menu, /--md-surface:\\s*#ffffff;/);
-  assert.match(menu, /--md-text-primary:\\s*#24354d;/);
-  assert.match(menu, /color-scheme:\\s*light;/);
-  assert.match(menu, /background:\\s*var\\(--md-surface, #ffffff\\)/);
-  assert.match(css, /\\.page-manager-design-layout-option:focus-visible\\s*\\{[^}]*box-shadow:\\s*inset/);
+  const menu = css.match(/\.page-manager-design-layout-menu\s*\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(menu, /--md-surface:\s*#ffffff;/);
+  assert.match(menu, /--md-text-primary:\s*#24354d;/);
+  assert.match(menu, /color-scheme:\s*light;/);
+  assert.match(menu, /background:\s*var\(--md-surface, #ffffff\)/);
+  assert.match(css, /\.page-manager-design-layout-option:focus-visible\s*\{[^}]*box-shadow:\s*inset/);
 });
 
 test('left-docked Page Builder tabs have a light rail and readable active and inactive labels', () => {
   const css = source('core/builders/PageBuilder/PageBuilderDesignDock.css');
-  const header = css.match(/\\.page-builder-design-dock-header\\s*\\{([^}]+)\\}/)?.[1] ?? '';
-  const rail = css.match(/\\.page-builder-design-dock-header \\.office-ribbon-tabs\\s*\\{([^}]+)\\}/)?.[1] ?? '';
-  const tabs = css.match(/\\.page-builder-design-dock-header \\.office-ribbon-tabs>button\\[role=tab\\]\\s*\\{([^}]+)\\}/)?.[1] ?? '';
-  assert.match(header, /background:\\s*#f8fafc/);
-  assert.match(rail, /background:\\s*transparent!important/);
-  assert.match(tabs, /color:\\s*#475569!important/);
-  assert.match(css, /\\.page-builder-design-dock-header \\.office-ribbon-tabs>button\\[role=tab\\]\\.active/);
-  assert.match(css, /border-bottom-color:\\s*#176ce5!important/);
-  assert.match(css, /\\.page-builder-design-dock-header \\.office-ribbon-tabs>button\\[role=tab\\]:focus-visible/);
+  const header = css.match(/\.page-builder-design-dock-header\s*\{([^}]+)\}/)?.[1] ?? '';
+  const rail = css.match(/\.page-builder-design-dock-header \.office-ribbon-tabs\s*\{([^}]+)\}/)?.[1] ?? '';
+  const tabs = css.match(/\.page-builder-design-dock-header \.office-ribbon-tabs>button\[role=tab\]\s*\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(header, /background:\s*#f8fafc/);
+  assert.match(rail, /background:\s*transparent!important/);
+  assert.match(tabs, /color:\s*#475569!important/);
+  assert.match(css, /\.page-builder-design-dock-header \.office-ribbon-tabs>button\[role=tab\]\.active/);
+  assert.match(css, /border-bottom-color:\s*#176ce5!important/);
+  assert.match(css, /\.page-builder-design-dock-header \.office-ribbon-tabs>button\[role=tab\]:focus-visible/);
 });
 
 test('independent values have independent labelled table columns', () => {
