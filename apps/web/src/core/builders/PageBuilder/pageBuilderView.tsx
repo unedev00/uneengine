@@ -3383,7 +3383,7 @@ function PageBuilder({
                 }else updateComponent(selected.id,{properties:{...selected.properties,iconId}});
               }}/>}
           {smartRibbonElement}
-          {!designInPanel && ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"
+          {ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"
             aria-label="Canvas" data-shared-group="Canvas">
             <div className="office-ribbon-stack">
               <label data-ribbon-property="canvasWidth" className="une-sql-home-control une-ribbon-size-with-icon"
