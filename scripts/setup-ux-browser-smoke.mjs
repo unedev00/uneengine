@@ -430,8 +430,21 @@ try {
  await mobileSmartGrid.waitFor();
  assert.ok(await mobileSmartGrid.evaluate(el=>el.scrollHeight>el.clientHeight),
    'Smart Card Grid should remain scrollable on mobile');
- assert.ok(await mobileSmartGrid.evaluate(el=>el.scrollWidth<=el.clientWidth+1),
-   'Smart Card Grid mobile viewport should not overflow horizontally');
+ const mobileOverflow=await mobileSmartGrid.evaluate(el=>({
+   contentWidth:el.scrollWidth,viewportWidth:el.clientWidth,
+   viewportRight:el.getBoundingClientRect().right,
+   pageWidth:document.documentElement.clientWidth,
+   overflowX:getComputedStyle(el).overflowX
+ }));
+ assert.equal(mobileOverflow.overflowX,'auto',
+   'Smart Card Grid must own its horizontal scrolling');
+ assert.ok(mobileOverflow.contentWidth>mobileOverflow.viewportWidth+1,
+   'Three min-width columns must scroll horizontally inside a narrow mobile viewport');
+ assert.ok(mobileOverflow.viewportRight<=mobileOverflow.pageWidth+1,
+   'The overflowing Card Grid must stay clipped inside the mobile page');
+ await mobileSmartGrid.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+ assert.ok(await mobileSmartGrid.evaluate(el=>el.scrollLeft>0),
+   'Offscreen columns must remain reachable by horizontal scrolling');
  await screenshot('smart-card-grid-height-rows-mobile');
  await page.setViewportSize({width:1365,height:768});
  await open('card-grid-scroll');
