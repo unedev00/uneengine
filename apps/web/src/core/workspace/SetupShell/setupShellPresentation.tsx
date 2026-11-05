@@ -2,7 +2,6 @@
 import SetupLoadingState from './SetupLoadingState';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
-import MobileSettingsHome from '../../settings/MobileSettingsHome';
 import SettingsNavigationIcon from '../../settings/SettingsNavigationIcon';
 import NotificationBell from '../../automation/Notifications/NotificationBell';
 // Shared shell presentation, composed from registered metadata-driven runtime and tools.
