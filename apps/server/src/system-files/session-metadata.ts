@@ -1,5 +1,6 @@
 import type {SqlPersistence} from './sql-persistence.js';
 import {RbacEngine, type PermissionCheck} from './rbac-engine.js';
+import {systemPermissionBindings} from '../system-support/permission-resource-map.js';
 
 /** Session capabilities are derived exclusively from the shared OneEngine RBAC evaluator. */
 const capabilities:readonly (PermissionCheck&{capability:string})[]=[
@@ -11,7 +12,11 @@ const capabilities:readonly (PermissionCheck&{capability:string})[]=[
   {resource:'Flow',action:'execute',capability:'flows:run'},
   {resource:'FlowDefinition',action:'manage',capability:'flows:manage'},
   {resource:'FlowDefinition',action:'system-context',capability:'flows:system-context'},
-  {resource:'Licence',action:'manage',capability:'licence:manage'}
+  {resource:'Licence',action:'manage',capability:'licence:manage'},
+  // Setup visibility is evaluated by the same SQL OneEngine engine as API rights.
+  ...Object.entries(systemPermissionBindings)
+    .filter(([token])=>token.startsWith('setup:'))
+    .map(([capability,[resource,action]])=>({resource,action,capability}))
 ];
 export async function sessionMetadata(db:SqlPersistence,tenantId:string,userId:string) {
   const rbac=new RbacEngine(db);

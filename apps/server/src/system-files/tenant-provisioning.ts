@@ -107,6 +107,8 @@ export class TenantProvisioning {
       await client.query(
         "INSERT INTO md_permission_rules (tenant_id,permission_set_id,resource,action,effect) VALUES ($1,$2,'*','*','allow')",
         [tenantId,permissionSet.rows[0].id]);
+      // Seed only missing standard navigation policies; keep OneEngine and custom grants intact.
+      await client.query('SELECT md_seed_setup_menu_permission_sets($1::uuid)',[tenantId]);
       // Fresh tenant catalog belongs to the same SQL transaction; business records are never seeded.
       await seedFreshCoreObjects(client,tenantId);
       await seedCommunicationObjects(client,tenantId);

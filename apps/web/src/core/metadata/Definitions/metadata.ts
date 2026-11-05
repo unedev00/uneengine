@@ -1055,10 +1055,10 @@ export const workspaces: WorkspaceMetadata[] = [
 export const setupNavigation = [
   { group: 'Platform Administration', items: ['Tenant Management'] },
   { group: 'Company Settings', items: ['Company Settings', 'Security & Recovery', 'Connected Apps', 'Audit Trail'] },
-  { group: 'Platform Tools', items: ['Setup Home', 'Object Manager', 'Universal Data Loader', 'Page Builder', 'App Manager', 'AppExchange'] },
+  { group: 'Platform Tools', items: ['Setup Home', 'Object Manager', 'Records', 'Universal Data Loader', 'Page Builder', 'App Manager', 'AppExchange'] },
   { group: 'Integrations', items: ['Named Credentials', 'Webhook Endpoints', 'Named Devices'] },
   { group: 'Automation', items: ['Flows', 'Paused and Waiting Interviews', 'Scheduled Flows', 'Flow History', 'Process Automation Settings'] },
-  { group: 'Analytics', items: ['Reports', 'Dashboards'] },
+  { group: 'Analytics', items: ['Reports Builder', 'Reports View', 'Dashboard Builder', 'Dashboard View'] },
   { group: 'Security', items: ['Users', 'Roles', 'Public Groups', 'Profiles', 'Permission Sets', 'Permission Set Groups', 'Sharing Settings', 'Sharing Rules'] }
 ];
 
