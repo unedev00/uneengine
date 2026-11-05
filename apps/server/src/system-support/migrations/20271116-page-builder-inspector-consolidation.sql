@@ -128,7 +128,9 @@ WHERE area IN ('Tabs','Card Grid','Focused','Custom Button 1','Custom Button 2',
 WITH duplicates AS (
  SELECT r.component_api,r.area,r.slot_key,
   ROW_NUMBER() OVER(PARTITION BY r.component_api,r.property_key
-    ORDER BY s.area_order,s.row_no,s.order_no,r.slot_key) AS occurrence
+    ORDER BY CASE WHEN r.property_key LIKE 'header%' AND r.area='Header'
+             THEN 0 ELSE s.area_order END,
+      s.row_no,s.order_no,r.slot_key) AS occurrence
  FROM md_builder_design2_slot_rules r
  JOIN md_builder_design2_slots s ON s.area=r.area AND s.slot_key=r.slot_key
 )
