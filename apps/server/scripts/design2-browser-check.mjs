@@ -138,7 +138,17 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  try{
   const objects=await db.query(`SELECT api_name FROM md_object_definitions WHERE tenant_id=$1 ORDER BY api_name LIMIT 5`,[tenantId]).catch(e=>({rows:[],error:String(e)}));
   console.log('DIAG objects',JSON.stringify(objects.rows),objects.error??'');
-  const bound=objects.rows[0]?.api_name??'';
+  let bound='';
+  for(const row of objects.rows){
+   const statuses=await page.evaluate(async({token,name})=>{const out=[];for(const label of ['Desserts','Wraps','Drinks']){
+    const r=await fetch('/api/records/'+name,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+     body:JSON.stringify({Name:label})});out.push(r.status+':'+(await r.text()).slice(0,120));}
+    const list=await fetch('/api/records/'+name,{headers:{Authorization:'Bearer '+token}});
+    out.push('list '+list.status+':'+(await list.text()).slice(0,200));return out;},{token,name:row.api_name});
+   console.log('DIAG records',row.api_name,JSON.stringify(statuses));
+   if(!bound&&statuses.some(item=>/^20[01]:/.test(item)))bound=row.api_name;
+  }
+  bound=bound||objects.rows[0]?.api_name||'';
   const diag={apiName:'browserdiaggrid',label:'Diag Grid',targetObject:'',pageType:'App Page',
    layoutMode:'free-canvas',canvasWidth:1280,canvasHeight:900,status:'Draft',devices:['Desktop'],
    activationAssignments:[],components:[
