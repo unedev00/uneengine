@@ -428,3 +428,37 @@ test('optimistic state guard rejects concurrent provisional changes to avoid sta
   [{key:'total',value:7}],()=>{});
  later.commit();
 });
+
+test('lazy server expressions do not read unselected IF, CASE and short-circuit branches',async()=>{
+ const urls:string[]=[];
+ const req=async<T>(path:string):Promise<T>=>{
+  urls.push(path);
+  if(path.startsWith('/records/Blocked'))throw Error('Denied unused aggregate');
+  return {total:5} as T;
+ };
+ const formulas=[
+  '=STATE(result, IF(TRUE, 7, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, IF(FALSE, COUNTIFS(Blocked, Status, "New"), 7))',
+  '=STATE(result, CASE("yes", "yes", 7, "no", COUNTIFS(Blocked, Status, "New"), 9))',
+  '=STATE(result, IFERROR(7, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, AND(FALSE, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, OR(TRUE, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, FALSE AND COUNTIFS(Blocked, Status, "New"))',
+  '=STATE(result, TRUE OR COUNTIFS(Blocked, Status, "New"))'
+ ];
+ for(const formula of formulas){
+  urls.length=0;
+  const result=await executePageFormulaAction(req,{formula},{},{},[],'');
+  assert.equal(result.recordChanged,false);
+  assert.deepEqual(urls,[],'unused server call: '+formula);
+ }
+});
+test('IFERROR handles rejected selected server aggregate and evaluates fallback',async()=>{
+ const calls:string[]=[];
+ const result=await executePageFormulaAction(async<T>(path:string):Promise<T>=>{
+  calls.push(path);throw Error('Permission denied');
+ },{formula:'=STATE(result, IFERROR(COUNTIFS(Blocked, Status, "New"), 11))'},
+ {},{},[],'');
+ assert.deepEqual(result.changes,[{key:'result',value:11}]);
+ assert.equal(calls.length,1);
+});
