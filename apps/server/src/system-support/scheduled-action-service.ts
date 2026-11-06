@@ -87,6 +87,15 @@ export class ScheduledActionService {
   if(!Number.isInteger(options.seconds)||options.seconds<1||options.seconds>31536000)
    throw Error('WAIT duration is outside the supported range');
   const scope=safeSnapshot(options.scope),variables=safeSnapshot(options.variables);
+  const wait=steps[options.nextStep-1];
+  const values={...scope,...variables};
+  if(wait.guards?.some(guard=>formulaTruth(evaluate(guard.condition,values))!==guard.expected))
+   throw Error('WAIT action is not selected');
+  const [minutes,seconds]=(wait.values??[]).map(node=>evaluate(node,values));
+  if(typeof minutes!=='number'||typeof seconds!=='number'||!Number.isInteger(minutes)||
+    !Number.isInteger(seconds)||minutes<0||seconds<0||seconds>=60||
+    minutes*60+seconds!==options.seconds)
+   throw Error('WAIT duration does not match the formula');
   const sessionId=typeof options.sessionId==='string'&&options.sessionId.length<=128
    ?options.sessionId:null;
   return this.db.transaction(async client=>{
