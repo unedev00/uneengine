@@ -23,7 +23,7 @@ test('Smart Card Grid, Cart and other scrolling Smart components remain bounded'
  assert.match(smart,/\.smart-runtime\.smart_card_grid>\.smart-grid/);
  assert.match(smart,/overflow:auto!important/);
  assert.match(smart,/\.smart-runtime\.smart_cart > \.smart-cart-root\{overflow:auto\}/);
- assert.match(cart,/width:100%;height:100%;min-height:0;padding:8px;overflow:auto/);
+ assert.match(cart,/width:100%;height:100%;min-height:0;padding:8px 8px 3px;overflow:auto/);
  assert.match(grid,/gridAutoRows:"max\("/);
 });
 
@@ -55,4 +55,13 @@ test('native scroll controls remain usable without moving the page component',()
  assert.match(scrollLogic,/canvasScrollbarRailHit/);
  assert.match(scrollLogic,/while\(node&&node!==container\)/);
  assert.match(workspace,/layout-container-component > \.free-canvas-content-viewport > \.registered-component/);
+});
+
+
+test('Smart Cart preview has no footer note and totals sit 3px above the inner bottom edge',()=>{
+ const cart=src('component-libraries/smart_cart/SmartComponent.css');
+ const renderer=src('component-libraries/smart_cart/SmartCart.jsx');
+ assert.match(cart,/\.smart-cart-root\{[^}]*padding:8px 8px 3px;overflow:auto\}/);
+ assert.doesNotMatch(cart,/\.smart-cart-preview-note\{/);
+ assert.doesNotMatch(renderer,/smart-cart-preview-note|Visual preview — totals and actions are configured separately/);
 });
