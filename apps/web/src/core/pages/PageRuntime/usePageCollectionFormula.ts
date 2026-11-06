@@ -3,6 +3,7 @@ import {Parser,type Expression} from '../../../../../server/src/expression-engin
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {evaluateCollectionFormula,evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
+import {loadBoundedCollectionSource} from './loadBoundedCollectionSource';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {isCollectionSourceExpression,namedCollectionNames,registerSessionCollection,useSessionCollectionSnapshot} from './pageCollectionSession';
 import {formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
@@ -138,10 +139,8 @@ export function usePageCollectionFormula(
   void Promise.all(secondary.map(async name=>{
    if(!selected.includes(name)||!objects.some(o=>o.apiName===name))
     throw Error('COLLECTION source Object is not selected: '+name);
-   const response=await loadFlowScreenRecordPage(name,{limit:200,offset:0});
-   if(response.total>200||response.total>response.records.length)
-    throw Error('COLLECTION source '+name+' has more records than can be safely loaded; narrow its filters');
-   return [name,response.records] as const;
+   const records=await loadBoundedCollectionSource(name,loadFlowScreenRecordPage);
+   return [name,records] as const;
   })).then(results=>{if(active)setRemote({key:sourceKey,records:Object.fromEntries(results)});})
    .catch((error:unknown)=>{if(active)setRemote({key:sourceKey,records:{},
      error:error instanceof Error?error.message:'COLLECTION source failed'});});
