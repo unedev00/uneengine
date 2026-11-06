@@ -45,8 +45,15 @@ export function resolvePrintValue(value:unknown,record:Record<string,unknown>,ob
   if(!Object.hasOwn(record,field[2]))throw Error('Print field is unavailable: '+field[2]);
   return recordValue(record[field[2]]);
  }
- if(!source.startsWith('=')&&!source.startsWith('IF(')&&!source.startsWith('TEXT('))
-  return value;
+ if(!source.startsWith('=')&&!source.startsWith('IF(')&&!source.startsWith('TEXT(')){
+  // Printed documents can contain literal captions with embedded record fields.
+  return value.replace(/(?:\{!|\{\{|@)([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)(?:\}|\}\})?/g,
+    (match,objectName:string,fieldName:string)=>{
+     if(objectName!==objectApi)return match;
+     if(!Object.hasOwn(record,fieldName))throw Error('Print field is unavailable: '+fieldName);
+     return recordValue(record[fieldName]);
+    });
+ }
  const expression=source.startsWith('=')?source.slice(1):source;
  const result=evaluateFlowFormula(expression,reference=>{
   const parts=reference.split('.');
