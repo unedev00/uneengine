@@ -292,3 +292,11 @@ test('App Manager responsive sorting exposes ascending and descending control',(
   assert.match(list,/setDescending\(value=>!value\)/);
   assert.match(css,/\.app-manager-sort-direction:focus-visible/);
 });
+
+test('UX-0023 desktop sidebar preference survives compact resize without persisting drawer state',()=>{
+  const shell=source('src/core/workspace/SetupShell/setupAppShell.tsx');
+  assert.match(shell,/md\.setup\.sidebar\.collapsed/);
+  assert.match(shell,/setSidebarCollapsedState\(event\.matches \? true : readDesktopSidebarPreference\(\)\)/);
+  assert.match(shell,/setSidebarCollapsedState\(true\)/);
+  assert.match(shell,/window\.localStorage\.setItem/);
+});
