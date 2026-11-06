@@ -61,6 +61,8 @@ jobs:
         run: npm run build --workspace apps/server
       - name: Check metadata binding regressions
         run: npm run test:metadata
+      - name: Verify the 84-finding Setup and authentication remediation contracts
+        run: node --test apps/web/test/auditFixes20261105.test.mjs
       - name: Check shared canvas movement, resize and overflow regressions
         run: npx tsx --tsconfig apps/web/tsconfig.json --test apps/web/test/canvasSharedGestureGeometry.test.ts apps/web/test/freeCanvasComponentOverflow.test.mjs apps/web/test/cardGridScrollContract.test.ts
       - name: Build production web application
