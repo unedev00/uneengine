@@ -1,4 +1,5 @@
 // @ts-nocheck
+import WorkspaceFormulaScreen from '../../pages/PageRuntime/WorkspaceFormulaScreen';
 import SetupLoadingState from './SetupLoadingState';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
@@ -17,7 +18,7 @@ const UniversalDataLoaderWorkspace=React.lazy(()=>import('./UniversalDataLoaderW
 const ReportReadOnlyView=React.lazy(()=>import('../../builders/ReportBuilder/ReportReadOnlyView'));
 
 export function renderSetupShell(ctx: any) {
-  const { setupRouteAllowed, setupPermissions, setupAccessNotice, AppExchange, AppManager, ComponentLibrary, FieldWizardModal, FlowInterviews, FlowLogs, NamedCredentials, ScheduledFlows, SetupFlowDialogs, SetupObjectDialogs, AccountSessionSecurity, ApprovalProcessManager, AutomationSettingsWorkspace, Bell, Check, ChevronLeft, ChevronRight, CircleHelp, CompanySettings, ConnectionHealthIndicator, DashboardBuilder, Database, DeveloperAccountSettings, FlowBuilderWorkspace, GlobalRecordSearch, History, LightningAppRuntime, Monitor, NavigationLoadTime, ObjectManager, PageBuilder, Permissions, PlatformPageSlot, PlatformWorkspaceSurface, ProfilePasswordMenu, RecordObjectPicker, RecordWorkspace, ReportBuilder, Search, SetupHome, TenantDomains, TenantEmailRecoverySettings, TenantManagement, TenantMfaSettings, TenantRecoveryPanel, TenantSecurityAudit, TenantUsagePanel, TenantUserLockSettings, X, accessControl, accessControlError, accessControlLoaded, activationAppIds, activeUtility, addField, addFlowElement, advancedMetadataLoaded, apiRequest, appUtilityRef, approvalBusyId, approvalProcesses, approvalRequests, apps, setApps, setPages, authorizeNamedCredential, canCreateDashboards, canManageApprovalProcesses, canManageApps, canReadMetadata, canReadSecurity, canManageDashboardTerritories, canManageDashboards, canManageFlows, canManageLibrary, canManageNamedCredentials, canManagePlatformTenants, canManageReportFolders, canManageUserIdentities, canRunFlows, canScheduleDashboards, cancelFlowInterview, changePage, cloneFlow, commitFlow, connectorProviders, connectorRights, connectorRightsLoaded, connectorRightsError, createDashboardSnapshot, createFlow, createObject, currentApp, currentAppNavigation, currentFieldAccess, currentProfileId, currentRecordTypeAccess, customTabObject, customTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, dashboardFolders, dashboardRunningUserIds, dashboardTerritories, dashboardUserId, dashboards, deactivateFlow, decideApproval, defaultLightningPage, deleteApp, deleteApprovalProcess, deleteDashboard, deleteDashboardFolder, deleteDashboardSnapshot, deleteDashboardSubscription, deleteEmailAlert, deletePage, deleteField, deleteFlow, deleteLibraryComponent, deleteNamedCredential, deleteObject, restoreObject, deletePlatformEvent, deleteReport, emailAlerts, executeConnectorAppLifecycleFlow, exitDashboardViewer, exportFlow, fetchFlowListPage, filteredSetupGroups, flow, flowDefinitionsLoaded, flowDefinitionsError, reportsLoaded, reportsError, dashboardsLoaded, dashboardsError, flowDebug, flowHasUnsavedChanges, flowHistory, flowInterviews, flowInterviewsLoading, flowLogs, flowLogsLoading, flowRun, flowRunnerError, flowRunnerSubmitting, flowToolTab, flowValidation, flows, formulaEditorRef, goBackFlowScreen, grantConnectorLicence, importFlow, insertFormulaText, integrationConnections, isStandaloneMetadataPage, launchCustomTabWizard, libraryComponents, loadAppCommunicationHistory, loadConnectorMarketplaceApps, loadDashboardRecords, loadDashboardSnapshots, loadDashboardSubscriptions, loadFlowScreenRecords, loadNotifications, logout, markNotificationRead, metadataLoadError, metadataLoaded, namedCredentials, namedCredentialsLoaded, namedCredentialsError, namedCredentialsReadinessError, namedCredentialsEncryptionReady, navigateRoute, navigateSetupItem, newFieldAllowReparenting, newFieldApiName, newFieldCaseSensitive, newFieldChildRelationshipName, newFieldConfigurationError, newFieldController, newFieldControllerApiName, newFieldControllerValues, newFieldDefaultValue, newFieldDeleteBehavior, newFieldDescription, newFieldExternalId, newFieldFormula, newFieldFormulaValidation, newFieldHasDefault, newFieldHelpText, newFieldLabel, newFieldLayoutIds, newFieldLookupFilterLogic, newFieldLookupFilters, newFieldPicklistOptions, newFieldPicklistRestricted, newFieldPicklistValues, newFieldPrecision, newFieldRelationshipName, newFieldRelationshipTarget, newFieldRequired, newFieldReturnType, newFieldScale, newFieldStage, newFieldTextLength, newFieldType, newFieldUnique, newFieldValueSettings, newObjectDescription, newObjectLabel, newObjectPluralLabel, newObjectRecordNameLabel, newObjectSettings, notificationRef, notifications, notificationsLoading, notificationsOpen, notificationsUnreadCount, notify, object, objectSearch, objectSetting, objects, onLogout, openDashboardViewer, openFlowDebug, openPageForObject, openSetupWorkspace, page, pageCreationAppContext, pageRouteApiName, pages, pageDefinitionCache, platformEvents, previewReport, protectedPageRuntime, publishLibraryComponent, quickFind, readableRecordObjects, recentRoutes, recordSearch, redoFlow, refreshFlowInterviews, refreshObject, relatedLookupFilterOperators, removeFlowElement, reportFolders, reports, resetNewFieldDraft, restoreFlowVersion, rollbackLibraryComponent, rotateNamedCredential, route, routeAliasError, routeTiming, runDashboardSubscription, runFlow, runFlowDebug, runReport, runSavedFlowTests, runtimeFormFactor, saveAccessControl, saveApp, saveApprovalProcess, saveConnectorProvider, saveCustomTab, saveDashboard, saveDashboardFolder, saveDashboardSubscription, saveDashboardTerritories, saveEmailAlert, saveField, saveFlow, saveIntegrationConnection, saveLibraryComponent, saveNamedCredential, saveObject, savePage, savePageFromBuilder, updatePageDetailsFromBuilder, publishPageFromBuilder, deactivatePageFromBuilder, savePlatformEvent, saveReport, saveReportFolder, selectDashboard, selectFlow, selectedFlowId, setActiveUtility, setCustomTabObject, setCustomTabStyle, setFlowDebug, setFlowRun, setFlowRunnerError, setFlowToolTab, setLaunchCustomTabWizard, setNewFieldAllowReparenting, setNewFieldCaseSensitive, setNewFieldChildRelationshipName, setNewFieldControllerApiName, setNewFieldDefaultValue, setNewFieldDeleteBehavior, setNewFieldDescription, setNewFieldExternalId, setNewFieldFormula, setNewFieldFormulaValidation, setNewFieldHasDefault, setNewFieldHelpText, setNewFieldLabel, setNewFieldLayoutIds, setNewFieldLookupFilterLogic, setNewFieldLookupFilters, setNewFieldPicklistRestricted, setNewFieldPicklistValues, setNewFieldPrecision, setNewFieldRelationshipName, setNewFieldRelationshipTarget, setNewFieldRequired, setNewFieldReturnType, setNewFieldScale, setNewFieldStage, setNewFieldTextLength, setNewFieldType, setNewFieldUnique, setNewFieldValueSettings, setNewObjectDescription, setNewObjectLabel, setNewObjectPluralLabel, setNewObjectRecordNameLabel, setNewObjectSettings, setObject, setObjectSearch, setPage, setPageCreationAppContext, setQuickFind, setRecordSearch, setSelectedFlowId, setSetupSidebarCollapsed, setShowNewField, setShowNewObject, setShowCustomTabWizard, setStandalonePageMode, setupSidebarCollapsed, showCustomTabWizard, showNewField, showNewObject, standalonePageMode, submitFlowScreen, testIntegrationConnection, testNamedCredential, toast, setToast, toggleNamedCredentialEnabled, toggleNotifications, undoFlow, uneSolutionsLogoUrl, updateFlowConfig, updateFlowLabel, validateFlow, validateNewFieldFormula, workspace } = ctx;
+  const { setupRouteAllowed, setupPermissions, setupAccessNotice, AppExchange, AppManager, ComponentLibrary, FieldWizardModal, FlowInterviews, FlowLogs, NamedCredentials, ScheduledFlows, ScheduledActionRecords, SetupFlowDialogs, SetupObjectDialogs, AccountSessionSecurity, ApprovalProcessManager, AutomationSettingsWorkspace, Bell, Check, ChevronLeft, ChevronRight, CircleHelp, CompanySettings, ConnectionHealthIndicator, DashboardBuilder, Database, DeveloperAccountSettings, FlowBuilderWorkspace, GlobalRecordSearch, History, LightningAppRuntime, Monitor, NavigationLoadTime, ObjectManager, PageBuilder, Permissions, PlatformPageSlot, PlatformWorkspaceSurface, ProfilePasswordMenu, RecordObjectPicker, RecordWorkspace, ReportBuilder, Search, SetupHome, TenantDomains, TenantEmailRecoverySettings, TenantManagement, TenantMfaSettings, TenantRecoveryPanel, TenantSecurityAudit, TenantUsagePanel, TenantUserLockSettings, X, accessControl, accessControlError, accessControlLoaded, activationAppIds, activeUtility, addField, addFlowElement, advancedMetadataLoaded, apiRequest, appUtilityRef, approvalBusyId, approvalProcesses, approvalRequests, apps, setApps, setPages, authorizeNamedCredential, canCreateDashboards, canManageApprovalProcesses, canManageApps, canReadMetadata, canReadSecurity, canManageDashboardTerritories, canManageDashboards, canManageFlows, canManageLibrary, canManageNamedCredentials, canManagePlatformTenants, canManageReportFolders, canManageUserIdentities, canRunFlows, canScheduleDashboards, cancelFlowInterview, changePage, cloneFlow, commitFlow, connectorProviders, connectorRights, connectorRightsLoaded, connectorRightsError, createDashboardSnapshot, createFlow, createObject, currentApp, currentAppNavigation, currentFieldAccess, currentProfileId, currentRecordTypeAccess, customTabObject, customTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, dashboardFolders, dashboardRunningUserIds, dashboardTerritories, dashboardUserId, dashboards, deactivateFlow, decideApproval, defaultLightningPage, deleteApp, deleteApprovalProcess, deleteDashboard, deleteDashboardFolder, deleteDashboardSnapshot, deleteDashboardSubscription, deleteEmailAlert, deletePage, deleteField, deleteFlow, deleteLibraryComponent, deleteNamedCredential, deleteObject, restoreObject, deletePlatformEvent, deleteReport, emailAlerts, executeConnectorAppLifecycleFlow, exitDashboardViewer, exportFlow, fetchFlowListPage, filteredSetupGroups, flow, flowDefinitionsLoaded, flowDefinitionsError, reportsLoaded, reportsError, dashboardsLoaded, dashboardsError, flowDebug, flowHasUnsavedChanges, flowHistory, flowInterviews, flowInterviewsLoading, flowLogs, flowLogsLoading, flowRun, flowRunnerError, flowRunnerSubmitting, flowToolTab, flowValidation, flows, formulaEditorRef, goBackFlowScreen, grantConnectorLicence, importFlow, insertFormulaText, integrationConnections, isStandaloneMetadataPage, launchCustomTabWizard, libraryComponents, loadAppCommunicationHistory, loadConnectorMarketplaceApps, loadDashboardRecords, loadDashboardSnapshots, loadDashboardSubscriptions, loadFlowScreenRecords, loadNotifications, logout, markNotificationRead, metadataLoadError, metadataLoaded, namedCredentials, namedCredentialsLoaded, namedCredentialsError, namedCredentialsReadinessError, namedCredentialsEncryptionReady, navigateRoute, navigateSetupItem, newFieldAllowReparenting, newFieldApiName, newFieldCaseSensitive, newFieldChildRelationshipName, newFieldConfigurationError, newFieldController, newFieldControllerApiName, newFieldControllerValues, newFieldDefaultValue, newFieldDeleteBehavior, newFieldDescription, newFieldExternalId, newFieldFormula, newFieldFormulaValidation, newFieldHasDefault, newFieldHelpText, newFieldLabel, newFieldLayoutIds, newFieldLookupFilterLogic, newFieldLookupFilters, newFieldPicklistOptions, newFieldPicklistRestricted, newFieldPicklistValues, newFieldPrecision, newFieldRelationshipName, newFieldRelationshipTarget, newFieldRequired, newFieldReturnType, newFieldScale, newFieldStage, newFieldTextLength, newFieldType, newFieldUnique, newFieldValueSettings, newObjectDescription, newObjectLabel, newObjectPluralLabel, newObjectRecordNameLabel, newObjectSettings, notificationRef, notifications, notificationsLoading, notificationsOpen, notificationsUnreadCount, notify, object, objectSearch, objectSetting, objects, onLogout, openDashboardViewer, openFlowDebug, openPageForObject, openSetupWorkspace, page, pageCreationAppContext, pageRouteApiName, pages, pageDefinitionCache, platformEvents, previewReport, protectedPageRuntime, publishLibraryComponent, quickFind, readableRecordObjects, recentRoutes, recordSearch, redoFlow, refreshFlowInterviews, refreshObject, relatedLookupFilterOperators, removeFlowElement, reportFolders, reports, resetNewFieldDraft, restoreFlowVersion, rollbackLibraryComponent, rotateNamedCredential, route, routeAliasError, routeTiming, runDashboardSubscription, runFlow, runFlowDebug, runReport, runSavedFlowTests, runtimeFormFactor, saveAccessControl, saveApp, saveApprovalProcess, saveConnectorProvider, saveCustomTab, saveDashboard, saveDashboardFolder, saveDashboardSubscription, saveDashboardTerritories, saveEmailAlert, saveField, saveFlow, saveIntegrationConnection, saveLibraryComponent, saveNamedCredential, saveObject, savePage, savePageFromBuilder, updatePageDetailsFromBuilder, publishPageFromBuilder, deactivatePageFromBuilder, savePlatformEvent, saveReport, saveReportFolder, selectDashboard, selectFlow, selectedFlowId, setActiveUtility, setCustomTabObject, setCustomTabStyle, setFlowDebug, setFlowRun, setFlowRunnerError, setFlowToolTab, setLaunchCustomTabWizard, setNewFieldAllowReparenting, setNewFieldCaseSensitive, setNewFieldChildRelationshipName, setNewFieldControllerApiName, setNewFieldDefaultValue, setNewFieldDeleteBehavior, setNewFieldDescription, setNewFieldExternalId, setNewFieldFormula, setNewFieldFormulaValidation, setNewFieldHasDefault, setNewFieldHelpText, setNewFieldLabel, setNewFieldLayoutIds, setNewFieldLookupFilterLogic, setNewFieldLookupFilters, setNewFieldPicklistRestricted, setNewFieldPicklistValues, setNewFieldPrecision, setNewFieldRelationshipName, setNewFieldRelationshipTarget, setNewFieldRequired, setNewFieldReturnType, setNewFieldScale, setNewFieldStage, setNewFieldTextLength, setNewFieldType, setNewFieldUnique, setNewFieldValueSettings, setNewObjectDescription, setNewObjectLabel, setNewObjectPluralLabel, setNewObjectRecordNameLabel, setNewObjectSettings, setObject, setObjectSearch, setPage, setPageCreationAppContext, setQuickFind, setRecordSearch, setSelectedFlowId, setSetupSidebarCollapsed, setShowNewField, setShowNewObject, setShowCustomTabWizard, setStandalonePageMode, setupSidebarCollapsed, showCustomTabWizard, showNewField, showNewObject, standalonePageMode, submitFlowScreen, testIntegrationConnection, testNamedCredential, toast, setToast, toggleNamedCredentialEnabled, toggleNotifications, undoFlow, uneSolutionsLogoUrl, updateFlowConfig, updateFlowLabel, validateFlow, validateNewFieldFormula, workspace } = ctx;
   const {shortcutHelpOpen,setShortcutHelpOpen,sessionPermissionsLoaded} = ctx;
   const activeAppPage = route.kind === 'app-page'
     ? pages.find((candidate: LightningPageMetadata) => candidate.apiName === route.pageApiName && candidate.status === 'Active')
@@ -69,7 +70,8 @@ export function renderSetupShell(ctx: any) {
           onClick={() => setSetupSidebarCollapsed((collapsed: boolean) => !collapsed)}>
           {setupSidebarCollapsed ? <ChevronRight size={20} aria-hidden="true" /> : <ChevronLeft size={20} aria-hidden="true" />}
         </button>}
-        <button type="button" className="brand brand-home-button" aria-label="Go to Setup Home" title="Setup Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /></button>
+
+        <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /><span className="brand-home-label">Home</span></button>
         <label className="header-installed-apps">
           <span>Apps</span>
           <select aria-label="Open installed app" value={installedAppValue} onChange={(event) => openInstalledApp(event.target.value)}>
@@ -214,10 +216,10 @@ export function renderSetupShell(ctx: any) {
             </nav>
           </aside>
         )}
-        {route.kind === 'setup' && runtimeFormFactor !== 'Phone' && !route.dashboardView && (workspace !== 'flow-builder' || !route.resourceApiName) && !(workspace === 'page-builder' && Boolean(route.resourceApiName)) && (
+        {route.kind === 'setup' && !route.dashboardView && (workspace !== 'flow-builder' || !route.resourceApiName) && !(workspace === 'page-builder' && Boolean(route.resourceApiName)) && (
           <aside id="md-setup-sidebar" className={setupSidebarCollapsed ? 'setup-sidebar setup-sidebar-collapsed' : 'setup-sidebar'}
             onClick={(event: React.MouseEvent<HTMLElement>) => {
-              if (window.matchMedia('(min-width: 600px) and (max-width: 1023px)').matches
+              if (window.matchMedia('(max-width: 1023px)').matches
                 && (event.target as HTMLElement).closest('.tree-item')) setSetupSidebarCollapsed(true);
             }}>
             <div className="setup-sidebar-toolbar">
@@ -237,35 +239,36 @@ export function renderSetupShell(ctx: any) {
             </div>
             <nav id="md-setup-navigation" className="setup-tree" aria-label="Setup sections">
               {filteredSetupGroups.map((group) => (
-                <div className="setup-tree-group" key={group.group}>
+                <div className="setup-tree-group" key={group.group} role="group" aria-label={group.group}
+                  data-group-short={group.group.split(/\s+/).map((word:string)=>word[0]).join('').slice(0,3).toUpperCase()} title={group.group}>
                   <div className="tree-group-label">{group.group}</div>
-                  {group.items.map((item) => (
-                    <React.Fragment key={item}>
-                      <button
-                        className={((workspace === 'object-manager' && item === 'Object Manager')
-                          || (workspace === 'data-loader' && item === 'Universal Data Loader')
-                          || (workspace === 'page-builder' && item === 'Page Builder')
-                          || (workspace === 'app-manager' && item === 'App Manager')
-                          || (workspace === 'app-exchange' && item === 'AppExchange')
-                          || (workspace === 'tenant-management' && item === 'Tenant Management')
-                          || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'NamedDevices' ? 'Named Devices' : route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
-                                                    || (workspace === 'flow-interviews' && item === 'Paused and Waiting Interviews')
-                          || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
-                          || (workspace === 'flow-logs' && item === 'Flow History')
-                          || (workspace === 'report-builder' && item === (route.kind==='setup' && route.resourceApiName==='viewer'?'Reports View':'Reports Builder'))
-                          || (workspace === 'dashboard-builder' && item === (route.kind==='setup' && (route.dashboardView || route.resourceApiName==='viewer')?'Dashboard View':'Dashboard Builder'))) ? 'tree-item selected' : 'tree-item'}
-                        aria-label={item === "Tenant Management" && !canManagePlatformTenants ? "Open My Tenant Management" : `Open ${item}`}
-                        title={item}
-                        data-short-label={item.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('')}
-                        onClick={() => navigateSetupItem(item)}
-                      >
-                        <SettingsNavigationIcon group={group.group} label={item} />
-                        <span>{item === 'Tenant Management' && !canManagePlatformTenants ? 'My Tenant Management' : item}</span>
-                        <ChevronRight size={13} />
-                      </button>
-
-                    </React.Fragment>
-                  ))}
+                  {group.items.map((item) => {
+                    const isSelected = (workspace === 'object-manager' && item === 'Object Manager')
+                      || (workspace === 'data-loader' && item === 'Universal Data Loader')
+                      || (workspace === 'page-builder' && item === 'Page Builder')
+                      || (workspace === 'app-manager' && item === 'App Manager')
+                      || (workspace === 'app-exchange' && item === 'AppExchange')
+                      || (workspace === 'tenant-management' && item === 'Tenant Management')
+                      || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'NamedDevices' ? 'Named Devices' : route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
+                      || (workspace === 'flow-interviews' && item === 'Paused and Waiting Interviews')
+                      || (workspace === 'scheduled-actions' && item === 'Scheduled Actions')
+                      || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
+                      || (workspace === 'flow-logs' && item === 'Flow History')
+                      || (workspace === 'report-builder' && item === (route.kind==='setup' && route.resourceApiName==='viewer'?'Reports View':'Reports Builder'))
+                      || (workspace === 'dashboard-builder' && item === (route.kind==='setup' && (route.dashboardView || route.resourceApiName==='viewer')?'Dashboard View':'Dashboard Builder'));
+                    return <button key={item}
+                      className={isSelected ? 'tree-item selected' : 'tree-item'}
+                      aria-current={isSelected ? 'page' : undefined}
+                      aria-label={item === 'Tenant Management' && !canManagePlatformTenants ? 'Open My Tenant Management' : `Open ${item}`}
+                      title={item}
+                      data-short-label={item.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('')}
+                      onClick={() => navigateSetupItem(item)}
+                    >
+                      <SettingsNavigationIcon group={group.group} label={item} />
+                      <span>{item === 'Tenant Management' && !canManagePlatformTenants ? 'My Tenant Management' : item}</span>
+                      <ChevronRight size={13} />
+                    </button>;
+                  })}
                 </div>
               ))}
               {filteredSetupGroups.length === 0 && <div className="empty-tree" role="status">No matching setup items. <button type="button" className="text-action" onClick={()=>setQuickFind('')}>Clear search</button></div>}
@@ -285,8 +288,7 @@ export function renderSetupShell(ctx: any) {
           {(route.kind!=='setup'||(sessionPermissionsLoaded&&setupRouteAllowed)) && <React.Fragment>
           {route.kind === 'setup' && runtimeFormFactor === 'Phone' && workspace !== 'home' && !route.dashboardView &&
             <nav className="mobile-settings-back-bar" aria-label="Settings navigation">
-              <button type="button" onClick={() => openSetupWorkspace('home')}><ChevronLeft size={20} aria-hidden="true" />Setup</button>
-              <strong>{workspaces.find(item => item.id === workspace)?.label ?? 'Settings'}</strong>
+              <button type="button" onClick={() => openSetupWorkspace('home')}><ChevronLeft size={20} aria-hidden="true" />Setup Home</button>
             </nav>}
           {(route.kind === 'record-list' || route.kind === 'record-detail') && (metadataLoadError && !objects.length ? <section className="setup-card" role="alert"><h1>Unable to load record metadata</h1><p>{metadataLoadError}</p><button className="btn" onClick={() => window.location.reload()}>Retry</button><button className="btn" onClick={() => navigateRoute({kind:'setup',workspace:'rbac',resourceApiName:'Users'})}>Back to Users</button></section> : <RecordWorkspace route={route} objects={objects} apps={apps} pages={pages}
             availableFlows={flows.filter(item => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
@@ -309,7 +311,8 @@ export function renderSetupShell(ctx: any) {
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
           {route.kind === 'setup' && workspace === 'home' &&
-            <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} onOpenAuditTrail={()=>navigateRoute({kind:'setup',workspace:'company-settings',resourceApiName:'security',resourceId:'audit-trail'})} />}
+            <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} onOpenAuditTrail={()=>navigateSetupItem("Audit Trail")} />
+          }
           {route.kind === 'setup' && workspace === 'data-loader' &&
            <React.Suspense fallback={<section className="setup-card">Loading Universal Data Loader…</section>}>
             <UniversalDataLoaderWorkspace apiRequest={apiRequest}
@@ -460,7 +463,7 @@ export function renderSetupShell(ctx: any) {
             </PlatformWorkspaceSurface>
               )
           )}
-          {route.kind === 'setup' && workspace === 'page-builder' && !advancedMetadataLoaded && <section className="setup-card" role="status">Loading live page definitions…</section>}
+          {route.kind === 'setup' && workspace === 'page-builder' && !advancedMetadataLoaded && <SetupLoadingState label="Page Builder definitions" />}
           {route.kind === 'setup' && workspace === 'page-builder' && advancedMetadataLoaded && route.resourceApiName && !pages.some((item) => item.apiName === route.resourceApiName) && (
             <section className="setup-card" role="alert" style={{ padding: 24 }}>
               <h2>{metadataLoadError ? "Unable to load Lightning pages" : "Lightning page not found"}</h2>
@@ -634,6 +637,8 @@ export function renderSetupShell(ctx: any) {
                initialView={route.resourceApiName==='triggers'?'triggers':'scheduled'}
                onViewChange={view=>navigateRoute({kind:'setup',workspace:'scheduled-flows',...(view==='triggers'?{resourceApiName:'triggers'}:{})})}/>
           )}
+          {route.kind === 'setup' && workspace === 'scheduled-actions' &&
+            <ScheduledActionRecords request={apiRequest}/>}
           {route.kind === 'setup' && workspace === 'flow-interviews' && (
             <FlowInterviews
               request={apiRequest}
@@ -771,6 +776,12 @@ onNavigateDeveloper={(target: string) => navigateRoute({kind:'setup',workspace:t
           </React.Fragment>}
         </main>
       </div>
+      <WorkspaceFormulaScreen key={JSON.stringify(route)} render={({appId,screen})=><LightningAppRuntime
+        appId={appId} pageApiName={screen.page} instanceKey={screen.instance} inScreenPage={screen.inScreen}
+        printPreview={screen.print?screen:undefined} inScreenContext={{sessionId:screen.sessionId,values:{recordId:screen.recordId}}}
+        objects={objects} apps={apps} pages={pages} reports={reports} libraryComponents={libraryComponents}
+        availableFlows={flows} formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current}
+        onNavigate={navigateRoute} onLaunchFlow={runFlow} onStandaloneModeChange={()=>{}}/>}/>
       {showNewField && <React.Suspense fallback={null}><FieldWizardModal context={{ X, addField, formulaEditorRef, insertFormulaText, newFieldAllowReparenting, newFieldApiName, newFieldCaseSensitive, newFieldChildRelationshipName, newFieldConfigurationError, newFieldController, newFieldControllerApiName, newFieldControllerValues, newFieldDefaultValue, newFieldDeleteBehavior, newFieldDescription, newFieldExternalId, newFieldFormula, newFieldFormulaValidation, newFieldHasDefault, newFieldHelpText, newFieldLabel, newFieldLayoutIds, newFieldLookupFilterLogic, newFieldLookupFilters, newFieldPicklistOptions, newFieldPicklistRestricted, newFieldPicklistValues, newFieldPrecision, newFieldRelationshipName, newFieldRelationshipTarget, newFieldRequired, newFieldReturnType, newFieldScale, newFieldStage, newFieldTextLength, newFieldType, newFieldUnique, newFieldValueSettings, object, objects, relatedLookupFilterOperators, resetNewFieldDraft, setNewFieldAllowReparenting, setNewFieldCaseSensitive, setNewFieldChildRelationshipName, setNewFieldControllerApiName, setNewFieldDefaultValue, setNewFieldDeleteBehavior, setNewFieldDescription, setNewFieldExternalId, setNewFieldFormula, setNewFieldFormulaValidation, setNewFieldHasDefault, setNewFieldHelpText, setNewFieldLabel, setNewFieldLayoutIds, setNewFieldLookupFilterLogic, setNewFieldLookupFilters, setNewFieldPicklistRestricted, setNewFieldPicklistValues, setNewFieldPrecision, setNewFieldRelationshipName, setNewFieldRelationshipTarget, setNewFieldRequired, setNewFieldReturnType, setNewFieldScale, setNewFieldStage, setNewFieldTextLength, setNewFieldType, setNewFieldUnique, setNewFieldValueSettings, setShowNewField, showNewField, validateNewFieldFormula }} /></React.Suspense>}
       {(showNewObject || showCustomTabWizard) && <React.Suspense fallback={null}><SetupObjectDialogs context={{ showNewObject, setShowNewObject, setShowCustomTabWizard, newObjectLabel, setNewObjectLabel, newObjectPluralLabel, setNewObjectPluralLabel, newObjectRecordNameLabel, setNewObjectRecordNameLabel, newObjectSettings, setNewObjectSettings, newObjectDescription, setNewObjectDescription, launchCustomTabWizard, setLaunchCustomTabWizard, createObject, showCustomTabWizard, customTabObject, setCustomTabObject, customTabStyle, setCustomTabStyle, customTabStyles, customTabAppIds, setCustomTabAppIds, apps, saveCustomTab }} /></React.Suspense>}
       {(flowRun || flowDebug) && <React.Suspense fallback={null}><SetupFlowDialogs context={{ flowRun, setFlowRun, flowRunnerError, setFlowRunnerError, submitFlowScreen, goBackFlowScreen, flowRunnerSubmitting, flowDebug, setFlowDebug, runFlowDebug, libraryComponents, loadFlowScreenRecords,

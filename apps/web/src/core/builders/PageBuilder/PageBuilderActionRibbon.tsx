@@ -1,6 +1,7 @@
-import {useState} from 'react';
+import {isActionPlan} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {useState,useEffect} from 'react';
 import {Trash2, SlidersHorizontal, Eye, EyeOff} from 'lucide-react';
-import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
+import type {FlowDefinitionMetadata,ObjectMetadata} from '../../metadata/Definitions/metadata';
 import {metadataReference,metadataSelection} from '../../metadata/Definitions/metadataReferences';
 import {supportsSmartActionEvent} from './SmartEventActionsRibbon';
 import SmartFormulaField from './SmartFormulaField';
@@ -73,12 +74,15 @@ const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
  */
 export default function PageBuilderActionRibbon({
  actions,eventDefinitions,flows,selectedEvent,onSelectEvent,onChange,
- api='',selectedApis,dataFields=[],disabled=false,
+ api='',selectedApis,objects=[],pages=[],request,dataFields=[],disabled=false,
  buttonVisibility,onButtonVisibilityChange,stateOptions=[]
 }:{
  actions:Binding;eventDefinitions:EventOption[];flows:FlowDefinitionMetadata[];
  selectedEvent:string;onSelectEvent:(name:string)=>void;
  onChange:(next:Binding)=>void;api?:string;selectedApis?:readonly string[];
+ pages?:readonly {apiName:string;label:string;pageType:string;status:string}[];
+ request?:<T>(path:string)=>Promise<T>;
+ objects?:readonly ObjectMetadata[];
  dataFields?:Array<{apiName:string;label:string;dataType:string}>;disabled?:boolean;
  stateOptions?:readonly PageStateChoice[];
  buttonVisibility?:Partial<Record<CartButtonKey,boolean>>;
@@ -87,6 +91,13 @@ export default function PageBuilderActionRibbon({
  showDetails?:boolean;onToggleDetails?:()=>void;
 }) {
  const active=Boolean(selectedEvent&&Object.prototype.hasOwnProperty.call(actions,selectedEvent));
+ const [credentials,setCredentials]=useState<Array<{apiName:string;label:string}>>([]);
+ useEffect(()=>{
+  let active=true;
+  if(request)void request<Array<{apiName:string;label:string}>>('/action-formulas/credentials')
+   .then(items=>{if(active)setCredentials(items);}).catch(()=>{if(active)setCredentials([]);});
+  return ()=>{active=false;};
+ },[request]);
  const selected=asBinding(actions[selectedEvent]);
  const numericFields=dataFields.filter(field=>
   /^(Number|Currency|Percent|Integer|Decimal|Double|Float|Long|Short|Int)(\(|$)/i.test(field.dataType));
@@ -96,7 +107,7 @@ export default function PageBuilderActionRibbon({
  const selectedFlow=active&&selected.actionType==='Flow'?metadataSelection(flows,selected.flowApiName):undefined;
  const selectedFlowName=String(selectedFlow?.apiName??(active&&selected.actionType==='Flow'?selected.flowApiName??'':''));
  const formulaValue=!active?'':selected.actionType==='Formula'?String(selected.formula??'')
-  :selected.actionType==='Flow'&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedFlowName)?'$flow.'+selectedFlowName:'';
+  :selected.actionType==='Flow'&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(selectedFlowName)?'=FLOW('+selectedFlowName+')':'';
  const formulaEditable=active&&(selected.actionType==='Formula'||selected.actionType==='Flow');
  const availableFlows=flows.filter(flow=>flow.status==='Active'&&
   ['Autolaunched Flow','Screen Flow','In-Screen Flow'].includes(flow.flowType));
@@ -209,11 +220,11 @@ export default function PageBuilderActionRibbon({
      <div className="page-action-formula-bar" role="group" aria-label="Actions formula bar">
        <span className="page-action-formula-menu" aria-hidden="true"><SlidersHorizontal size={15}/></span>
        <span className="page-action-formula-symbol" aria-hidden="true"
-         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"; IF($state.Total > 500, $flow.ApplePay, $flow.CardMachine)'}>ƒx</span>
-       <SmartFormulaField label="Selected action formula" fields={formulaFields}
+         title={'Formula: @Quantity + 1; @state.key := @event.value; @filter.key := @event.value; @navigate.page := "App/Page"; IF($state.Total > 500, FLOW(ApplePay), FLOW(CardMachine))'}>ƒx</span>
+       <SmartFormulaField label="Selected action formula" fields={formulaFields} objects={objects} actionPages={pages} actionCredentials={credentials}
          stateOptions={stateOptions}
          flowReferences={availableFlows.map(flow=>({apiName:flow.apiName,label:flow.label}))}
-         validate={value=>isFlowActionFormula(value)?validateFlowActionFormula(value,flows):null}
+         validate={value=>!isActionPlan(value)&&isFlowActionFormula(value)?validateFlowActionFormula(value,flows):null}
          disabled={disabled||!formulaEditable}
          value={formulaValue}
          onChange={value=>{

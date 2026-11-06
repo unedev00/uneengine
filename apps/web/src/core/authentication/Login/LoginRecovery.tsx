@@ -23,20 +23,23 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
  const [message,setMessage]=useState('');
  const [busy,setBusy]=useState(false);
  const [loadingOptions,setLoadingOptions]=useState(true);
+ const [optionsFailed,setOptionsFailed]=useState(false);
+ const availableChannels=channelButtons.filter(item=>options.channels[item.channel]);
+ const loadOptions=async()=>{
+  setLoadingOptions(true);setOptionsFailed(false);setMessage('');
+  try{setOptions(await apiRequest<Options>('/auth/password-reset/options'));}
+  catch{setOptions(defaults);setOptionsFailed(true);setMessage('Recovery methods could not be loaded.');}
+  finally{setLoadingOptions(false);}
+ };
  useEffect(()=>{
   // Clear sensitive link tokens immediately; never keep them in browser history.
   const params=new URLSearchParams(window.location.search);
   if(params.has('resetToken')){
-   params.delete('resetToken');params.delete('resetEmail');
+   params.delete('resetToken');params.delete('resetEmail');params.set('recover','1');
    window.history.replaceState(null,'',window.location.pathname+
     (params.size?'?'+params.toString():'')+window.location.hash);
   }
-  let active=true;
-  void apiRequest<Options>('/auth/password-reset/options')
-   .then(value=>{if(active){setOptions(value);setMessage('');}})
-   .catch(()=>{if(active)setMessage('Recovery methods cannot be loaded. Contact your administrator or support for assistance.');})
-   .finally(()=>{if(active)setLoadingOptions(false);});
-  return()=>{active=false;};
+  void loadOptions();
  },[]);
  const request=async(selected:Channel)=>{
   if(!email.trim()||busy||!options.channels[selected])return;
@@ -76,22 +79,20 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
  return <section className="auth-recovery">
   <h1>Recover your password</h1>
   {step==='choose'&&<>
-   <p>Enter your registered email and choose where to receive your verification code.</p>
-   <label className="form-label">Account email
+   <p>Enter your registered email to request a password reset.</p>
+   {availableChannels.length>0&&<label className="form-label">Account email
     <input className="form-control" type="email" autoComplete="username"
      value={email} onChange={event=>setEmail(event.target.value)} required/>
-   </label>
-   {loadingOptions&&<p role="status">Checking available recovery methods…</p>}
-   {!loadingOptions&&channelButtons.some(item=>options.channels[item.channel])&&<div className="auth-recovery-channels">
-    {channelButtons.filter(item=>options.channels[item.channel]).map(item=><button key={item.channel} type="button"
-      className="btn auth-recovery-channel" disabled={busy||!email.trim()} onClick={()=>void request(item.channel)}>
-      {options.method==='LINK'&&item.channel==='email'?'Send reset link by Email':item.label}
-    </button>)}
-   </div>}
-   {!loadingOptions&&!channelButtons.some(item=>options.channels[item.channel])&&<div className="auth-recovery-help" role="status">
-     <p>Password self-service is unavailable. Contact your organisation administrator or <a href="mailto:support@unesolutions.co.uk?subject=Account%20recovery">UNE Solutions support</a> to request assistance.</p>
-     <button className="btn" type="button" onClick={()=>{setLoadingOptions(true);setMessage('');void apiRequest<Options>('/auth/password-reset/options').then(setOptions).catch(()=>setMessage('Recovery remains unavailable. Contact your administrator or support.')).finally(()=>setLoadingOptions(false));}}>Retry recovery options</button>
-   </div>}
+   </label>}
+   {loadingOptions?<p role="status">Loading recovery options…</p>:
+    availableChannels.length>0?<div className="auth-recovery-channels" role="group" aria-label="Available recovery methods">
+     {availableChannels.map(item=><button key={item.channel} type="button"
+      className="btn auth-recovery-channel" disabled={busy||!email.trim()}
+      onClick={()=>void request(item.channel)}>{options.method==='LINK'&&item.channel==='email'?'Send reset link by Email':item.label}</button>)}
+    </div>:<div className="auth-recovery-unavailable" role="status">
+      <p>Password self-service is currently unavailable. Contact your organisation administrator or <a href="mailto:support@unesolutions.co.uk">UNE Solutions support</a> for assistance.</p>
+      {optionsFailed&&<button className="btn" type="button" onClick={()=>void loadOptions()}>Retry loading methods</button>}
+    </div>}
   </>}
   {step==='verify'&&<>
    <p>Enter the {options.otpLength}-digit code delivered to your registered {channel==='email'?'email':'phone'}.</p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowRight, ArrowUpRight, BarChart3, BellRing, CalendarCheck2, Check,
   CheckCircle2, ChevronDown, ClipboardList, Clock3, CloudUpload, CreditCard,
@@ -119,7 +119,49 @@ function MarketingSite() {
       <section id="faq" className="une-section une-faq-section"><div className="une-container une-faq-layout"><div><span className="une-section-eyebrow">GOOD TO KNOW</span><h2>Questions?<br/>We've got answers.</h2><p>Still have something in mind? We'd love to hear about your business.</p><a className="une-inline-link" href={enquiryHref}>Ask us anything <ArrowUpRight size={18}/></a></div><div className="une-faq-list">{faqs.map((item,i)=><div className="une-faq-item" key={item.q}><button type="button" aria-expanded={openFaq===i} onClick={()=>setOpenFaq(openFaq===i?null:i)}>{item.q}<ChevronDown size={19}/></button>{openFaq===i&&<p>{item.a}</p>}</div>)}</div></div></section>
       <section id="contact" className="une-section une-final-cta"><div className="une-container"><div className="une-cta-inner"><div className="une-cta-color" aria-hidden="true"/><span className="une-cta-kicker"><Sparkles size={16}/> YOUR NEXT CHAPTER STARTS HERE</span><h2>Let's make your business<br/><em>work beautifully.</em></h2><p>Tell us what you need. We'll help you find the right solution.</p><div className="une-cta-buttons"><a href={demoHref} className="une-button une-button-light">Book a demo <ArrowRight size={17}/></a><a href={enquiryHref} className="une-button une-button-transparent">Contact our team <ArrowUpRight size={17}/></a></div><div className="une-cta-email">Prefer email? <a href={'mailto:'+contactEmail}>{contactEmail}</a></div></div></div></section>
     </main>
-    <footer className="une-footer"><div className="une-container"><div className="une-footer-main"><div><Brand/><p>Practical software. Brilliantly connected.<br/>Helping everyday businesses do more.</p></div><div><strong>Explore</strong><a href="#solutions">Solutions</a><a href="#product">Product experience</a><a href="#industries">Industries</a><a href="#integrations">Integrations</a></div><div><strong>Get in touch</strong><a href={demoHref}>Book a demo</a><a href={'mailto:'+contactEmail}>Email us</a><a href="#faq">FAQs</a></div><div><strong>For customers</strong><a href={loginHref}>Client login <ArrowUpRight size={13}/></a><span>Already with Une Solutions?<br/>Your workspace is one click away.</span></div></div><div className="une-footer-bottom"><span>© {new Date().getFullYear()} Une Solutions. All rights reserved.</span><span>Built for better business.</span><a href={loginHref}>Customer workspace <ArrowUpRight size={14}/></a></div></div></footer>
+    <footer className="une-footer"><div className="une-container"><div className="une-footer-main"><div><Brand/><p>Practical software. Brilliantly connected.<br/>Helping everyday businesses do more.</p></div><div><strong>Explore</strong><a href="#solutions">Solutions</a><a href="#product">Product experience</a><a href="#industries">Industries</a><a href="#integrations">Integrations</a></div><div><strong>Get in touch</strong><a href={demoHref}>Book a demo</a><a href={'mailto:'+contactEmail}>Email us</a><a href="#faq">FAQs</a></div><div><strong>For customers</strong><a href={loginHref}>Client login <ArrowUpRight size={13}/></a><span>Already with Une Solutions?<br/>Your workspace is one click away.</span></div></div><div className="une-footer-bottom"><span>© {new Date().getFullYear()} Une Solutions. All rights reserved.</span><span>Built for better business.</span><a href={`${prefix}privacy`}>Privacy Policy</a><a href={loginHref}>Customer workspace <ArrowUpRight size={14}/></a></div></div></footer>
+  </div>;
+}
+
+/** Public UNE Solutions policy. Intentionally independent of the authenticated workspace. */
+export function PrivacyPolicyPage(){
+  useEffect(()=>{
+    const previous=document.title;
+    document.title='Privacy Policy | UNE Solutions';
+    return ()=>{document.title=previous;};
+  },[]);
+  return <div className="une-marketing une-privacy-page">
+    <header className="une-privacy-header">
+      <div className="une-container une-privacy-header-inner">
+        <a href={prefix} aria-label="UNE Solutions home"><UneBrandLogo className="une-marketing-logo"/></a>
+        <a href={prefix}>Back to website <ArrowRight size={16} aria-hidden="true"/></a>
+      </div>
+    </header>
+    <main id="main-content" className="une-container une-privacy-main">
+      <p className="une-section-eyebrow">UNE SOLUTIONS</p>
+      <h1>Privacy Policy</h1>
+      <p className="une-privacy-updated">Last updated: 6 November 2026</p>
+      <p>UNE Solutions provides business software, online services and a public website. This notice explains the types of personal information that may be handled when you use our website and services, and how to contact us about it. Depending on the service, your organisation may be the controller of information entered into its workspace and UNE Solutions may act on its instructions.</p>
+      <section><h2>1. Information we process</h2>
+        <p>Depending on the features in use, information may include the contact details you provide when making an enquiry; account and organisation details used to sign in; records and communications entered into a customer's workspace; and technical and security information needed to operate and protect the service. Not every feature collects every category.</p></section>
+      <section><h2>2. Why information is used</h2>
+        <p>Information is used, as applicable, to provide requested services, authenticate users, maintain security, respond to enquiries, deliver support, operate configured business features and meet legal obligations. Where required, processing relies on an appropriate lawful basis such as contractual necessity, legitimate interests, a legal obligation or consent. Customer-controlled workspace data is handled in accordance with the customer's instructions and applicable agreements.</p></section>
+      <section><h2>3. Customer workspaces and other services</h2>
+        <p>Business customers manage the accounts, permissions, records and enabled integrations in their own environments. When a request concerns information your employer or another organisation controls, contact that organisation's administrator first. Providers used to host or deliver enabled services may process information according to the relevant customer agreement and safeguards.</p></section>
+      <section><h2>4. Storage, security and retention</h2>
+        <p>Access restrictions, authentication and technical security measures are used to protect information. No internet service can guarantee absolute security. Retention depends on the nature of the information, applicable customer agreements, configured retention controls and legal requirements. You can contact us for details relevant to your use of our services.</p></section>
+      <section><h2>5. Cookies and browser storage</h2>
+        <p>Website and application functions may use browser storage and cookies needed for session management, authentication, security and user preferences. Any additional analytics or similar technology, where enabled, should be disclosed and managed in accordance with applicable requirements.</p></section>
+      <section><h2>6. Your data protection rights</h2>
+        <p>Depending on applicable law and the circumstances, you may have rights to request access to, correction or deletion of your personal data, to object to or restrict processing, and to request portability. You may also be able to withdraw consent and complain to a data protection authority, including the UK's Information Commissioner's Office. Requests about a customer-managed workspace may need to be handled by that customer as controller.</p></section>
+      <section><h2>7. Contact and changes to this policy</h2>
+        <p>For privacy questions or requests, email <a href="mailto:support@unesolutions.co.uk">support@unesolutions.co.uk</a>. We may revise this notice as our services and processing arrangements change. A new update date will appear above when we publish changes.</p></section>
+      <nav className="une-privacy-actions" aria-label="Privacy page navigation">
+        <a href={prefix}>UNE Solutions home</a>
+        <a href={loginHref}>Client sign in</a>
+      </nav>
+    </main>
+    <footer className="une-privacy-footer"><div className="une-container">© {new Date().getFullYear()} UNE Solutions · <a href="mailto:support@unesolutions.co.uk">Contact support</a></div></footer>
   </div>;
 }
 

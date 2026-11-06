@@ -17,9 +17,10 @@ test('workspace table behaviour is shared and lazy, without changing record-spec
   assert.match(css, /overflow-x: auto/);
 });
 
-test('page list has a compact leading Actions column without a frozen edge', () => {
+test('page list keeps sortable identity and reachable actions at narrow widths', () => {
   const styles = source('core/workspace/WorkspaceTheme/styles.css');
   const css = source('core/workspace/WorkspaceTheme/adminTableControls.css');
+  const responsive = source('core/workspace/WorkspaceTheme/setupUsability.css');
   const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
   const imports = [...styles.matchAll(/@import\s+["']([^"']+)["']/g)].map(match => match[1]);
   assert.equal(imports.at(-1), './adminTableControls.css', 'must load last so it wins the cascade');
@@ -29,12 +30,13 @@ test('page list has a compact leading Actions column without a frozen edge', () 
   assert.match(css, /width:\s*200px;\s*min-width:\s*200px;\s*max-width:\s*200px/);
   assert.match(css, /\.page-manager-icon-action\s*\{[^}]*width:\s*32px/);
   assert.match(css, /\.page-status-badge\s*\{[^}]*min-width[^}]*height/);
-  assert.match(pages, /<thead><tr><th scope="col" className="page-manager-actions-heading">Actions<\/th><th aria-sort=\{pageListSort.key===/);
-  assert.match(pages, /className="page-manager-sort" onClick=\{\(\)=>togglePageSort\('label'\)\}>Page name<\/button>/);
+  assert.match(pages, /className="page-manager-actions-heading">Actions<\/th>/);
+  assert.match(pages, /\['label','Page name'\]/);
+  assert.match(pages, /pageListSort/);
+  assert.match(responsive, /\.page-manager-table td:last-child/);
   assert.match(pages, /<tbody>\{paginatedPages\.map\(item=><tr key=\{item\.apiName\}>\s*<td className="page-manager-actions">/);
   assert.match(pages, /<div className="page-manager-action-icons" role="group" aria-label=/);
   assert.doesNotMatch(pages, /aria-pressed=\{item\.status==='Active'\}/);
-  assert.match(pages, /aria-label=\{\(item\.status==='Active'\?'Deactivate ':'Activate '\)/);
   assert.match(pages, /<Pencil size=\{16\}\/>/);
   assert.match(pages, /<PageDesignSplitAction label=\{item\.label\}/);
   const split = source('core/builders/PageBuilder/PageDesignSplitAction.tsx');
@@ -81,12 +83,11 @@ test('left-docked Page Builder tabs have a light rail and readable active and in
 
 test('independent values have independent labelled table columns', () => {
   const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
-  assert.match(pages, /togglePageSort\('label'\)\}>Page name<\/button><\/th><th aria-sort=\{pageListSort.key==='apiName'/);
+  assert.match(pages, /\['label','Page name'\],\['apiName','API name'\]/);
   assert.doesNotMatch(pages, /page-manager-page-link[^\n]*<small>\{item\.apiName\}/);
 
   const apps = source('core/applications/AppManagerList/AppManagerList.tsx');
-  assert.match(apps, /<th scope="col" aria-sort=\{sort.key==='description'/);
-  assert.match(apps, /sortBy\('description'\)\}>Description/);
+  assert.match(apps, /<th scope="col">Description<\/th>/);
   assert.doesNotMatch(apps, /<small>\{app\.description\}/);
 
   const tenants = source('core/platform/TenantManagement/TenantManagement.tsx');

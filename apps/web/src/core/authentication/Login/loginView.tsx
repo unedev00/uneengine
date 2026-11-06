@@ -7,6 +7,7 @@ import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import { Eye, EyeOff } from 'lucide-react';
 import './standaloneLogin.css';
 
+declare const __METADRIVE_WEB_RELEASE__: {commit:string|null;builtAt:string};
 type LandingBootstrap = {
   objects: ObjectMetadata[];
   pages: LightningPageMetadata[];
@@ -45,11 +46,27 @@ export function createLoginView(logoUrl: string) {
     const [challenge,setChallenge]=useState<{challenge_token:string;setup_secret?:string;enrollment_required?:boolean}|null>(null);
     const [code,setCode]=useState('');
     const [providers,setProviders]=useState<Array<{id:string;label:string}>>([]);
-    const [recovering,setRecovering]=useState(()=>{const q=new URLSearchParams(window.location.search);return q.has('resetToken')||q.has('recover');});
-    useEffect(()=>{const onPopState=()=>{const q=new URLSearchParams(window.location.search);setRecovering(q.has('recover')||q.has('resetToken'));setPassword('');setPasswordVisible(false);};window.addEventListener('popstate',onPopState);return()=>window.removeEventListener('popstate',onPopState);},[]);
-    const openRecovery=()=>{setRecovering(true);setPassword('');setPasswordVisible(false);window.history.pushState(null,'','/login?recover=1');};
-    const closeRecovery=()=>{setRecovering(false);setPassword('');setPasswordVisible(false);window.history.replaceState(null,'','/login');};
-    useEffect(()=>{const previous=document.title;document.title=recovering?'Recover your password | Une Solutions':'Sign in | Une Solutions';return()=>{document.title=previous;};},[recovering]);
+    const [recovering,setRecovering]=useState(()=>{
+      const query=new URLSearchParams(window.location.search);
+      return query.has('resetToken')||query.get('recover')==='1';
+    });
+    useEffect(()=>{
+      const sync=()=>{const query=new URLSearchParams(window.location.search);setRecovering(query.get('recover')==='1'||query.has('resetToken'));};
+      window.addEventListener('popstate',sync);
+      return ()=>window.removeEventListener('popstate',sync);
+    },[]);
+    useEffect(()=>{document.title=recovering?'Recover your password | Une Solutions':'Sign in | Une Solutions';},[recovering]);
+    const openRecovery=()=>{
+      const url=new URL(window.location.href);url.searchParams.set('recover','1');
+      window.history.pushState(null,'',url.pathname+url.search+url.hash);
+      setPasswordVisible(false);setPassword('');setFieldErrors({});setRecovering(true);
+    };
+    const closeRecovery=()=>{
+      const url=new URL(window.location.href);
+      url.searchParams.delete('recover');url.searchParams.delete('resetToken');url.searchParams.delete('resetEmail');
+      window.history.pushState(null,'',url.pathname+url.search+url.hash);
+      setPasswordVisible(false);setPassword('');setFieldErrors({});setMessage('');setRecovering(false);
+    };
     const accept=(session:{access_token?:string;landing?:LandingBootstrap;landingAppApi?:string;mfa_required?:boolean;challenge_token?:string;setup_secret?:string;enrollment_required?:boolean},startedAt:number)=>{
       if(session.mfa_required&&session.challenge_token){setPassword('');setChallenge({...session,challenge_token:session.challenge_token});return;}
       if(!session.access_token)throw Error('Authentication did not return an access token');
@@ -101,6 +118,14 @@ export function createLoginView(logoUrl: string) {
           : failure instanceof TypeError
             ? 'Cannot connect to the workspace API. Please retry when the service is online.'
             : failure instanceof Error ? failure.message : 'Unable to sign in');
+        // Put focus back on the actionable field for invalid credentials.
+        // Connection errors retain focus on the submit/retry action.
+        if (!(failure instanceof DOMException && failure.name==='AbortError') &&
+            !(failure instanceof TypeError)) {
+          window.requestAnimationFrame(()=>{
+            document.getElementById(challenge?'login-mfa':'login-password')?.focus();
+          });
+        }
       } finally {
         window.clearTimeout(timeout);
         setSubmitting(false);
@@ -108,7 +133,10 @@ export function createLoginView(logoUrl: string) {
     };
 
     const loginStyle=branding?{'--standalone-accent':branding.accent} as CSSProperties:undefined;
-    if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card"><LoginRecovery onClose={closeRecovery}/></div></main>;
+    if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card">
+      {!branding && <UneBrandLogo className="auth-brand-logo" src={logoUrl} />}
+      <div className="eyebrow">{branding?.eyebrow??'UNEENGINE WORKSPACE'}</div>
+      <LoginRecovery onClose={closeRecovery}/></div></main>;
     return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}>
       <form className="auth-card" onSubmit={(event) => void signIn(event)}
         onInvalid={(event) => {
@@ -122,7 +150,7 @@ export function createLoginView(logoUrl: string) {
             setFieldErrors(current => ({...current, code: 'Enter your authenticator or backup code.'}));
           }
           setMessage('Correct the highlighted fields to continue.');
-          window.requestAnimationFrame(()=>document.querySelector<HTMLInputElement>('.auth-card input:invalid')?.focus());
+          if(document.activeElement!==input)input.focus();
         }}>
         {branding && <div className="auth-product-identity"><div className="auth-product-monogram" aria-hidden="true">{branding.label.slice(0,1)}</div><div><div className="eyebrow">{branding.eyebrow}</div><h1>{branding.label}</h1></div></div>}
         {!branding && <UneBrandLogo className="auth-brand-logo" src={logoUrl} />}
@@ -143,21 +171,23 @@ export function createLoginView(logoUrl: string) {
           <button type="button" className="text-action" onClick={()=>{setChallenge(null);setCode('');setMessage('');}}>Start again</button>
         </>:<>
         <label className="form-label" htmlFor="login-email">Email</label>
-        <input className="form-control" id="login-email" name="email" type="email" value={email}
-          onChange={(event) => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}} autoComplete="username" spellCheck={false} required
+        <input className="form-control" id="login-email" name="email" type="email" value={email} spellCheck={false} autoCapitalize="none" autoCorrect="off"
+          onChange={(event) => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}} autoComplete="username" required
           aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email?'login-email-error':undefined}/>
         {fieldErrors.email&&<small id="login-email-error" className="auth-field-error">{fieldErrors.email}</small>}
         <label className="form-label" htmlFor="login-password">Password</label>
-        <div className="auth-password-field">
-          <input className="form-control" id="login-password" name="password"
-            type={passwordVisible ? 'text' : 'password'} value={password}
-            onChange={(event) => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}} autoComplete="current-password" required
-            aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password?'login-password-error':undefined}/>
-          <button className="auth-reveal" type="button" aria-label={passwordVisible?'Hide password':'Show password'} aria-pressed={passwordVisible} aria-controls="login-password"
-            onClick={()=>setPasswordVisible(value=>!value)}>{passwordVisible?<EyeOff size={18} aria-hidden="true"/>:<Eye size={18} aria-hidden="true"/>}</button>
+        <div className="auth-password-control">
+         <input className="form-control" id="login-password" name="password"
+          type={passwordVisible ? 'text' : 'password'} value={password}
+          onChange={(event) => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}} autoComplete="current-password" required
+          aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password?'login-password-error':undefined}/>
+         <button className="text-action auth-password-toggle" type="button" aria-controls="login-password"
+          aria-label={passwordVisible?'Hide password':'Show password'} aria-pressed={passwordVisible} onClick={()=>setPasswordVisible(value=>!value)}>{passwordVisible?<EyeOff size={18} aria-hidden="true"/>:<Eye size={18} aria-hidden="true"/>}</button>
         </div>
         {fieldErrors.password&&<small id="login-password-error" className="auth-field-error">{fieldErrors.password}</small>}
-        <div className="auth-inline-actions"><button className="text-action" type="button" onClick={openRecovery}>Forgot password?</button></div>
+        <div className="auth-inline-actions auth-recovery-action">
+          <button className="text-action" type="button" onClick={openRecovery}>Forgot password?</button>
+        </div>
         {providers.map(provider=><button key={provider.id} type="button" className="btn" disabled={submitting} onClick={()=>{
           setSubmitting(true);void apiRequest<{url:string}>('/auth/federation/start',{method:'POST',body:JSON.stringify({providerId:provider.id})})
             .then(r=>{
@@ -169,6 +199,12 @@ export function createLoginView(logoUrl: string) {
         <button className="btn btn-brand auth-submit" disabled={submitting}>
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
+        {!branding && <nav className="auth-signin-footer" aria-label="Sign-in help and legal">
+          <a href="mailto:support@unesolutions.co.uk">Contact support</a>
+          <a href={import.meta.env.VITE_PRIVACY_POLICY_URL?.startsWith('https://')?import.meta.env.VITE_PRIVACY_POLICY_URL:`${import.meta.env.BASE_URL}privacy`} rel="noopener noreferrer">Privacy Policy</a>
+          {import.meta.env.VITE_TERMS_URL?.startsWith('https://')&&<a href={import.meta.env.VITE_TERMS_URL} rel="noopener noreferrer">Terms</a>}
+          <small>Build {__METADRIVE_WEB_RELEASE__?.commit?.slice(0,7)??'development'}</small>
+        </nav>}
         {branding && <div className="auth-product-powered"><UneBrandLogo className="auth-product-powered-logo" src={logoUrl}/>Securely powered by MetaDrive</div>}
       </form>
     </main>;

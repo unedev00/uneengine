@@ -65,7 +65,7 @@ test('Formula bar remains mounted and editable for Flow and Formula actions',()=
  assert.doesNotMatch(plus,/aria-label="Selected action formula"[^>]*disabled/);
  assert.match(plus,/aria-label="Remove \+ Icon action"/);
  const source=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
- assert.match(flow,/\$flow\.Some_Flow/);
+ assert.match(flow,/=FLOW\(Some_Flow\)/);
  assert.match(source,/delete next\[slot\.key\]/);
 });
 

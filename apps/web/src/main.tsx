@@ -1,7 +1,9 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import './core/workspace/WorkspaceTheme/design-system.css';
-import MarketingSite from './core/public/MarketingSite/MarketingSite';
+import MarketingSite, { PrivacyPolicyPage } from './core/public/MarketingSite/MarketingSite';
+import { UneBrandLogo } from './core/branding/UneBrandLogo';
+import './core/workspace/WorkspaceTheme/bootSplash.css';
 import { registerUniversalShell } from './core/workspace/Bootstrap/universalShell';
 import { installPopoverDismissal } from './component-libraries/shared/popoverDismissal';
 import { installKeyboardInset } from './core/workspace/Responsive/keyboardInset';
@@ -48,16 +50,24 @@ function WorkspaceLoadingFallback() {
     const timer=window.setTimeout(()=>setSlow(true),12000);
     return ()=>window.clearTimeout(timer);
   },[]);
-  return <main role="status" aria-live="polite" style={{minHeight:'100dvh',display:'grid',placeItems:'center',fontFamily:'system-ui,sans-serif',background:'#f6f8fb',padding:16,color:'#24354d',boxSizing:'border-box'}}>
-    <div style={{textAlign:'center',maxWidth:480,padding:24}}>
-      <img src={import.meta.env.BASE_URL + 'une-solutions-logo.webp'} alt="UNE Solutions" style={{display:'block',width:148,maxWidth:'70%',height:'auto',margin:'0 auto 18px'}}/>
-      <div className="md-workspace-loading-indicator" aria-hidden="true" style={{width:30,height:30,margin:'0 auto 16px',borderRadius:'50%',border:'3px solid #dce7f8',borderTopColor:'#0b57d0',animation:'md-loading-spin .9s linear infinite'}}/>
-      <style>{'@keyframes md-loading-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.md-workspace-loading-indicator{animation:none!important}}'}</style>
-      <h1 style={{fontSize:20,margin:'0 0 6px'}}>Loading your workspace…</h1>
-      <p style={{fontSize:13,color:'#475569',margin:0}}>Preparing your applications and settings.</p>
-      {slow && <><p>The workspace is taking longer than expected. You can request the latest application files without losing saved data.</p>
-        <button type="button" onClick={reloadLatestWorkspace}>Reload latest version</button></>}
-    </div>
+  return <main role="status" aria-live="polite"
+    style={{minHeight:'100dvh',display:'grid',placeItems:'center',padding:16,boxSizing:'border-box',fontFamily:'system-ui,sans-serif',background:'#f5f6fa',color:'#192230'}}>
+    <section aria-label="Workspace starting" style={{boxSizing:'border-box',width:'min(480px,100%)',padding:'28px 24px',background:'#fff',borderRadius:16,border:'1px solid #d8e1ed',boxShadow:'0 10px 32px #15243c12'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
+        <UneBrandLogo className="md-boot-brand" decorative />
+        <div><strong style={{fontSize:17}}>UNE Engine Workspace</strong><p style={{fontSize:13,color:'#526175',margin:'4px 0 0'}}>Preparing your secure workspace</p></div>
+      </div>
+      <p className="md-boot-progress-label" style={{fontSize:15,fontWeight:600}}><span className="md-boot-spinner" aria-hidden="true" /> Loading your workspace…</p>
+      <div aria-hidden="true" style={{display:'grid',gap:10,marginTop:20}}>
+        <div style={{height:18,width:'72%',borderRadius:7,background:'#e7ecf3'}}/>
+        <div style={{height:36,width:'100%',borderRadius:7,background:'#e7ecf3'}}/>
+        <div style={{height:36,width:'92%',borderRadius:7,background:'#e7ecf3'}}/>
+      </div>
+      {slow && <div style={{marginTop:24}}>
+        <p>The workspace is taking longer than expected. Your saved data is unchanged.</p>
+        <button type="button" onClick={reloadLatestWorkspace} style={{minHeight:44,padding:'8px 14px',borderRadius:9,border:'1px solid #0b57d0',color:'#fff',background:'#0b57d0'}}>Reload latest version</button>
+      </div>}
+    </section>
   </main>;
 }
 
@@ -129,12 +139,15 @@ if (pathname.toLowerCase().startsWith('/une/apps/acetill/')
   window.location.replace('/acetill/');
 }
 const isMarketingHome = !workspaceDevelopmentRoot && (pathname === '/' || pathname === '/index.html' || (Boolean(basePath) && window.location.pathname === basePath));
+const isPrivacyRoute = pathname === '/privacy' || pathname === '/privacy/' || pathname === '/privacy-policy' || pathname === '/privacy-policy/';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {isMailRoute
       ? <Suspense fallback={<WorkspaceLoadingFallback />}><MailWebmail /></Suspense>
-      : isMarketingHome
+      : isPrivacyRoute
+        ? <PrivacyPolicyPage />
+        : isMarketingHome
         ? <MarketingSite />
         : <WorkspaceFailureBoundary><Suspense fallback={<WorkspaceLoadingFallback />}><Workspace /></Suspense></WorkspaceFailureBoundary>}
   </React.StrictMode>

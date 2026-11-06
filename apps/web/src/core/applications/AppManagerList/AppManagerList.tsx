@@ -13,18 +13,13 @@ type Props = {
 
 export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<{key:string;direction:'asc'|'desc'}>({key:'label',direction:'asc'});
-  const sortBy = (key:string) => setSort(p => ({key,direction:p.key===key&&p.direction==='asc'?'desc':'asc'}));
-  const countLabel = (n:number,word:string) => `${n} ${word}${n===1?'':'s'}`;
+  const [sort, setSort] = useState<'label'|'apiName'|'navigation'|'pages'>('label');
+  const [descending, setDescending] = useState(false);
+  const changeSort=(field: typeof sort)=>{if(field===sort)setDescending(value=>!value);else{setSort(field);setDescending(false);}};
   const filtered = apps.filter(app =>
     (app.label + ' ' + app.apiName + ' ' + app.description)
       .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  ).sort((a,b) => {
-    const value=(app:LightningAppMetadata) => sort.key==='navigation'?app.navigationItems.length:sort.key==='pages'?app.navigationPageApiNames.length:String((app as unknown as Record<string,unknown>)[sort.key]??'');
-    const left=value(a),right=value(b);
-    const diff=typeof left==='number'&&typeof right==='number'?left-right:String(left).localeCompare(String(right));
-    return (sort.direction==='asc'?diff:-diff)||a.label.localeCompare(b.label);
-  });
+  ).sort((a, b) => {const result=sort==='label'?a.label.localeCompare(b.label):sort==='apiName'?a.apiName.localeCompare(b.apiName):sort==='navigation'?a.navigationItems.length-b.navigationItems.length:a.navigationPageApiNames.length-b.navigationPageApiNames.length;return descending?-result:result;});
   return <section className="app-manager-list surface" aria-label="Existing applications">
     <div className="app-manager-list-head">
       <div><h2>Existing Apps <span>{apps.length}</span></h2>
@@ -36,27 +31,28 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
           onChange={event => setSearch(event.target.value)} placeholder="Search apps…"/>
       </label>
     </div>
-    <ResponsiveDataList rows={filtered} includeTablet getId={app=>app.apiName} label="Applications"
+    <label className="app-manager-mobile-sort">Sort applications <select value={sort} onChange={event=>{setSort(event.target.value as typeof sort);setDescending(false);}}><option value="label">App name</option><option value="apiName">Developer name</option><option value="navigation">Navigation items</option><option value="pages">App pages</option></select></label>
+    <ResponsiveDataList rows={filtered} includeTablet includeNarrowDesktop getId={app=>app.apiName} label="Applications"
       onOpen={app=>onEdit(app)} openLabel="Edit application"
       columns={[
         {apiName:'name',label:'Application',phoneRole:'title',render:app=>app.label},
         {apiName:'apiName',label:'Developer name',phoneRole:'subtitle',render:app=>app.apiName},
         {apiName:'description',label:'Description',render:app=>app.description || '—'},
-        {apiName:'pages',label:'Pages',phoneRole:'badge',render:app=>countLabel(app.navigationPageApiNames.length,'page')},
-        {apiName:'navigation',label:'Navigation',phoneRole:'trailing',render:app=>countLabel(app.navigationItems.length,'item')},
+        {apiName:'pages',label:'Pages',phoneRole:'badge',render:app=>app.navigationPageApiNames.length+(app.navigationPageApiNames.length===1?' page':' pages')},
+        {apiName:'navigation',label:'Navigation',phoneRole:'trailing',render:app=>app.navigationItems.length+(app.navigationItems.length===1?' item':' items')},
         {apiName:'actions',label:'Actions',render:app=><div className="app-manager-list-actions">
-         <button type="button" className="btn" aria-label={'Edit '+app.label} disabled={busy} onClick={event=>{event.stopPropagation();onEdit(app);}}>Edit</button>
-         <button type="button" className="btn" aria-label={'Clone '+app.label} disabled={busy} onClick={event=>{event.stopPropagation();onClone(app);}}>Clone</button>
+         <button type="button" className="btn" disabled={busy} aria-label={"Edit "+app.label} onClick={()=>onEdit(app)}>Edit</button>
+         <button type="button" className="btn" disabled={busy} aria-label={"Clone "+app.label} onClick={()=>onClone(app)}>Clone</button>
         </div>}
       ]}/>
     <div className="app-manager-list-scroll md-mobile-table-replaced md-tablet-table-replaced">
       <table className="app-manager-list-table">
         <thead><tr>
-          <th scope="col" aria-sort={sort.key==='label'?(sort.direction==='asc'?'ascending':'descending'):'none'}><button type="button" className="app-manager-sort" onClick={() => sortBy('label')}>App{sort.key==='label'?(sort.direction==='asc'?' ↑':' ↓'):''}</button></th>
-          <th scope="col" aria-sort={sort.key==='apiName'?(sort.direction==='asc'?'ascending':'descending'):'none'}><button type="button" className="app-manager-sort" onClick={() => sortBy('apiName')}>Developer Name{sort.key==='apiName'?(sort.direction==='asc'?' ↑':' ↓'):''}</button></th>
-          <th scope="col" aria-sort={sort.key==='description'?(sort.direction==='asc'?'ascending':'descending'):'none'}><button type="button" className="app-manager-sort" onClick={() => sortBy('description')}>Description{sort.key==='description'?(sort.direction==='asc'?' ↑':' ↓'):''}</button></th>
-          <th scope="col" aria-sort={sort.key==='navigation'?(sort.direction==='asc'?'ascending':'descending'):'none'}><button type="button" className="app-manager-sort" onClick={() => sortBy('navigation')}>Navigation Items{sort.key==='navigation'?(sort.direction==='asc'?' ↑':' ↓'):''}</button></th>
-          <th scope="col" aria-sort={sort.key==='pages'?(sort.direction==='asc'?'ascending':'descending'):'none'}><button type="button" className="app-manager-sort" onClick={() => sortBy('pages')}>App Pages{sort.key==='pages'?(sort.direction==='asc'?' ↑':' ↓'):''}</button></th>
+          <th scope="col" aria-sort={sort==="label"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("label")}>App {sort==='label'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
+          <th scope="col" aria-sort={sort==="apiName"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("apiName")}>Developer Name {sort==='apiName'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
+          <th scope="col">Description</th>
+          <th scope="col" aria-sort={sort==="navigation"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("navigation")}>Navigation Items {sort==='navigation'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
+          <th scope="col" aria-sort={sort==="pages"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("pages")}>App Pages {sort==='pages'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
           <th scope="col">Actions</th>
         </tr></thead>
         <tbody>{filtered.map(app => <tr key={app.apiName}>

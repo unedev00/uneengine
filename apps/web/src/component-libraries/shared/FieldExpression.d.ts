@@ -39,3 +39,10 @@ export function evaluateCollectionFormula(
  sources?:Readonly<Record<string,ReadonlyArray<Record<string,unknown>>>>,
  context?:Readonly<Record<string,unknown>>
 ):{value:FormulaNamedCollection|null;error?:string};
+export function evaluateParsedExpression(
+ expression:import('../../../../server/src/expression-engine/FormulaParser.js').Expression,
+ record:Readonly<Record<string,unknown>>,context:FormulaBindingContext
+):unknown;
+export function executeActionFormula(formula:string,record:Record<string,unknown>,context:FormulaBindingContext,
+ services:import('../../../../server/src/expression-engine/ActionFormulas.js').ActionServices
+):Promise<{changes:Array<{key:string;value:unknown}>;recordChanged:boolean}>;

@@ -14,6 +14,10 @@ export type QueryField = {
   api_name: string;
   data_type: string;
   rollup_source_data_type?: string | null;
+  /** Set for a one-level lookup path filter such as Product.AgeRestricted:
+   * api_name is the related object's field and access is the caller's
+   * record-access predicate for the related record (alias rel). */
+  via?: { lookupField: string; access: string };
 };
 
 export type RecordCursor = {
@@ -24,6 +28,8 @@ export type RecordCursor = {
 };
 
 const apiName = /^[A-Za-z][A-Za-z0-9_]*$/;
+/** Field name or one-level lookup path (Lookup.Field). */
+export const filterFieldPath = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)?$/;
 const operators = new Set<RecordFilterOperator>([
   'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'matches', 'includes', 'excludes', 'in', 'isBlank', 'isNotBlank',
 ]);
@@ -97,7 +103,7 @@ export function parseRecordFilters(raw: string | undefined): RecordFilter[] {
   return parsed.map(item => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('Invalid record filter');
     const filter = item as Record<string, unknown>;
-    if (typeof filter.field !== 'string' || !apiName.test(filter.field) ||
+    if (typeof filter.field !== 'string' || !filterFieldPath.test(filter.field) ||
         typeof filter.operator !== 'string' || !operators.has(filter.operator as RecordFilterOperator) ||
         (typeof filter.value !== 'string' && !Array.isArray(filter.value)) ||
         (Array.isArray(filter.value) && filter.value.some(value => typeof value !== 'string')))
@@ -163,8 +169,23 @@ export function compileRecordFilters(
   if (filters.length > 20) throw new Error('Too many record filters');
   const parameters: unknown[] = [];
   const predicates = filters.map((filter, index) => {
-    if (!apiName.test(filter.field)) throw new Error('Invalid list field');
+    if (!filterFieldPath.test(filter.field)) throw new Error('Invalid list field');
     const field = fields.get(filter.field);
+    if (field?.via) {
+      // Lookup path: evaluate the same predicate against the related record
+      // (alias rel) reached through the lookup value, with its record access.
+      const lookupParameter = `$${firstParameter + parameters.length}`;
+      parameters.push(field.via.lookupField);
+      const inner = compileRecordFilters([{ ...filter, field: field.api_name }], undefined,
+        new Map([[field.api_name, { ...field, via: undefined }]]), firstParameter + parameters.length);
+      parameters.push(...inner.parameters);
+      return `EXISTS(SELECT 1 FROM md_record_values lk JOIN md_records rel
+        ON rel.tenant_id=lk.tenant_id AND rel.id=lk.reference_record_id AND rel.is_deleted=false
+        WHERE lk.tenant_id=r.tenant_id AND lk.record_id=r.id AND lk.object_api=r.object_api
+          AND lk.field_api=${lookupParameter} AND ${field.via.access}
+          AND ${inner.predicate.replace(/\br\./g, 'rel.')})`;
+    }
+    if (filter.field.includes('.')) throw new Error('Invalid list field');
     if (!field || ['formula', 'geolocation', 'address', 'encryptedtext'].includes(field.data_type))
       throw new Error('Invalid list field');
     if (!operators.has(filter.operator))

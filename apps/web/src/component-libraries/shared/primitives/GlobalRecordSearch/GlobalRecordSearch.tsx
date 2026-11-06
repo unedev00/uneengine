@@ -17,7 +17,7 @@ export function GlobalRecordSearch({
   onOpenObject?: (apiName:string) => void;
 }) {
   const [query, setQuery] = useState('');
-  const isApplePlatform=typeof navigator!=='undefined'&&/Mac|iPhone|iPad/.test(navigator.platform);
+  const shortcutLabel=typeof navigator!=='undefined'&&/Mac|iPhone|iPad/i.test(navigator.platform)?'⌘ K':'Ctrl K';
   const [results, setResults] = useState<Array<{ object: NavigableObject; record: SearchableRecord }>>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -83,7 +83,7 @@ export function GlobalRecordSearch({
   return <>
     <button type="button" className="global-search global-record-search palette-trigger"
       aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" onClick={() => setOpen(true)}>
-      <Search size={16} aria-hidden="true" /><span>Search records and navigation</span><kbd>{isApplePlatform?'⌘ K':'Ctrl K'}</kbd>
+      <Search size={16} aria-hidden="true" /><span>Search records and navigation</span><kbd>{shortcutLabel}</kbd>
     </button>
     {open && createPortal(<div className="palette-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
       <div className="palette-dialog" role="dialog" aria-modal="true" aria-label="Global search command palette" ref={palette} tabIndex={-1}>

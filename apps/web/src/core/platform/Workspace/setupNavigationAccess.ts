@@ -20,6 +20,7 @@ export const setupMenuTokens: Readonly<Record<string, readonly string[]>> = {
   'Named Devices':['setup:NamedDevices:view'],
   'Flows':['setup:Flows:view'],
   'Paused and Waiting Interviews':['setup:PausedInterviews:view'],
+  'Scheduled Actions':['setup:Records:view'],
   'Scheduled Flows':['setup:ScheduledFlows:view'],
   'Flow History':['setup:FlowHistory:view'],
   'Process Automation Settings':['setup:ProcessAutomation:view'],
@@ -50,6 +51,7 @@ export function canOpenSetupRoute(route:AppRoute,permissions:readonly string[]):
     'object-manager':'Object Manager','data-loader':'Universal Data Loader',
     'page-builder':'Page Builder','app-manager':'App Manager','app-exchange':'AppExchange',
     'flow-builder':'Flows','flow-interviews':'Paused and Waiting Interviews',
+    'scheduled-actions':'Scheduled Actions',
     'scheduled-flows':'Scheduled Flows','flow-logs':'Flow History',
     'automation-settings':'Process Automation Settings','tenant-management':'Tenant Management'
   };

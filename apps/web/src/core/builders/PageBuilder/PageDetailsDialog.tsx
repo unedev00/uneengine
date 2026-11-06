@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState,type KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {Pencil,LayoutTemplate,History,LockKeyhole} from 'lucide-react';
 import type {LightningPageMetadata,LightningAppMetadata,PageActivationAssignmentMetadata,ProfileMetadata} from '../../metadata/Definitions/metadata';
 import PageDetailsAssignmentEditor,{assignmentValidationError} from './PageDetailsAssignmentEditor';
@@ -55,6 +55,21 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  /** Which layouts the page has designed; the default opens the page's own layout. */
  layoutSummary?:PageLayoutSummary|null;
 }){
+ const dialogRef=useRef<HTMLElement>(null);
+ const [activeSection,setActiveSection]=useState<'properties'|'history'>('properties');
+ const originRef=useRef<HTMLElement|null>(typeof document==='undefined'?null:document.activeElement as HTMLElement);
+ useEffect(()=>{
+  return ()=>originRef.current?.focus();
+ },[]);
+ const dialogKeyDown=(event:ReactKeyboardEvent<HTMLElement>)=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();if(!busy)onClose();return;}
+  if(event.key!=='Tab')return;
+  const focusable=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')??[]);
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ };
  const [label,setLabel]=useState(page.label);
  const [apiName,setApiName]=useState(page.apiName);
  const apiNameValid=apiName===page.apiName||/^[a-z][a-z0-9_]{0,127}$/.test(apiName);
@@ -69,13 +84,11 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
    ?([...current,factor] as LightningPageMetadata['devices'])
    :current.filter(item=>item!==factor));
  const [assignments,setAssignments]=useState<PageActivationAssignmentMetadata[]>(page.activationAssignments??[]);
- const changedAssignments=page.pageType!=='App Page'&&page.pageType!=='In-Screen Page'
+ const changedAssignments=page.pageType!=='App Page'&&page.pageType!=='In-Screen Page'&&page.pageType!=='Print Template'
   &&JSON.stringify(assignments)!==JSON.stringify(page.activationAssignments??[]);
  const assignmentError=changedAssignments?assignmentValidationError(page,assignments,apps,profiles,recordTypes):'';
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const [detailsTab,setDetailsTab]=useState<'properties'|'history'>('properties');
- useEffect(()=>{const origin=document.activeElement;return()=>{if(origin instanceof HTMLElement)window.requestAnimationFrame(()=>origin.focus());};},[]);
  // An open builder layout wins; from the page list, open the layout the page was designed in.
  const initialVariant:Variant=page.layoutVariant??primaryPageLayout(layoutSummary);
  const [variant,setVariant]=useState<Variant>(initialVariant);
@@ -176,20 +189,34 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
   }catch(e){setError(e instanceof Error?e.message:'Unable to open the selected layout')}
   finally{setBusy(false)}
  };
- return <div className="modal-backdrop" role="presentation">
-  <section className="modal page-details-dialog" role="dialog" aria-modal="true"
-   aria-label="Edit page properties and versions" onKeyDown={event=>{if(event.key==='Escape'&&!busy){event.stopPropagation();onClose();}}}>
+ return <div className="modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget&&!busy)onClose();}}>
+  <section ref={dialogRef} onKeyDown={dialogKeyDown} className="modal page-details-dialog" role="dialog" aria-modal="true"
+   aria-label="Edit page properties and versions">
    <header className="modal-header page-details-header">
     <h2><Pencil size={19}/> Edit Page — {page.label}</h2>
     <button type="button" className="icon-button" aria-label="Close page details"
      onClick={onClose} disabled={busy}>×</button>
    </header>
    <div className="page-details-body">
-    <div className="page-details-nav" role="tablist" aria-label="Page edit sections">
-      <button role="tab" type="button" id="page-details-tab-properties" aria-selected={detailsTab==='properties'} aria-controls="page-details-properties" onClick={()=>setDetailsTab('properties')}>Page Properties</button>
-      <button role="tab" type="button" id="page-details-tab-history" aria-selected={detailsTab==='history'} aria-controls="page-details-history" onClick={()=>setDetailsTab('history')}>Versions</button>
-     </div>
-    <div id="page-details-properties" className="page-details-grid" role="tabpanel" aria-labelledby="page-details-tab-properties" hidden={detailsTab!=='properties'}>
+    <div className="page-details-nav" role="tablist" aria-label="Page edit sections"
+     onKeyDown={event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      event.preventDefault();
+      const selected=event.key==='ArrowRight'||event.key==='End'?'history':'properties';
+      setActiveSection(selected);
+      dialogRef.current?.querySelector<HTMLButtonElement>('#page-details-tab-'+selected)?.focus();
+     }}>
+     <button id="page-details-tab-properties" type="button" role="tab"
+       aria-selected={activeSection==='properties'} aria-controls="page-details-properties"
+       tabIndex={activeSection==='properties'?0:-1}
+       onClick={()=>setActiveSection('properties')}>Page Properties</button>
+     <button id="page-details-tab-history" type="button" role="tab"
+       aria-selected={activeSection==='history'} aria-controls="page-details-history"
+       tabIndex={activeSection==='history'?0:-1}
+       onClick={()=>setActiveSection('history')}>Versions</button>
+    </div>
+    <div id="page-details-properties" className="page-details-grid" role="tabpanel"
+     aria-labelledby="page-details-tab-properties" hidden={activeSection!=='properties'}>
      <div className="page-details-main">
       <section className="page-details-section" aria-label="Basic Information">
        <h3>Basic Information</h3>
@@ -255,7 +282,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
      </aside>
     </div>
     <section id="page-details-history" className="page-details-section page-details-versions"
-      role="tabpanel" aria-labelledby="page-details-tab-history" hidden={detailsTab!=='history'}>
+     role="tabpanel" aria-labelledby="page-details-tab-history" hidden={activeSection!=='history'}>
      <div className="page-details-version-heading">
       <h3><History size={17}/> Page Versions</h3>
       <label className="form-label">Layout

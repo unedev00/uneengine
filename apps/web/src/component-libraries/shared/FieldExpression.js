@@ -1,3 +1,4 @@
+import {executeActionPlan,normalizeFlowCalls} from '../../../../server/src/expression-engine/ActionFormulas.js';
 /** Bounded browser formula evaluator shared by page bindings and UNE renderers.
  * It reads only own properties of the already-authorised record and never evals code.
  */
@@ -282,7 +283,11 @@ const evaluateCall=(name,args,context)=>{
 };
 export const componentReaderKey=Symbol.for('metadrive.pageFormulaComponentReader');
 function parse(source,record,formulaContext){
- const expression=new Parser(tokenize(source)).parse();
+ const parsed=new Parser(tokenize(source)).parse();
+ const expression=formulaContext.flowReferences?normalizeFlowCalls(parsed):parsed;
+ return evaluateParsedExpression(expression,record,formulaContext);
+}
+export function evaluateParsedExpression(expression,record,formulaContext){
  validateFormulaFunctions(expression,'ribbon_binding');
  const resolveReference=(reference,currentRecord=record)=>{
    // Page-local globals are scoped inputs; never read storage or arbitrary records.
@@ -399,6 +404,18 @@ function parse(source,record,formulaContext){
    return descriptor&&Object.prototype.hasOwnProperty.call(descriptor,'value')
     ?descriptor.value:undefined;
   };
+  // Action results are returned by authorised Record/Files services and may
+  // be referenced as AS(alias).Field without unrelated record mention hydration.
+  // The runtime supplies the explicit aliases: never trust a page property to
+  // declare which nested objects may be read.
+  if(parts.length===2&&Array.isArray(formulaContext.actionAliases)&&
+    formulaContext.actionAliases.includes(parts[0])){
+   const result=ownValue(ownValue(currentRecord,parts[0])??{},parts[1]);
+   if(result===undefined||result===null)return '';
+   if(!['string','number','boolean'].includes(typeof result))
+    throw Error('Action result field must be a permitted scalar');
+   return result;
+  }
   // Related values have been hydrated against Object Manager metadata and
   // read permissions by the Page Runtime; they are not arbitrary JS traversal.
   if(reference.includes('.')){
@@ -702,4 +719,11 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
    namedCollections:context?.namedCollections,
    pageState:context?.state,sessionId:context?.session?.id,
    namedCollectionSelections:context?.state?.collectionSelections});
+}
+
+/** Explicit action entry point. Ordinary field evaluation remains side-effect free. */
+export function executeActionFormula(formula,record,context,services){
+ return executeActionPlan(formula,{...record,sessionId:context?.sessionId??''},
+  (node,scope,aliases,state)=>evaluateParsedExpression(node,scope,{...context,actionAliases:aliases,
+   pageState:state&&Object.keys(state).length?{...(context?.pageState??{}),...state}:context?.pageState}),services);
 }

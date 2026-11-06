@@ -1,4 +1,5 @@
 import type {Expression} from './FormulaParser.js';
+import {actionFormulaFunctions,formulaCategory,formulaAllowedInContext} from './FormulaCategories.js';
 
 export type FormulaExpressionContext='formula_field'|'validation_rule'|'flow_formula'
   |'component_visibility'|'record_filter'|'ribbon_binding';
@@ -20,7 +21,6 @@ type DefinitionInput=[name:string,min:number,max:number,contexts?:readonly Formu
 const serverContexts:readonly FormulaExpressionContext[]=['formula_field','validation_rule','flow_formula'];
 const formulaAndFlow:readonly FormulaExpressionContext[]=['formula_field','flow_formula'];
 const validationAndFlow:readonly FormulaExpressionContext[]=['validation_rule','flow_formula'];
-const flowOnly:readonly FormulaExpressionContext[]=['flow_formula'];
 const ribbonFunctions=new Set([
   'IF','IFERROR','AND','OR','NOT','XOR','ISBLANK','ISNULL','ISNUMBER','BLANKVALUE','NULLVALUE',
   'TEXT','VALUE','LEN','ASCII','LOWER','UPPER','PROPER','TRIM','LEFT','RIGHT','MID','FIND',
@@ -31,12 +31,12 @@ const ribbonFunctions=new Set([
   'DATEVALUE','DATETIMEVALUE','TODAY','NOW','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND',
   'WEEKDAY','ISOWEEK','ISOYEAR','ADDDAYS','ADDMONTHS','TIMEVALUE','TIMENOW','SIN','COS',
   'PI','TAN','ASIN','ACOS','ATAN','ATAN2','SINH','COSH','TANH','DEGREES','RADIANS','TZOFFSET',
-  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP'
+  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP','COUNTIFS'
 ]);
 const flowContextOnly=new Set(['ISCHANGED','ISNEW','PRIORVALUE']);
 const formulaAndFlowOnly=new Set(['IMAGE','CURRENCYRATE']);
 const numberFunctions=new Set([
-  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','SUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
+  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','COUNTIFS','SUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
   'ROUNDDOWN','TRUNC','SIGN','MIN','MAX','MOD','SQRT','POWER','CEILING','FLOOR','MCEILING',
   'MFLOOR','EXP','LN','LOG','PI','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND','WEEKDAY',
   'ISOWEEK','ISOYEAR','TZOFFSET','DISTANCE','SIN','COS','TAN','ASIN','ACOS','ATAN','ATAN2',
@@ -82,7 +82,8 @@ const inputs:DefinitionInput[]=[
   ['ISBLANK',1,1],['ISNULL',1,1],['ISNUMBER',1,1],['ISCHANGED',1,1,validationAndFlow],
   ['ISNEW',0,0,validationAndFlow],['ISCLONE',0,0],['PRIORVALUE',1,1,validationAndFlow],
   ['BLANKVALUE',2,2],['NULLVALUE',2,2],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
-  ['COLLECTIONCOUNT',1,1,flowOnly],['COLLECTIONSUM',2,2,flowOnly],
+  ['COLLECTIONCOUNT',1,1,['flow_formula','ribbon_binding']],
+  ['COLLECTIONSUM',2,2,['flow_formula','ribbon_binding']],
   ['COLLECTION',2,20,['flow_formula','ribbon_binding']],
   ['TABLE',1,129,['ribbon_binding']],['SUM',1,1],['ASCII',1,1],
   ['LOWER',1,1],['UPPER',1,1],['PROPER',1,1],['TRIM',1,1],['LEFT',1,2],['RIGHT',1,2],
@@ -100,7 +101,9 @@ const inputs:DefinitionInput[]=[
   ['ADDMONTHS',2,2],['TIMEVALUE',1,1],['TIMENOW',0,0],['PI',0,0],['SIN',1,1],
   ['COS',1,1],['TAN',1,1],['ASIN',1,1],['ACOS',1,1],['ATAN',1,1],['ATAN2',2,2],
   ['SINH',1,1],['COSH',1,1],['TANH',1,1],['DEGREES',1,1],['RADIANS',1,1],
-  ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,flowOnly]
+  ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,['flow_formula','ribbon_binding']],
+  // Server-side record count; evaluated by the action runtime only (ActionFormulas).
+  ['COUNTIFS',3,41,['ribbon_binding']]
 ];
 
 const definitions=new Map<string,FormulaFunctionDefinition>();
@@ -130,6 +133,15 @@ export function getFormulaFunctionNames(context:FormulaExpressionContext):string
   return [...definitions.values()].filter(definition=>definition.allowedContexts.includes(context))
     .map(definition=>definition.name);
 }
+/** Scope-specific completion: Action sees all functions; Data excludes
+ * side effects; Universal is only the pure function family. */
+export function getFormulaNamesForEditor(context:'action'|'data'|'universal'):string[] {
+ const pureAndData=getFormulaFunctionNames('ribbon_binding');
+ const allowed=pureAndData.filter(name=>formulaAllowedInContext(name,context));
+ return context==='action'
+  ?[...new Set([...allowed,...actionFormulaFunctions])]
+  :context==='universal'?allowed.filter(name=>formulaCategory(name)==='universal'):allowed;
+}
 export function validateFormulaFunctions(expression:Expression,context:FormulaExpressionContext):void {
   const visit=(node:Expression):void=>{
     if(node.kind==='call'){
@@ -150,4 +162,24 @@ export function validateFormulaFunctions(expression:Expression,context:FormulaEx
     else if(node.kind==='binary'){visit(node.left);visit(node.right);}
   };
   visit(expression);
+}
+
+/** Substring completion shared by Page, Flow and record-filter formula inputs. */
+export function formulaFunctionPrefix(before:string){
+ const match=/(?:^\s*=?\s*|[,(=+*/&<>-]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before);
+ if(!match)return null;
+ let quote='';
+ for(let index=0;index<before.length;index++){
+  const ch=before[index];
+  if(quote&&ch==='\\'){index++;continue;}
+  if(quote&&ch===quote){
+   if(before[index+1]===quote){index++;continue;}
+   quote='';
+  }else if(!quote&&(ch==='"'||ch==="'"))quote=ch;
+ }
+ return quote?null:match[1];
+}
+export function matchingFormulaFunctions(names:readonly string[],query:string){
+ const search=query.toUpperCase();
+ return names.filter(name=>name.includes(search)).slice(0,12);
 }

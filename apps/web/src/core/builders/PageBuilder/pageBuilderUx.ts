@@ -16,6 +16,7 @@ export const pageBuilderStartOptions = [
   { type: 'Home Page', title: 'Home page', description: 'A starting place for your team.' },
   { type: 'Record Page', title: 'Record page', description: 'Display and edit a saved record.' },
   { type: 'App Page', title: 'App page', description: 'Create a page inside an application.' },
+  { type: 'Print Template', title: 'Print template', description: 'Design a printable page with record bindings.' },
   { type: 'In-Screen Page', title: 'In-screen window', description: 'Reusable Flow window; not a navigation page.' }
 ] as const;
 

@@ -1,3 +1,5 @@
+import {actionArgumentSuggestions} from './actionArgumentSuggestions';
+import {isScreenAction,parseScreenAction,compileActionPlan,isActionPlan,normalizeFlowCalls} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
@@ -7,7 +9,7 @@ import {formulaDollarSuggestions} from './formulaDollarSuggestions';
 import {formulaSignatureAt} from './formulaSignatureHelp';
 import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {getFormulaFunctionNames,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+import {formulaFunctionPrefix,matchingFormulaFunctions,getFormulaNamesForEditor,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 // Styles are loaded by the Page Builder entrypoint so this reusable editor
 // can also render in lightweight server-side ribbon contract tests.
@@ -30,13 +32,15 @@ export function splitSmartFormula(value:string){
 function tokenEndsInComponentPrefix(source:string){
  return /\$component(?:\.[A-Za-z_][A-Za-z0-9_]*)?\.$/.test(source);
 }
-export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[],flowReferences}:{
+export default function SmartFormulaField({value,onChange,fields,disabled,label,objects=[],rootObjectApiName='',singleFieldOnly=false,selectedSourceObjects,mentionKind='text',validate,stateOptions=[],flowReferences,actionPages=[],actionCredentials=[]}:{
  value:string;onChange:(next:string)=>void;fields:readonly FieldMetadata[];disabled:boolean;label:string;
  objects?:readonly ObjectMetadata[];rootObjectApiName?:string;singleFieldOnly?:boolean;selectedSourceObjects?:readonly ObjectMetadata[];mentionKind?:MentionKind;
  validate?:(formula:string)=>string|null;
  stateOptions?:readonly {source:'PageState'|'CollectionState';key:string;label:string}[];
  /** Action formula bar only: runnable Flows offered as $flow.ApiName. Omitted
   * everywhere else, so normal formula bars never suggest or accept $flow. */
+ actionPages?:readonly {apiName:string;label:string;pageType:string;status:string}[];
+ actionCredentials?:readonly {apiName:string;label:string}[];
  flowReferences?:readonly {apiName:string;label:string}[]
 }){
  const scope=usePageFormulaScope();
@@ -53,11 +57,10 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [activeSuggestion,setActiveSuggestion]=useState(0);
  const suggestionListId=useId();
  useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
- const functions=getFormulaFunctionNames('ribbon_binding');
- const functionSuggestions=functionMatch?functions.filter(name=>
-   name.startsWith(functionMatch.query.toUpperCase())).slice(0,12):[];
+ const functions=getFormulaNamesForEditor(flowReferences?'action':'data');
+ const functionSuggestions=functionMatch?matchingFormulaFunctions(functions,functionMatch.query):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
- const hint=focused?formulaSignatureAt(draft,caret):null;
+ const hint=focused?formulaSignatureAt(draft,caret,Boolean(flowReferences)):null;
  useLayoutEffect(()=>{
   if(!hint||!input.current){setHintPosition(null);return;}
   const reposition=()=>{
@@ -122,12 +125,13 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  // TABLE's first argument is an @Object. Subsequent arguments are bare
  // field API names: TABLE(@Product,Name,Price). Do not show unrelated mentions.
  const tableArg=Boolean(tableSourcePrompt||tableObject);
- const availableMentions=matches?.prefix==='$'
+ const actionArgs=flowReferences? actionArgumentSuggestions(draft.slice(0,caret),objects,flowReferences,actionPages,actionCredentials):null;
+ const availableMentions=actionArgs&&matches?.prefix===''?actionArgs.choices.map(item=>({reference:item.apiName,label:item.label})):matches?.prefix==='$'
   ?tableArg?[]:dollarMentions
   :tableArg?recordMentions:[...recordMentions,...collectionMentions,...collectionNames];
  const filtered=matches?availableMentions
     .filter(item=>item.reference.toLowerCase().includes(
-       (matches.prefix==='$'?'$':tableArg?'':'@')+matches.query.toLowerCase())||
+       (matches.prefix==='$'?'$':(tableArg||actionArgs)?'':'@')+matches.query.toLowerCase())||
       item.label.toLowerCase().includes(matches.query.toLowerCase()))
     .slice(0,200):[];
  const isFormulaDraft=(source:string)=>source.startsWith('=')||
@@ -137,6 +141,25 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
   if(!flowReferences&&/\$flow\b/i.test(next))return '$flow is only available in the Action formula bar';
   const custom=validate?.(next);
   if(custom)return custom;
+  if(flowReferences&&isScreenAction(next)){
+   try{const {page,mode}=parseScreenAction(next);
+    if(!actionPages.some(item=>item.apiName===page&&item.status==='Active'&&(item.pageType==='App Page'||mode==='popup'&&item.pageType==='In-Screen Page')))return 'Choose a published page available for this window mode';
+    return null;}catch(error){return error instanceof Error?error.message:'Invalid screen';}
+  }
+  if(flowReferences&&isActionPlan(next)){
+   try{
+    for(const step of compileActionPlan(next)){
+     if(['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(step.name)){
+      const object=objects.find(item=>item.apiName===step.object);
+      if(!object)return 'Unknown object: '+step.object;
+      for(const field of step.fields.keys())if(!object.fields.some(item=>item.apiName===field))return 'Unknown field: '+step.object+'.'+field;
+     }
+     if(['PRINT','CREATEPDF'].includes(step.name)&&!actionPages.some(item=>item.apiName===step.object&&item.pageType==='Print Template'&&item.status==='Active'))return 'Unknown published Print Template: '+step.object;
+     if(step.name==='FLOW'&&!flowReferences.some(item=>item.apiName===step.object))return 'Unknown active Flow: '+step.object;
+     if(['EMAIL','SMS','WHATSAPP'].includes(step.name)&&!actionCredentials.some(item=>item.apiName===step.object))return 'Choose an enabled Named Credential';
+    }
+    return null;}catch(error){return error instanceof Error?error.message:'Invalid action';}
+  }
   const source=next.trim();
   if(!isFormulaDraft(source))return null;
   if(tokenEndsInComponentPrefix(source))return 'Select a component and property';
@@ -146,7 +169,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
     return 'Complete the function with arguments';
   try{
    const expression=new Parser(tokenize(source.startsWith('=')?source.slice(1):source)).parse();
-   validateFormulaFunctions(expression,'ribbon_binding');
+   validateFormulaFunctions(flowReferences?normalizeFlowCalls(expression):expression,'ribbon_binding');
    return null;
   }catch(error){return error instanceof Error?error.message:'Incomplete formula';}
  };
@@ -162,12 +185,12 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
    // the canonical bare field name with no @.
    const tableField=tablePart&&/^@?[A-Za-z0-9_]*$/.test(last)
     ?{start:caret-last.length,end:caret,query:last.replace(/^@/,'')}:null;
-   setMatches(mention?{start:caret-mention[0].length,end:caret,query:mention[1],prefix:'@'}:
+   const args=flowReferences?actionArgumentSuggestions(before,objects,flowReferences,actionPages,actionCredentials):null;
+   setMatches(args?{start:caret-args.query.length,end:caret,query:args.query,prefix:''}:mention?{start:caret-mention[0].length,end:caret,query:mention[1],prefix:'@'}:
     dollar?{start:caret-dollar[0].length,end:caret,query:dollar[1],prefix:'$'}:
     tableField?{...tableField,prefix:''}:null);
-   const name=next.trimStart().startsWith('=')&&!openString
-      ?/(?:^\s*=\s*|[,()]\s*)([A-Za-z][A-Za-z0-9_]*)$/.exec(before):null;
-   setFunctionMatch(tablePart?null:name?{start:caret-name[1].length,end:caret,query:name[1]}:null);
+   const name=next.trimStart().startsWith('=')?formulaFunctionPrefix(before):null;
+   setFunctionMatch(tablePart||args||!name?null:{start:caret-name.length,end:caret,query:name});
  };
  const update=(next:string,caret:number)=>{
   setDraft(next);

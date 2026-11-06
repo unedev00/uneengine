@@ -70,11 +70,30 @@
 }
 @media(max-width:640px){.app-manager-workspace .page-heading.app-manager-top{padding-bottom:8px;margin-bottom:8px;min-height:auto}}
 
-/* Keep Actions reachable and sortable at desktop/tablet widths. */
-.app-manager-list-table{min-width:0}.app-manager-list-table :is(th,td){overflow-wrap:anywhere}
-.app-manager-list-table :is(th,td):nth-child(3){width:20%}.app-manager-list-table :is(th,td):nth-child(6){width:22%}
-.app-manager-sort{border:0;background:transparent;color:inherit;font:inherit;font-weight:600;padding:5px 0;cursor:pointer;text-align:left}.app-manager-sort:focus-visible{outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px}
-@media(min-width:1024px) and (max-width:1250px){.app-manager-list-table{font-size:12px}.app-manager-list-table :is(th,td){padding:8px 6px}.app-manager-list-actions{gap:4px}.app-manager-list-actions .btn{padding-inline:6px}}
-
-.app-manager-list-search input{min-height:40px;height:auto;box-sizing:border-box}
-@media(pointer:coarse){.app-manager-list-search input{min-height:44px}}
+/* Audit UX-0072/75/80–83: controls stay reachable at intermediate sizes. */
+.app-manager-list-table :is(th,td):last-child {
+  position: sticky;right: 0;z-index: 2;background: var(--surface,#fff);
+  box-shadow: -2px 0 5px rgba(20,30,50,.08);
+}
+.app-manager-list-table th:last-child { background: #f8fafc; z-index: 3; }
+.app-manager-list-table th button {
+  border: 0; padding: 0; font: inherit; font-weight: 600;
+  background: transparent; color: inherit; cursor: pointer;
+  text-align: left; min-height: 32px;
+}
+.app-manager-list-table th button:focus-visible { outline: 2px solid var(--md-primary,#1d4ed8); outline-offset: 2px; }
+.app-manager-list-search { min-height: 40px; }
+.app-manager-mobile-sort { display: none; }
+@media(max-width:1199px) {
+ .app-manager-list-table { min-width: 800px; }
+ .app-manager-list-scroll { max-width: 100%; overflow-x: auto; }
+}
+@media(max-width:1023px) {
+ .app-manager-mobile-sort { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 0 12px 8px; font-size: 13px; }
+ .app-manager-mobile-sort select { min-height: 40px; min-width: 140px; max-width: 100%; }
+}
+@media(max-width:360px) {
+ .app-manager-workspace, .app-manager-list { min-width: 0; max-width: 100%; }
+ .app-manager-list .md-responsive-rows, .app-manager-list .md-responsive-item { min-width: 0; }
+ .app-manager-list .md-responsive-item-text, .app-manager-list .md-responsive-trailing { min-width: 0; overflow-wrap: anywhere; }
+}

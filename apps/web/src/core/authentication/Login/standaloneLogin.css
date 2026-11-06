@@ -99,29 +99,231 @@
   box-shadow: 0 0 0 1px #b42318;
 }
 
-/* Reported auth reflow, clarity, access and recovery issues. */
-html:has(.auth-screen),body:has(.auth-screen){min-width:0!important;max-width:100%;color-scheme:light}
-.auth-screen{box-sizing:border-box;width:100%;min-width:0;padding:clamp(12px,3vw,24px);overflow-x:clip}
-.auth-screen .auth-card{box-sizing:border-box;width:100%;max-width:420px;min-width:0;padding:clamp(18px,3vw,34px)}
-.auth-screen .auth-brand-logo{width:min(158px,65%);height:auto;max-height:83px;margin:0 auto 10px;object-fit:contain}
-.auth-screen .auth-card h1{font-size:clamp(22px,5vw,26px);margin:2px 0 6px}
-.auth-screen .auth-card>p{margin-bottom:14px}
-.auth-screen .auth-card .form-control{width:100%;max-width:100%;box-sizing:border-box;padding-left:12px;padding-right:12px}
-.auth-screen .auth-card .form-label{margin-bottom:5px}
-.auth-password-field{position:relative;min-width:0}
-.auth-screen .auth-password-field .form-control{padding-right:50px}
-.auth-reveal{position:absolute;right:0;top:0;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;border:0;background:transparent;color:var(--md-primary,#075b95);border-radius:8px}
-.auth-reveal:focus-visible{outline:2px solid #0b57d0;outline-offset:1px}
-.auth-inline-actions{justify-content:flex-end;gap:8px;margin:6px 0 0;min-height:44px}
-.auth-inline-actions .text-action{min-height:44px}
-.auth-screen .auth-submit{margin-top:12px}
-.auth-recovery{min-width:0;max-width:100%;overflow-wrap:anywhere}
-.auth-recovery h1{font-size:24px}
-.auth-recovery-channels{display:grid;gap:8px;margin:12px 0}
-.auth-screen .auth-recovery-channel{min-height:44px;width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center}
-.auth-recovery-help{border:1px solid #d6e1ef;background:#f5f9ff;border-radius:10px;padding:12px;margin:12px 0}
-.auth-recovery-help p{margin:0 0 10px;line-height:1.5}
-.auth-recovery-help a{color:#075b95;font-weight:600}
-.auth-screen .auth-recovery input[type=email]{box-sizing:border-box;width:100%;min-width:0}
-@media(max-width:360px){.auth-screen{padding:10px}.auth-screen .auth-card{padding:16px}.auth-screen .auth-brand-logo{max-height:62px}.auth-screen .auth-card>p{margin:0 0 10px}}
-@media(max-height:460px) and (min-width:480px){.auth-screen{place-items:start center;padding:8px}.auth-screen .auth-card{padding:12px 20px}.auth-screen .auth-brand-logo{max-height:42px;margin:0 auto 3px}.auth-screen .auth-card>p,.auth-screen .auth-card>.eyebrow{display:none}.auth-screen .auth-card h1{font-size:20px;margin:0 0 5px}.auth-screen .auth-card .form-label{margin:0 0 2px}.auth-screen .auth-card .form-control{min-height:38px;height:38px}.auth-screen .auth-inline-actions,.auth-screen .auth-inline-actions .text-action{min-height:32px}.auth-screen .auth-submit{margin-top:6px;min-height:38px}}
+/* UX-0001–0003, UX-0014–0018: compact, reflow-safe authentication screens. */
+.auth-screen {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  padding: 16px;
+  overflow-x: clip;
+}
+.auth-screen .auth-card {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: clamp(18px, 3vw, 28px);
+}
+.auth-screen .auth-card .auth-brand-logo {
+  display: block;
+  width: min(160px, 65%);
+  max-height: 82px;
+  object-fit: contain;
+  margin-inline: auto;
+}
+.auth-screen .auth-card :is(.text-action, .auth-recovery-channel) {
+  min-height: 44px;
+}
+.auth-screen .auth-card .auth-recovery-channels {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.auth-screen .auth-card .auth-recovery-channel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.auth-screen .auth-card .auth-recovery :is(input, button) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.auth-recovery-unavailable {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.auth-recovery-unavailable a {
+  color: #075b95;
+  text-decoration: underline;
+}
+@media (max-width: 360px) {
+  .auth-screen { padding: 12px 16px; }
+  .auth-screen .auth-card { padding: 18px; }
+  .auth-screen .auth-card .auth-brand-logo { max-height: 64px; }
+  .auth-screen .auth-card :is(h1, h2) { margin-block: 6px 8px; }
+  .auth-screen .auth-card > p { margin-block: 6px 10px; }
+}
+@media (max-height: 460px) and (orientation: landscape) {
+  .auth-screen { align-items: start; padding-block: 8px; }
+  .auth-screen .auth-card { padding: 12px 20px; }
+  .auth-screen .auth-card .auth-brand-logo { max-height: 40px; }
+  .auth-screen .auth-card :is(h1, h2) { margin-block: 4px; font-size: 20px; }
+  .auth-screen .auth-card > p { margin-block: 4px; }
+  .auth-screen .auth-card .form-control { min-height: 36px; }
+}
+
+/* Input-affordance separation and recovery deep-linking (UX-0004–0009, 0017–18). */
+.auth-screen .auth-card .auth-password-control { display:flex;align-items:center;position:relative;min-width:0; }
+.auth-screen .auth-card .auth-password-control .form-control { min-width:0;width:100%;padding-right:62px; }
+.auth-screen .auth-card .auth-password-toggle {
+ position:absolute;right:4px;top:50%;transform:translateY(-50%);
+ min-width:48px;min-height:40px;padding:0 6px;
+ border:0;border-radius:8px;background:transparent;
+ color:var(--standalone-accent,#075b95);font-weight:600;
+}
+.auth-screen .auth-card .auth-recovery-action { justify-content:flex-end;margin:3px 0 10px; }
+.auth-screen .auth-card .auth-inline-actions .text-action { min-height:40px; }
+.auth-screen .auth-card :is(input,select,textarea) { padding-inline:12px; }
+.auth-screen .auth-card .auth-signin-footer {
+ margin-top:14px; padding-top:12px;border-top:1px solid #e2e8f0;
+ text-align:center;font-size:13px;
+}
+.auth-screen .auth-card .auth-signin-footer a {color:#075b95;text-decoration:underline;min-height:40px;display:inline-flex;align-items:center;}
+.auth-screen .auth-card .auth-brand-logo {height:auto;max-height:82px;}
+.auth-screen .auth-card .eyebrow { margin:10px 0; }
+@media(max-height:460px) and (orientation:landscape){
+ .auth-screen .auth-card > p {display:none;}
+ .auth-screen .auth-card .auth-recovery-action {margin:0;}
+ .auth-screen .auth-card .auth-signin-footer {padding:0;margin:4px 0;}
+}
+
+/* One auth action palette; keep the contrast-appropriate white text on blue. */
+.auth-screen:not(.auth-screen--standalone) {
+ --auth-action:#0b57d0;
+ --md-primary:#0b57d0;
+ --md-focus-ring:#0b57d0;
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(a,.text-action,.auth-password-toggle) {
+ color:var(--auth-action);
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit,
+.auth-screen:not(.auth-screen--standalone) .auth-card .btn-brand {
+ background:var(--auth-action);border-color:var(--auth-action);color:#fff;
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(input,select,textarea,button,a):focus-visible {
+ outline:2px solid var(--auth-action);outline-offset:2px;
+}
+
+/* UX-0013: browser autofill must match the white, light-scheme credential fields. */
+.auth-screen .auth-card { color-scheme:light; }
+.auth-screen .auth-card input:-webkit-autofill,
+.auth-screen .auth-card input:-webkit-autofill:hover,
+.auth-screen .auth-card input:-webkit-autofill:focus {
+  -webkit-box-shadow:0 0 0 1000px #fff inset;
+  -webkit-text-fill-color:#192230;
+  caret-color:#192230;
+  border-color:#94a3b8;
+}
+
+/* UX-0005: 44px in-field eye control with no overlap on small devices. */
+.auth-screen .auth-card .auth-password-control .form-control { padding-right:56px; }
+.auth-screen .auth-card .auth-password-toggle {
+ display:grid;place-items:center;
+ right:2px;min-width:44px;width:44px;min-height:44px;height:44px;
+ padding:0;
+}
+
+/* UX-0001: override the 320px workspace-root minimum when a vertical scrollbar
+   reduces the actual layout viewport below 320 CSS pixels. */
+html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
+ min-width:0;max-width:100%;overflow-x:clip;
+}
+
+/* Remaining auth audit findings UX-0002–0004, UX-0006, UX-0010 and UX-0016. */
+.auth-screen:not(.auth-screen--standalone) { --auth-action:#0b57d0; }
+.auth-screen:not(.auth-screen--standalone) .auth-card {
+ --auth-label-gap:6px; --auth-group-gap:14px;
+}
+.auth-screen .auth-card .auth-brand-logo {max-height:64px;max-width:160px;object-fit:contain}
+.auth-screen .auth-card .form-label {display:block;margin:10px 0 6px}
+.auth-screen .auth-card .auth-inline-actions {margin:4px 0 8px;gap:8px}
+.auth-screen .auth-card .auth-submit {margin-top:10px;min-height:44px}
+.auth-screen .auth-card .auth-signin-footer {
+ display:flex;align-items:center;justify-content:center;gap:8px 16px;
+ flex-wrap:wrap;min-width:0;margin-top:12px;padding:8px 0 0;
+}
+.auth-screen .auth-card .auth-signin-footer :is(a,small) {
+ font-size:12px;line-height:1.4;overflow-wrap:anywhere;
+}
+.auth-screen .auth-card .auth-recovery-channels {display:grid;gap:8px}
+.auth-screen .auth-card .auth-recovery-channel {
+ display:flex;align-items:center;justify-content:center;min-height:44px;
+ padding:9px 12px;line-height:1.35;
+}
+@media(max-width:360px) and (min-height:461px){
+ .auth-screen {padding:8px 12px}
+ .auth-screen .auth-card {padding:12px 16px}
+ .auth-screen .auth-card .auth-brand-logo {max-height:52px}
+ .auth-screen .auth-card .eyebrow {margin:4px 0}
+ .auth-screen .auth-card :is(h1,h2){margin:2px 0 5px;font-size:22px}
+ .auth-screen .auth-card > p {margin:4px 0 8px}
+ .auth-screen .auth-card .form-label {margin:6px 0 3px}
+ .auth-screen .auth-card .auth-inline-actions {margin:2px 0 4px}
+ .auth-screen .auth-card .auth-submit {margin-top:4px}
+ .auth-screen .auth-card .auth-signin-footer {margin-top:7px;padding-top:4px}
+}
+@media(max-height:460px) and (orientation:landscape){
+ .auth-screen{padding:6px 12px;align-items:start}
+ .auth-screen .auth-card {padding:8px 16px}
+ .auth-screen .auth-card .auth-brand-logo {max-height:32px}
+ .auth-screen .auth-card .eyebrow {margin:2px 0}
+ .auth-screen .auth-card :is(h1,h2){font-size:18px;margin:2px 0}
+ .auth-screen .auth-card .form-label {margin:3px 0 1px}
+ .auth-screen .auth-card .form-control {min-height:34px}
+ .auth-screen .auth-card .auth-inline-actions {margin:0;min-height:30px}
+ .auth-screen .auth-card .auth-submit {min-height:38px;margin-top:2px}
+ .auth-screen .auth-card .auth-signin-footer {margin-top:2px;padding:0}
+}
+
+/* Preserve the supplied UNE logo's 160:101 aspect ratio at narrow sizes. */
+.auth-screen:not(.auth-screen--standalone) .auth-card .une-brand-logo.auth-brand-logo {
+ width:132px;max-width:65%;height:auto;max-height:none;aspect-ratio:160/101;
+}
+@media(max-width:360px){
+ .auth-screen:not(.auth-screen--standalone) .auth-card .une-brand-logo.auth-brand-logo{
+  width:120px;max-width:65%;height:auto;max-height:none;
+ }
+}
+@media(max-height:460px) and (orientation:landscape){
+ .auth-screen:not(.auth-screen--standalone) .auth-card .une-brand-logo.auth-brand-logo{
+  width:64px;max-width:65%;height:auto;max-height:none;
+ }
+}
+
+/* In 320–375px-tall landscape, keep the credential action in the first viewport. */
+@media(max-height:375px) and (orientation:landscape){
+ .auth-screen .auth-card .une-brand-logo.auth-brand-logo,
+ .auth-screen .auth-card .auth-signin-footer {display:none!important}
+ .auth-screen .auth-card .form-control {min-height:38px}
+ .auth-screen .auth-card .auth-submit {min-height:40px}
+ .auth-screen .auth-card .auth-inline-actions .text-action {min-height:30px}
+}
+
+/* UX-0004 and UX-0006: explicit desktop auth rhythm and one shared control ramp.
+ * The compact/landscape geometry above retains precedence on short viewports. */
+.auth-screen:not(.auth-screen--standalone) {
+ --auth-primary:#0b57d0;
+ --auth-primary-hover:#0946a7;
+ --auth-primary-disabled:#698ac0;
+ --auth-focus:#0b57d0;
+ --auth-action:var(--auth-primary);
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(a,.text-action,.auth-password-toggle) {color:var(--auth-primary)}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(button,a,input,textarea,select):focus-visible {
+ outline:2px solid var(--auth-focus);outline-offset:2px;
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit:hover:not(:disabled) {background:var(--auth-primary-hover);border-color:var(--auth-primary-hover)}
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit:disabled {background:var(--auth-primary-disabled);border-color:var(--auth-primary-disabled)}
+@media(min-width:601px) and (min-height:620px){
+ .auth-screen:not(.auth-screen--standalone) .auth-card .form-label {margin-top:0;margin-bottom:6px}
+ .auth-screen:not(.auth-screen--standalone) .auth-card #login-email {margin-bottom:18px}
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-recovery-action {margin-top:8px;margin-bottom:0}
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {margin-top:24px}
+}

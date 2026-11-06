@@ -43,7 +43,9 @@ export function parseFlowHttpMapping(value:unknown,vars:FlowHttpVariables):Recor
  if(!own(parsed))throw new Error('HTTP mapping must be an object');
  return mapped(parsed,vars) as Record<string,unknown>;
 }
-export function prepareFlowHttpRequest(config:Record<string,unknown>,vars:FlowHttpVariables){
+export function prepareFlowHttpRequest(config:Record<string,unknown>,vars:FlowHttpVariables,maxBodyBytes=32768){
+ if(!Number.isInteger(maxBodyBytes)||maxBodyBytes<1||maxBodyBytes>8*1024*1024)
+  throw Error('Invalid HTTP body limit');
  const path=String(config.path??'');
  const destination=expandFlowHttpText(path,vars);
  if(destination.length>2048)throw new Error('HTTP Callout path exceeds size limit');
@@ -62,7 +64,7 @@ export function prepareFlowHttpRequest(config:Record<string,unknown>,vars:FlowHt
   ?config.body.trim().startsWith('{')||config.body.trim().startsWith('[')
     ?JSON.stringify(mapped(JSON.parse(config.body),vars))
     :expandFlowHttpText(config.body,vars):undefined;
- if(mappedBody&&Buffer.byteLength(mappedBody)>32768)
+ if(mappedBody&&Buffer.byteLength(mappedBody)>maxBodyBytes)
   throw new Error('HTTP Callout body too large');
  return {path:url.pathname.slice(1)+url.search,body:mappedBody};
 }

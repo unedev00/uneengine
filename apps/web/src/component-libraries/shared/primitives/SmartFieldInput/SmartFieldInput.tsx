@@ -1,3 +1,4 @@
+import {formulaFunctionPrefix,matchingFormulaFunctions,getFormulaFunctionNames} from '../../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import { useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type KeyboardEvent, type Ref, type UIEvent } from 'react';
 import { AtSign } from 'lucide-react';
 import type { ObjectMetadata } from '../../../../core/metadata/Definitions/metadata';
@@ -20,6 +21,7 @@ type Props = {
   placeholder?: string;
   disabled?: boolean;
   maxLength?: number;
+  formulaContext?:'flow_formula'|'ribbon_binding';
   textareaRef?: Ref<HTMLTextAreaElement>;
 };
 
@@ -33,7 +35,7 @@ function tokenAtCursor(value: string, cursor: number): { start: number; query: s
 export default function SmartFieldInput({
   value, onChange, objects = [], primaryObjectApiName = '', appObjectApiNames = [],
   kind = 'text', multiline = false, rows = 3, id, ariaLabel, placeholder,
-  disabled = false, maxLength, textareaRef
+  disabled = false, maxLength, textareaRef,formulaContext='flow_formula'
 }: Props) {
   const inputRef = useRef<InputElement | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
@@ -45,6 +47,10 @@ export default function SmartFieldInput({
   const [search, setSearch] = useState('');
   const [searchOverride, setSearchOverride] = useState(false);
   const token = tokenAtCursor(value, cursorRef.current);
+  const functionQuery=kind==='formula'&&!forced?formulaFunctionPrefix(value.slice(0,cursorRef.current)):null;
+  const completions=functionQuery?matchingFormulaFunctions(getFormulaFunctionNames(formulaContext),functionQuery):[];
+  const hasSuggestion=(source:string,caret:number)=>Boolean(tokenAtCursor(source,caret)||
+    kind==='formula'&&formulaFunctionPrefix(source.slice(0,caret)));
   const query = forced || searchOverride ? search : token?.query ?? '';
   const options = useMemo(() =>
     mentionGroups(objects, primaryObjectApiName, appObjectApiNames, '', kind),
@@ -72,11 +78,11 @@ export default function SmartFieldInput({
     onChange(next);
     setForced(false);
     setSearchOverride(false);
-    setOpen(Boolean(tokenAtCursor(next, cursorRef.current)));
+    setOpen(hasSuggestion(next,cursorRef.current));
   };
   const updateCursor = () => {
     cursorRef.current = inputRef.current?.selectionStart ?? value.length;
-    if (!forced) setOpen(Boolean(tokenAtCursor(value, cursorRef.current)));
+    if (!forced) setOpen(hasSuggestion(value,cursorRef.current));
   };
   const insert = (reference: string) => {
     const position = inputRef.current?.selectionStart ?? cursorRef.current;
@@ -134,7 +140,15 @@ export default function SmartFieldInput({
         <AtSign size={15} />
       </button>
     </div>
-    {open && !disabled && primaryObjectApiName && objects.length > 0 &&
+    {open&&!disabled&&functionQuery&&completions.length>0&&<div role="listbox" aria-label="Formula functions" id={resultId}>
+      {completions.map(name=><button key={name} type="button" role="option" aria-selected={false}
+       onMouseDown={event=>event.preventDefault()} onClick={()=>{
+        const end=cursorRef.current,start=end-functionQuery.length;
+        onChange(value.slice(0,start)+name+'('+value.slice(end));
+        setOpen(false);putCursor(start+name.length+1);
+       }}>{name}</button>)}
+    </div>}
+    {open && !functionQuery && !disabled && primaryObjectApiName && objects.length > 0 &&
       <ReferenceBrowser id={resultId} groups={browserGroups} query={query}
         onQueryChange={next => { setSearch(next); setSearchOverride(true); }}
         onChoose={insert} onClose={() => { setOpen(false); setForced(false); }}

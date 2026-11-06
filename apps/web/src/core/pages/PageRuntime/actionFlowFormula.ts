@@ -1,3 +1,4 @@
+import {normalizeFlowCalls} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
@@ -15,8 +16,19 @@ export const FLOW_FORMULA_PREFIX='$flow.';
 const flowName=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
 type FlowLike={apiName:string;status?:string;flowType?:string};
 
-export const isFlowActionFormula=(formula:unknown):boolean=>
- typeof formula==='string'&&/\$flow\./i.test(formula);
+export function formulaFlowReferences(formula:string):string[]{
+ try{
+  const tree=normalizeFlowCalls(new Parser(tokenize(formula)).parse());
+  return references(tree).filter(ref=>/^\$flow\./i.test(ref)).map(ref=>ref.slice(FLOW_FORMULA_PREFIX.length));
+ }catch{return [];}
+}
+export const isFlowActionFormula=(formula:unknown):boolean=>{
+ if(typeof formula!=='string'||!/(?:\$flow\.|\bFLOW\s*\()/i.test(formula))return false;
+ try{
+  const tree=normalizeFlowCalls(new Parser(tokenize(formula)).parse());
+  return references(tree).some(ref=>/^\$flow\./i.test(ref));
+ }catch{return true;}
+};
 
 /** Active Flows that a component event may run (same rule as the Flow dropdown). */
 export const runnableActionFlows=<T extends FlowLike>(flows:readonly T[]):T[]=>
@@ -52,7 +64,7 @@ export function validateFlowActionFormula(formula:string,flows:readonly FlowLike
  if(!source)return null;
  if(source.length>1000)return 'Action formula is too long';
  let tree:Expression;
- try{tree=new Parser(tokenize(source)).parse();}
+ try{tree=normalizeFlowCalls(new Parser(tokenize(source)).parse());}
  catch(error){return error instanceof Error?error.message:'Incomplete formula';}
  const runnable=new Set(runnableActionFlows(flows).map(flow=>flow.apiName.toLowerCase()));
  for(const reference of references(tree)){

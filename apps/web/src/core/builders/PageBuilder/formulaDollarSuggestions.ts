@@ -26,7 +26,7 @@ export function formulaDollarSuggestions(
  }
  for(const flow of flows??[])
   if(/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(flow.apiName))
-   suggestions.push({reference:'$flow.'+flow.apiName,label:flow.label+' · Flow'});
+   suggestions.push({reference:'FLOW('+flow.apiName+')',label:flow.label+' · Flow'});
  const match='$'+query.toLowerCase();
  return suggestions.filter(item=>item.reference.toLowerCase().includes(match)
    ||item.label.toLowerCase().includes(query.toLowerCase())).slice(0,200);

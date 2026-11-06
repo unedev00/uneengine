@@ -363,10 +363,15 @@ function PageBuilder({
   // $tenant.name / $tenant.logo formulas: load the signed-in tenant's brand once.
   useEffect(()=>{void ensureTenantBrand();},[]);
   const isPhoneBuilder = useFormFactor() === 'Phone';
-  const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId);
+  // An existing App Page keeps its saved App Default assignment as the builder app, so it can be
+  // activated in a later session (the prepared app context only exists in the session that created it).
+  const assignedAppApiName = page.activationAssignments
+    ?.find(item => item.scope === 'App Default' && item.appId)?.appId ?? '';
+  const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId || assignedAppApiName);
   useEffect(() => {
     if (preparedAppId) setBuilderAppApiName(preparedAppId);
-  }, [preparedAppId]);
+    else if (assignedAppApiName) setBuilderAppApiName(current => current || assignedAppApiName);
+  }, [preparedAppId, assignedAppApiName]);
   const template = pageTemplates.find((item) => item.id === page.template) ?? pageTemplates[0];
   const builderApp = apps.find((app) => app.apiName === builderAppApiName);
   const appPageApiNames = new Set(builderApp?.navigationPageApiNames ?? []);
@@ -456,8 +461,9 @@ function PageBuilder({
   const [pageListTypeTab, setPageListTypeTab] = useState('App Page');
   const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
   const [pageListPage,setPageListPage]=useState(1);
-  const [pageListSort,setPageListSort]=useState<{key:'label'|'apiName'|'pageType'|'status'|'updatedAt';desc:boolean}>({key:'updatedAt',desc:true});
-  const togglePageSort=(key:typeof pageListSort.key)=>setPageListSort(current=>({key,desc:current.key===key?!current.desc:false}));
+  const [pageListSort,setPageListSort]=useState<'updatedAt'|'label'|'apiName'|'status'>('updatedAt');
+  const [pageListSortDescending,setPageListSortDescending]=useState(true);
+  const changePageListSort=(key:typeof pageListSort)=>{if(key===pageListSort)setPageListSortDescending(value=>!value);else{setPageListSort(key);setPageListSortDescending(key==='updatedAt');}setPageListPage(1);};
   const [pageDetailsApi,setPageDetailsApi]=useState<string|null>(null);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
@@ -531,6 +537,21 @@ function PageBuilder({
     return()=>window.cancelAnimationFrame(frame);
   },[page.components,page.layoutMode]);
   const [createPageOpen, setCreatePageOpen] = useState(false);
+  const createPageTriggerRef=useRef<HTMLButtonElement>(null);
+  const createPageDialogRef=useRef<HTMLElement>(null);
+  const wasCreatingPage=useRef(false);
+  useEffect(()=>{
+    if(createPageOpen){wasCreatingPage.current=true;return;}
+    if(wasCreatingPage.current){wasCreatingPage.current=false;requestAnimationFrame(()=>createPageTriggerRef.current?.focus());}
+  },[createPageOpen]);
+  const handleCreatePageDialogKey=(event:React.KeyboardEvent<HTMLElement>)=>{
+    if(event.key==='Escape'){event.preventDefault();setCreatePageOpen(false);return;}
+    if(event.key!=='Tab')return;
+    const controls=Array.from(createPageDialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]')??[]);
+    if(!controls.length)return;
+    if(event.shiftKey&&document.activeElement===controls[0]){event.preventDefault();controls[controls.length-1].focus();}
+    if(!event.shiftKey&&document.activeElement===controls[controls.length-1]){event.preventDefault();controls[0].focus();}
+  };
   const [routeDirectoryOpen, setRouteDirectoryOpen] = useState(false);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
   const [newPageLabel, setNewPageLabel] = useState('');
@@ -2215,10 +2236,13 @@ function PageBuilder({
       : pageListDeviceTab === 'Desktop'
         ? item.layoutVariant === 'Desktop' || item.devices.includes('Desktop')
         : item.layoutVariant === pageListDeviceTab))
-    && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b)=>{
-    const diff=pageListSort.key==='updatedAt'?(Date.parse(a.updatedAt??'')||0)-(Date.parse(b.updatedAt??'')||0):String(a[pageListSort.key]??'').localeCompare(String(b[pageListSort.key]??''));
-    return (pageListSort.desc?-diff:diff)||a.label.localeCompare(b.label);
-  });
+    && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => {
+      const result=pageListSort==='updatedAt'?(Date.parse(a.updatedAt??'')||0)-(Date.parse(b.updatedAt??'')||0):
+        pageListSort==='status'?a.status.localeCompare(b.status):
+        pageListSort==='apiName'?a.apiName.localeCompare(b.apiName):a.label.localeCompare(b.label);
+      return pageListSortDescending?-result:result;
+    });
+  const showRelatedObjectColumn=visiblePages.some(item=>Boolean(item.targetObject));
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
@@ -2324,7 +2348,7 @@ function PageBuilder({
       const saved = await onSave(nextPage, apiName, 'Lightning page draft created');
       if (!saved) return;
       if(saved.apiName!==apiName) onNotify('Page API name already reserved; created as '+saved.apiName);
-      if (newPageAppId&&newPageType!=='In-Screen Page') onPrepareApp(saved.apiName,newPageAppId);
+      if (newPageAppId&&newPageType!=='In-Screen Page'&&newPageType!=='Print Template') onPrepareApp(saved.apiName,newPageAppId);
       savedPageApiName.current = saved.apiName;
       if (newPageAppId) setBuilderAppApiName(newPageAppId);
       setSelectedId('');
@@ -3360,8 +3384,11 @@ function PageBuilder({
             }}/>} 
 
           {ribbonTab==='Add Block' && insertRibbon}
+          {page.pageType==='Print Template'&&page.layoutMode==='template'&&selected&&ribbonTab==='Component Layout'&&
+            <label><input type="checkbox" checked={selected.properties.printBreakBefore===true} onChange={event=>
+              updateComponent(selected.id,{properties:{...selected.properties,printBreakBefore:event.target.checked}})}/>Page break before component</label>}
           {ribbonTab==='Component Action' &&
-            <PageBuilderActionRibbon
+            <PageBuilderActionRibbon objects={objects} pages={pages} request={request}
               api={selected?.type.startsWith('Custom:')?selected.type.slice(7):selected?.type??''}
               selectedApis={actionMembers.map(item=>item.type.startsWith('Custom:')?item.type.slice(7):item.type)}
               actions={selectedActions} eventDefinitions={actionOptions} flows={flows}
@@ -3582,10 +3609,10 @@ function PageBuilder({
       {!editorMode && <section className="page-manager-view" aria-label="Page management">
         <header className="page-manager-header"><div><h1>{recordPageContext ? 'Record Page Editor' : 'Page Builder'}</h1><p>{recordPageContext ? 'Object-owned record pages: view, edit, activate and publish device layouts.' : 'Manage Home and App Pages. Record Pages are managed inside Object Manager.'}</p></div>
           <div className="page-manager-header-actions">
-            <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
+            <button ref={createPageTriggerRef} className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
             <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
             <select className="form-control" aria-label="Inventory CSV device layout" title="Layout used by page inventory downloads"
-              style={{width:172,maxWidth:'100%',minWidth:0}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant|'Auto')}>
+              style={{width:172}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant|'Auto')}>
               <option value="Auto">CSV: Page’s layout</option>
               {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><option key={device} value={device}>CSV: {device}</option>)}
             </select>
@@ -3595,16 +3622,22 @@ function PageBuilder({
           onTypeChange={value=>{setPageListTypeTab(value);setPageListPage(1);}}
           onAppChange={value=>{setPageListAppTab(value);setPageListPage(1);}}/>}
         <div className="page-manager-filters">
-          <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>{setPageListObject(event.target.value);setPageListPage(1);}}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
-          <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>{setPageListSearch(event.target.value);setPageListPage(1);}} placeholder="Search page name…"/></label>
+          <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>setPageListObject(event.target.value)}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
+          <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
           {!recordPageContext && <label className="form-label page-manager-layout-filter">Layout
-            <select className="form-control" aria-label="Filter pages by layout" value={pageListDeviceTab} onChange={event=>{setPageListDeviceTab(event.target.value);setPageListPage(1);}}>
+            <select className="form-control" aria-label="Layout" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
               <option value="all">All devices</option>{['Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>{device}</option>)}
             </select>
           </label>}
         </div>
-        <ResponsiveDataList rows={paginatedPages} includeTablet getId={item=>item.apiName}
-          label="Page Manager pages" emptyText="No pages match the selected filters"
+        <label className="page-manager-mobile-sort">Sort pages
+          <select className="form-control" value={pageListSort} onChange={event=>{setPageListSort(event.target.value as typeof pageListSort);setPageListSortDescending(event.target.value==='updatedAt');setPageListPage(1);}}>
+           <option value="updatedAt">Last modified</option><option value="label">Page name</option>
+           <option value="apiName">API name</option><option value="status">Status</option>
+          </select>
+        </label>
+        <ResponsiveDataList rows={paginatedPages} includeTablet includeNarrowDesktop getId={item=>item.apiName}
+          label="Page Manager pages" emptyText={pageListSearch||pageListObject||pageListDeviceTab!=="all"?"No pages match the selected filters.":"No pages of this type exist yet."}
           onOpen={item=>void openPageDesign(item.apiName)} openLabel="Open page designer"
           columns={[
             {apiName:'label',label:'Page',phoneRole:'title',render:item=>item.label},
@@ -3612,18 +3645,32 @@ function PageBuilder({
             {apiName:'status',label:'Status',phoneRole:'badge',render:item=>item.status},
             {apiName:'type',label:'Type',render:item=>item.pageType},
             {apiName:'device',label:'Devices',phoneRole:'trailing',render:item=><>{pageDeviceLabel(item)}{layoutBadges(item)}</>},
-            {apiName:'actions',label:'Actions',render:item=><div className="page-manager-mobile-actions" role="group" aria-label={'Actions for '+item.label}>
-               <button type="button" className="btn" aria-label={'Edit page properties for '+item.label} disabled={saving} onClick={event=>{event.stopPropagation();setPageDetailsApi(item.apiName);}}>Page properties</button>
-               <button type="button" className="btn" aria-label={'Download component inventory for '+item.label} disabled={Boolean(inventoryDownloading)} onClick={event=>{event.stopPropagation();void downloadPageInventory(item);}}>Download CSV</button>
-               <PageDesignSplitAction label={item.label} summary={layoutSummaries[item.apiName]}
-                 onOpenDefault={()=>void openPageDesign(item.apiName)} onOpenLayout={variant=>void openPageDesignLayout(item.apiName,variant)}/>
-               <button type="button" className="btn" aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label} disabled={saving}
-                 onClick={event=>{event.stopPropagation();void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true));}}>{item.status==='Active'?'Deactivate':'Activate'}</button>
-               <button type="button" className="btn" aria-label={'Delete '+item.label} disabled={saving||Boolean(archivingPageApiName)}
-                 onClick={event=>{event.stopPropagation();setPendingArchivePageApiName(item.apiName);}}>Delete</button>
+            {apiName:'actions',label:'Actions',render:item=><div className="page-manager-mobile-actions">
+              <button type="button" className="btn" aria-label={"Page properties for "+item.label} disabled={saving} onClick={()=>setPageDetailsApi(item.apiName)}>Page properties</button>
+              <button type="button" className="btn" aria-label={"Download component inventory for "+item.label}
+                disabled={Boolean(inventoryDownloading)} onClick={()=>void downloadPageInventory(item)}>Download inventory</button>
+              <PageDesignSplitAction label={item.label} summary={layoutSummaries[item.apiName]}
+                onOpenDefault={()=>void openPageDesign(item.apiName)}
+                onOpenLayout={variant=>void openPageDesignLayout(item.apiName,variant)}/>
+              <button type="button" className="btn" aria-label={(item.status==="Active"?"Deactivate ":"Activate ")+item.label} disabled={saving} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
+              <button type="button" className="btn" aria-label={"Delete "+item.label} disabled={saving||Boolean(archivingPageApiName)} onClick={()=>setPendingArchivePageApiName(item.apiName)}>Delete</button>
             </div>}
           ]}/>
-        <div className="page-manager-table-scroll md-mobile-table-replaced md-tablet-table-replaced"><table className="records-table page-manager-table"><thead><tr><th scope="col" className="page-manager-actions-heading">Actions</th><th aria-sort={pageListSort.key==='label'?(pageListSort.desc?'descending':'ascending'):'none'}><button type="button" className="page-manager-sort" onClick={()=>togglePageSort('label')}>Page name</button></th><th aria-sort={pageListSort.key==='apiName'?(pageListSort.desc?'descending':'ascending'):'none'}><button type="button" className="page-manager-sort" onClick={()=>togglePageSort('apiName')}>API Name</button></th><th>Application</th><th>Version</th><th aria-sort={pageListSort.key==='pageType'?(pageListSort.desc?'descending':'ascending'):'none'}><button type="button" className="page-manager-sort" onClick={()=>togglePageSort('pageType')}>Type</button></th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th aria-sort={pageListSort.key==='updatedAt'?(pageListSort.desc?'descending':'ascending'):'none'}><button type="button" className="page-manager-sort" onClick={()=>togglePageSort('updatedAt')}>Last modified</button></th><th aria-sort={pageListSort.key==='status'?(pageListSort.desc?'descending':'ascending'):'none'}><button type="button" className="page-manager-sort" onClick={()=>togglePageSort('status')}>Status</button></th></tr></thead>
+        <div className="page-manager-table-scroll md-mobile-table-replaced md-tablet-table-replaced"><table className="records-table page-manager-table"><thead><tr>
+          <th scope="col" className="page-manager-actions-heading">Actions</th>
+          {([['label','Page name'],['apiName','API name']] as const).map(([key,label])=>
+            <th key={key} scope="col" aria-sort={pageListSort===key?(pageListSortDescending?'descending':'ascending'):undefined}>
+              <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort(key)}>{label} {pageListSort===key&&<span className="md-sort-indicator" aria-hidden="true">{pageListSortDescending?'↓':'↑'}</span>}</button>
+            </th>)}
+          <th scope="col">Application</th><th scope="col">Version</th>
+          {showRelatedObjectColumn&&<th scope="col">Related object</th>}<th scope="col">Layout</th>
+          <th scope="col" aria-sort={pageListSort==='updatedAt'?(pageListSortDescending?'descending':'ascending'):undefined}>
+            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('updatedAt')}>Last modified {pageListSort==='updatedAt'&&<span className="md-sort-indicator" aria-hidden="true">{pageListSortDescending?'↓':'↑'}</span>}</button>
+          </th>
+          <th scope="col" aria-sort={pageListSort==='status'?(pageListSortDescending?'descending':'ascending'):undefined}>
+            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('status')}>Status {pageListSort==='status'&&<span className="md-sort-indicator" aria-hidden="true">{pageListSortDescending?'↓':'↑'}</span>}</button>
+          </th>
+        </tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td className="page-manager-actions">
             <div className="page-manager-action-icons" role="group" aria-label={'Actions for '+item.label}>
@@ -3652,13 +3699,17 @@ function PageBuilder({
           <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
             ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
           <td>{item.publishedRevision?'v'+item.publishedRevision:'—'}</td>
-          <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}{layoutBadges(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
+          {showRelatedObjectColumn&&<td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : '—'}</td>}
+          <td title={item.pageType+' · '+pageDeviceLabel(item)+' · '+item.canvasWidth+' × '+item.canvasHeight+' · '+canvasOrientation(item.canvasWidth,item.canvasHeight)}>
+            <strong>{pageDeviceLabel(item)}{layoutBadges(item)}</strong>
+            <small className="page-manager-layout-metadata">{item.pageType} · {item.canvasWidth} × {item.canvasHeight}</small>
+          </td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
 
-        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : (!pageListSearch.trim()&&!pageListObject&&pageListDeviceTab==='all'&&pageListAppTab==='all' ? 'No '+(pageListTypeTab==='all'?'saved':pageListTypeTab.toLowerCase())+' pages exist yet. Select New Page to create one.' : 'No pages match the selected filters. Adjust the filters or search to see more pages.')}</div>}</div>
+        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : pageListSearch||pageListObject||pageListDeviceTab!=='all'?'No pages match the selected filters. Clear filters to see all pages.':'No pages of this type exist yet. Create a new page to begin.'}</div>}</div>
         <nav className="flow-existing-pagination" aria-label="Page list pagination">
-          <span>{visiblePages.length} {visiblePages.length===1?'page':'pages'} · Page {safePageListPage} of {pageListPageCount}</span>
+          <span>{visiblePages.length} {visiblePages.length===1?"page":"pages"} · Page {safePageListPage} of {pageListPageCount}</span>
           <button className="btn" disabled={safePageListPage<=1} onClick={()=>setPageListPage(safePageListPage-1)}>Previous</button>
           <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
         </nav>
@@ -4543,7 +4594,7 @@ function PageBuilder({
         onNotify={onNotify} onClose={() => setRouteDirectoryOpen(false)} />}
       {createPageOpen && <div className="modal-backdrop" role="presentation"
         onMouseDown={event => { if (event.target === event.currentTarget) setCreatePageOpen(false); }}>
-        <section className="modal builder-create-page-dialog" role="dialog" aria-modal="true" aria-labelledby="create-lightning-page-title" onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setCreatePageOpen(false);window.requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>('.page-manager-header-actions .btn-brand')?.focus());}}}>
+        <section ref={createPageDialogRef} onKeyDown={handleCreatePageDialogKey} className="modal builder-create-page-dialog" role="dialog" aria-modal="true" aria-labelledby="create-lightning-page-title">
           <div className="modal-header">
             <h2 id="create-lightning-page-title">Create a page</h2>
             <button className="icon-button dark" type="button" onClick={() => setCreatePageOpen(false)} aria-label="Close"><X size={18} /></button>
@@ -4590,7 +4641,7 @@ function PageBuilder({
                         setNewPageTargetObject(choice.type === 'Record Page' ? (recordPageContext || '') : '');
                         setNewPageTemplate(choice.type === 'Record Page' ? 'header-main-sidebar' : 'main-sidebar');
                         if(choice.type==='In-Screen Page')setNewPageLayoutMode('free-canvas');
-                        const size = newPageDeviceChoice === 'Phone' ? [390,844]
+                        const size = choice.type==='Print Template'?[794,1123]:newPageDeviceChoice === 'Phone' ? [390,844]
                           : newPageDeviceChoice === 'Tablet' ? [1024,768]
                           : newPageDeviceChoice === 'Custom' ? [1440,900]
                           : choice.type === 'In-Screen Page' ? [480,420] : [1440,900];
@@ -4600,6 +4651,14 @@ function PageBuilder({
                   </label>)}
                 </div>
               </fieldset>
+              {newPageType==='Print Template'&&<label className="form-label">Paper size
+                <select className="form-control" value={newPageCanvasWidth+'x'+newPageCanvasHeight}
+                  onChange={event=>{const [w,h]=event.target.value.split('x').map(Number);setNewPageCanvasWidth(w);setNewPageCanvasHeight(h);}}>
+                  <option value="794x1123">A4</option><option value="816x1056">Letter</option>
+                  <option value="559x794">A5</option>
+                  {!['794x1123','816x1056','559x794'].includes(newPageCanvasWidth+'x'+newPageCanvasHeight)&&
+                    <option value={newPageCanvasWidth+'x'+newPageCanvasHeight}>Custom canvas size</option>}
+                </select></label>}
               {recordPageContext && <label className="form-label">Record operation
                 <select className="form-control" value={newRecordMode} onChange={event=>setNewRecordMode(event.target.value as 'View'|'Edit')}>
                   <option value="View">View records</option><option value="Edit">Edit records</option>

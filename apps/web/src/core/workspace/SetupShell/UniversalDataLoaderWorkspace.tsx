@@ -35,18 +35,18 @@ function ExcelWorkflow({apiRequest,category,options,filename,onSuccess}:{
  const [validation,setValidation]=useState<Report|null>(null);
  const [execution,setExecution]=useState<Report|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- const [exportNotice,setExportNotice]=useState('');
+ const [notice,setNotice]=useState('');
  const report=execution??validation;
  const exportSheet=async()=>{
-  setBusy(true);setError('');setExportNotice('Preparing Excel workbook…');
+  setBusy(true);setError('');setNotice('');
   try{
    const result=await apiRequest<{workbook:string;filename?:string;count?:number;total?:number;truncated?:boolean}>(
     '/data-loader/'+category+'/export',{method:'POST',body:JSON.stringify(options)});
    saveXlsx(result.workbook,result.filename??filename);
-   setExportNotice('Workbook download started.');
+   setNotice('Downloaded '+(result.filename??filename)+'.');
    if(result.truncated)setError('Export contains '+result.count+' of '+result.total+
     ' records (the maximum per file). The workbook is incomplete; do not treat it as a full backup.');
-  }catch(e){setExportNotice('');setError(e instanceof Error?e.message:'Export failed');}
+  }catch(e){setError(e instanceof Error?e.message:'Export failed');}
   finally{setBusy(false);}
  };
  const validate=async()=>{
@@ -75,24 +75,24 @@ function ExcelWorkflow({apiRequest,category,options,filename,onSuccess}:{
    <div><h3>Download, edit and re-upload Excel</h3>
     <p>Keep the exported API names. Upload validation makes no changes.</p></div>
    <button className="btn" type="button" disabled={busy} onClick={()=>void exportSheet()}>
-    <Download size={16}/> {busy?'Working…':'Download current workbook'}
+    <Download size={16}/> Download current workbook
    </button>
   </div>
-  {exportNotice&&<p role="status" aria-live="polite">{exportNotice}</p>}
+  {notice&&<p role="status">{notice}</p>}
   <label className="form-label">Upload edited Excel workbook
-   <input className="form-control" type="file" accept=".xlsx" aria-label="Choose Excel workbook" style={{maxWidth:'100%',width:'100%',minWidth:0}}
+   <input className="form-control" type="file" accept=".xlsx" aria-label="Choose Excel workbook" style={{minWidth:0,maxWidth:'100%',width:'100%',boxSizing:'border-box'}}
     onChange={event=>{
      setValidation(null);setExecution(null);setFile(null);setError('');
      void loadXlsx(event).then(v=>setFile(v)).catch(e=>setError(e instanceof Error?e.message:'Cannot read file'));
     }}/>
   </label>
   {file&&<p>Selected: <strong>{file.name}</strong></p>}
-  {!file&&<p className="properties-help" id="record-workbook-hint">Choose an exported .xlsx workbook before validating. Validation never changes records.</p>}
   <div className="toolbar-actions" style={{marginTop:10}}>
-   <button type="button" className="btn btn-brand" disabled={busy||!file} aria-describedby={!file?'record-workbook-hint':undefined} onClick={()=>void validate()}>
+   <button type="button" className="btn btn-brand" disabled={busy||!file} aria-describedby={!file?'data-loader-validate-hint':undefined} onClick={()=>void validate()}>
     <Upload size={15}/> Validate first
    </button>
   </div>
+  {!file&&<small id="data-loader-validate-hint">Choose an exported workbook to enable validation.</small>}
   {error&&<p role="alert" style={{color:'#b42318'}}><AlertTriangle size={16}/> {error}</p>}
   {report&&<section className="metadata-card" style={{marginTop:18}}>
    <h3>{execution?'Execution report':'Validation results'}</h3>
@@ -144,19 +144,19 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
    <div><h1>Universal Data Loader</h1>
     <p>Export, edit, validate and upsert Object Metadata, Records or Smart Ribbon Properties.</p></div>
   </div>
-  <div role="tablist" aria-label="Data Loader categories" style={{display:'flex',gap:8,flexWrap:'nowrap',overflowX:'auto',maxWidth:1100,marginBottom:18,paddingBottom:2}}>
+  <nav role="tablist" aria-label="Data Loader categories" style={{display:'flex',gap:8,flexWrap:'nowrap',overflowX:'auto',maxWidth:1100,marginBottom:18,paddingBlock:4,scrollSnapType:'x mandatory'}}>
    {([
     ['objects','Objects & Fields',Database],
     ['records','Records',Table2],
     ['ribbon','Smart Component Property Library',SlidersHorizontal]
    ] as const).map(([key,label,Icon])=><button key={key} type="button"
-    role="tab" id={'loader-tab-'+key} aria-controls="loader-active-panel" aria-selected={tab===key} tabIndex={tab===key?0:-1}
-    style={{flexShrink:0,minHeight:44}} className={tab===key?'btn btn-brand':'btn'}
-    onPointerDown={()=>setTab(key)} onClick={()=>setTab(key)}
-    onKeyDown={event=>{if(event.key==='ArrowRight'||event.key==='ArrowLeft'){event.preventDefault();const order=['objects','records','ribbon'] as const;const next=order[(order.indexOf(key)+(event.key==='ArrowRight'?1:2))%3];setTab(next);document.getElementById('loader-tab-'+next)?.focus();}}}>
-    <Icon size={16}/>{label}</button>)}
-  </div>
-  <div id="loader-active-panel" role="tabpanel" aria-labelledby={'loader-tab-'+tab} style={{maxWidth:1100,minWidth:0}}>
+    className={tab===key?'btn btn-brand':'btn'} role="tab" aria-selected={tab===key} aria-controls={'data-loader-panel-'+key} id={'data-loader-tab-'+key}
+    tabIndex={tab===key?0:-1} style={{flexShrink:0,minHeight:44,scrollSnapAlign:'start'}}
+    onKeyDown={event=>{const keys=['objects','records','ribbon'] as const;const index=keys.indexOf(key);const next=event.key==='ArrowRight'?keys[(index+1)%keys.length]:event.key==='ArrowLeft'?keys[(index+keys.length-1)%keys.length]:undefined;if(next){event.preventDefault();setTab(next);document.getElementById('data-loader-tab-'+next)?.focus();}}}
+    onPointerUp={event=>{if(event.pointerType==='mouse')setTab(key);}}
+    onClick={()=>setTab(key)}><Icon size={16}/>{label}</button>)}
+  </nav>
+  <div id={"data-loader-panel-"+tab} role="tabpanel" aria-labelledby={"data-loader-tab-"+tab} style={{maxWidth:1100,minWidth:0}}>
    {tab==='objects'&&<UniversalMetadataLoader inline apiRequest={apiRequest}
     currentObject={selectedObject} availableObjects={objectList}
     onObjectChange={apiName=>{setObjectApi(apiName);setExternalField('');}}
@@ -166,7 +166,7 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
     }}/>}
    {tab==='records'&&<>
     <section className="metadata-card" style={{marginBottom:16}}>
-     <h3>Record Data</h3>
+     <h2>Record Data</h2>
      <label className="form-label">Choose object
       <select className="form-control" value={selectedObject} onChange={e=>{setObjectApi(e.target.value);setExternalField('');}}>
        {objectList.map(o=><option key={o.apiName} value={o.apiName}>{o.label} ({o.apiName})</option>)}
@@ -188,7 +188,7 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
    </>}
    {tab==='ribbon'&&<>
     <section className="metadata-card" style={{marginBottom:16}}>
-     <h3>Smart Ribbon Property Visibility</h3>
+     <h2>Smart Ribbon Property Visibility</h2>
      <label className="form-label">Component API
       <input className="form-control" value={componentApi} onChange={e=>setComponentApi(e.target.value)}
        placeholder="Leave blank to download all Smart Components"/>
