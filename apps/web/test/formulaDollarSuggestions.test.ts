@@ -22,15 +22,16 @@ const components=[{
  id:'label',properties:{stateBindings:{textSource:'selectedProduct'}}
 }];
 
-test('$ autocomplete lists page-declared keys, the page-session token and the tenant brand',()=>{
+test('$ autocomplete lists page-declared keys and nested authenticated session fields',()=>{
  const choices=pageStateChoices(components);
  const keys=choices.filter(entry=>entry.source==='PageState').map(entry=>entry.key);
  assert.deepEqual(keys,['cartTotal','currentCategory','flowStatus','selectedProduct']);
  const all=formulaDollarSuggestions(choices).map(entry=>entry.reference);
- assert.deepEqual(all,['$session','$tenant.name','$tenant.logo','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
- assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(3));
- assert.deepEqual(formulaDollarSuggestions(choices,'tenant').map(x=>x.reference),['$tenant.name','$tenant.logo']);
- assert.deepEqual(formulaDollarSuggestions(choices,'sess').map(x=>x.reference),['$session']);
+ assert.deepEqual(all,['$session.id','$session.user.id','$session.user.email','$session.user.name','$session.user.locale','$session.user.timeZone','$session.user.currencyIsoCode','$session.tenant.id','$session.tenant.name','$session.tenant.logo','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
+ assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(10));
+ assert.deepEqual(formulaDollarSuggestions(choices,'tenant').map(x=>x.reference),['$session.tenant.id','$session.tenant.name','$session.tenant.logo']);
+ assert.deepEqual(formulaDollarSuggestions(choices,'sess').map(x=>x.reference),all.slice(0,10));
+ assert.deepEqual(formulaDollarSuggestions(choices,'session.user.').map(x=>x.reference),all.slice(1,7));
  assert.deepEqual(formulaDollarSuggestions(choices,'state.selected').map(x=>x.reference),['$state.selectedProduct']);
  assert.deepEqual(formulaDollarSuggestions(choices,'unknown'),[]);
  assert.ok(!all.includes('$User.Email'),'only declared page state and session ID are available');
@@ -46,8 +47,9 @@ test('one shared formula parser resolves $state fields and $session, without lea
  assert.equal(evaluateFieldExpressionDetailed('$session',{},{}).value,'');
  assert.match(evaluateFieldExpressionDetailed('$state.privateRecord',{},ctx).error??'',/finite scalar/);
  assert.match(evaluateFieldExpressionDetailed('$state.__proto__',{},ctx).error??'',/Invalid Page State reference/);
- assert.match(evaluateFieldExpressionDetailed('$session.anything',{},ctx).error??'',/Unsupported Page State or session/);
+ assert.match(evaluateFieldExpressionDetailed('$session.anything',{},ctx).error??'',/Unsupported session reference/);
  assert.equal(evaluateFieldExpressionDetailed('@Name',{Name:'Coffee'},ctx).value,'Coffee');
+ assert.equal(evaluateFieldExpressionDetailed('$session.id',{},ctx).value,'page-session-123');
 });
 
 test('global state references flow through component text bindings and Action formulas',()=>{
@@ -80,6 +82,9 @@ test('shared Formula Bar keeps @ fields and TABLE column suggestions separate fr
  assert.deepEqual(splitSmartFormula('=@Name & $state.item & $session')
   .filter(part=>part.kind==='field').map(part=>part.value),
   ['@Name','$state.item','$session']);
+ assert.deepEqual(splitSmartFormula('=$session.user.email & $session.tenant.name')
+  .filter(part=>part.kind==='field').map(part=>part.value),
+  ['$session.user.email','$session.tenant.name']);
 });
 
 
@@ -100,4 +105,26 @@ test('tenant brand loader retries failed requests and refreshes formulas when co
   assert.match(settings,/setCompany\(saved\.profile\)[\s\S]*?void refreshTenantBrand\(\)/);
   assert.match(brand,/for\(const listener of \[\.\.\.state\.listeners\]\)listener\(\)/);
   assert.match(runtime,/React\.useSyncExternalStore\(subscribeTenantBrand,getTenantBrand,getTenantBrand\)/);
+});
+
+
+test('session hierarchy reads only authenticated scalar identity, never record fields',()=>{
+ const identity={sessionId:'page-123',
+  user:{Id:'user-42',Email:'signed-in@example.test',Name:'Cashier',Locale:'en-GB',TimeZone:'Europe/London'},
+  organization:{Id:'tenant-42',Name:'UNE Tenant'},
+  tenant:{name:'Trading Company',logo:'https://example.test/logo.png'}};
+ const fakeRecord={session:{user:{id:'forged-user',email:'forged@example.test'}},User:{Id:'record-user'}};
+ for(const [source,expected] of [
+  ['$session.id','page-123'],['$session.user.id','user-42'],
+  ['$session.user.email','signed-in@example.test'],['$session.user.name','Cashier'],
+  ['$session.tenant.id','tenant-42'],['$session.tenant.name','Trading Company'],
+  ['$session.tenant.logo','https://example.test/logo.png']
+ ]){
+  assert.equal(evaluateFieldExpressionDetailed(source,fakeRecord,identity).value,expected);
+ }
+ for(const name of ['$session.user.password','$session.tenant.secret',
+  '$session.user.__proto__','$session.user.id.extra','$session.anything']){
+  assert.match(evaluateFieldExpressionDetailed(name,fakeRecord,identity).error??'',/Unsupported session reference/);
+ }
+ assert.match(evaluateFieldExpressionDetailed('$session.user.email',fakeRecord,{sessionId:'page-123'}).error??'',/Authenticated user is unavailable/);
 });
