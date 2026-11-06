@@ -124,24 +124,27 @@ export async function createTemplatePdf(template:string,id:string,request:Reques
  clone.style.overflow='visible';clone.style.position='relative';
  const pageCount=Math.ceil(Math.max(height,root.scrollHeight,clone.scrollHeight)/height);
  if(pageCount>100)throw Error('Print Template exceeds 100 PDF pages');
- const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+(height*pageCount)+'">'+
-  '<foreignObject width="100%" height="100%">'+
-  '<div xmlns="http://www.w3.org/1999/xhtml">'+new XMLSerializer().serializeToString(clone)+'</div>'+
-  '</foreignObject></svg>';
- const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
- try{
-  const image=new Image();
-  await new Promise<void>((resolve,reject)=>{
-   image.onload=()=>resolve();image.onerror=()=>reject(Error('Print Template could not be rasterised'));
-   image.src=url;
-  });
-  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-  const ctx=canvas.getContext('2d');
-  if(!ctx)throw Error('Canvas is unavailable');
-  const chunks:Uint8Array[]=[];
-  for(let i=0;i<pageCount;i++){
+ const markup=new XMLSerializer().serializeToString(clone);
+ const chunks:Uint8Array[]=[];
+ for(let i=0;i<pageCount;i++){
+  // Each print sheet is rendered independently to avoid huge, unsupported
+  // browser canvas sizes on multi-page templates.
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'">'+
+   '<foreignObject width="100%" height="100%">'+
+   '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+width+'px;height:'+height+'px;overflow:hidden;position:relative">'+
+   '<div style="position:relative;top:-'+(i*height)+'px">'+markup+'</div></div></foreignObject></svg>';
+  const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+  try{
+   const image=new Image();
+   await new Promise<void>((resolve,reject)=>{
+    image.onload=()=>resolve();image.onerror=()=>reject(Error('Print Template could not be rasterised'));
+    image.src=url;
+   });
+   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+   const ctx=canvas.getContext('2d');
+   if(!ctx)throw Error('Canvas is unavailable');
    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);
-   ctx.drawImage(image,0,i*height,width,height,0,0,width,height);
+   ctx.drawImage(image,0,0,width,height);
    const jpeg=await new Promise<ArrayBuffer>((resolve,reject)=>{
     canvas.toBlob(async blob=>{
      if(!blob){reject(Error('Unable to encode print page'));return;}
@@ -149,16 +152,15 @@ export async function createTemplatePdf(template:string,id:string,request:Reques
     },'image/jpeg',.9);
    });
    chunks.push(new Uint8Array(jpeg));
-  }
+  }finally{URL.revokeObjectURL(url);}
+ }
   const contentBase64=await toBase64(imagesToPdf(chunks,width,height));
   const saved=await request<{id:string}>('/media-assets',{method:'POST',
    body:JSON.stringify({name:template+'-'+id+'.pdf',contentType:'application/pdf',contentBase64})});
   if(!saved.id)throw Error('PDF storage did not return a file ID');
   return {FileId:'asset:'+saved.id,AssetRef:'asset:'+saved.id};
  }finally{
-  URL.revokeObjectURL(url);
-  // The existing preview host is the owner of this dialog. Do not forcibly
-  // destroy its React portal or bypass its close handler.
+  // The existing preview host owns the React dialog.
   dialog.querySelector<HTMLButtonElement>('button')?.click();
  }
 }
