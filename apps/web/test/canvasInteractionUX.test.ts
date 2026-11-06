@@ -943,3 +943,62 @@ test('Page Builder bulk delete preserves unselected nested children and repairs 
   assert.deepEqual(childOnly.components.find(item=>item.id==='selected')?.position,
     {x:25,y:37,width:80,height:80});
 });
+
+import {selectCanvasIds,marqueeCanvasIds,translateCanvasSelection} from '../src/core/builders/PageBuilder/canvasSelectionInteractions';
+
+test('canvas Ctrl/Cmd toggle selects and deselects an entire authored group',()=>{
+  const items=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{canvasGroupId:'g'},position:{x:10,y:10,width:30,height:30}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{canvasGroupId:'g'},position:{x:50,y:10,width:30,height:30}},
+    {id:'c',type:'Card',label:'C',visible:true,properties:{},position:{x:100,y:10,width:30,height:30}}
+  ] as PageComponentMetadata[];
+  assert.deepEqual(selectCanvasIds(items,[],'a','replace'),['a','b']);
+  assert.deepEqual(selectCanvasIds(items,['a','b'],'c','toggle'),['a','b','c']);
+  assert.deepEqual(selectCanvasIds(items,['a','b','c'],'b','toggle'),['c']);
+  assert.deepEqual(selectCanvasIds(items,['a','b'],'a','member'),['a']);
+});
+
+test('navigator Shift range extends existing selection across sibling rows',()=>{
+  const items=['a','b','c','d'].map(id=>({
+    id,type:'Text',label:id,visible:true,properties:{},position:{x:0,y:0,width:40,height:20}
+  })) as PageComponentMetadata[];
+  assert.deepEqual(selectCanvasIds(items,['a'],'d','range','b'),['a','b','c','d']);
+  assert.deepEqual(selectCanvasIds(items,['a'],'c','replace'),['c']);
+});
+
+test('marquee hit testing ignores invisible, locked, and nested shapes',()=>{
+  const items=[
+    {id:'in',type:'Text',label:'Visible',visible:true,properties:{},position:{x:40,y:40,width:30,height:30}},
+    {id:'outside',type:'Text',label:'Other',visible:true,properties:{},position:{x:200,y:200,width:30,height:30}},
+    {id:'hidden',type:'Text',label:'Hidden',visible:false,properties:{},position:{x:40,y:40,width:30,height:30}},
+    {id:'locked',type:'Text',label:'Locked',visible:true,properties:{editorLocked:true},position:{x:40,y:40,width:30,height:30}},
+    {id:'nested',type:'Text',label:'Nested',visible:true,parentId:'container',properties:{},position:{x:40,y:40,width:30,height:30}}
+  ] as PageComponentMetadata[];
+  assert.deepEqual(marqueeCanvasIds(items,{x:30,y:30,width:50,height:50}),['in']);
+  assert.deepEqual(marqueeCanvasIds(items,{x:30,y:30,width:50,height:50},['outside']),['outside','in']);
+});
+
+test('arrow movement treats 50 selected shapes as one rigid bounded edit',()=>{
+  const items=Array.from({length:50},(_,i)=>({
+    id:'shape'+i,type:'Text',label:'Text',visible:true,properties:{binding:'$session.user.id'},
+    position:{x:i*10,y:20,width:10,height:10}
+  })) as PageComponentMetadata[];
+  const moved=translateCanvasSelection(items,items.map(item=>item.id),50,10,{width:510,height:150});
+  assert.equal(moved[0].position?.x,10,'last shape bounds clamp all movement equally');
+  assert.equal(moved[49].position?.x,500);
+  assert.equal(moved[0].position?.y,30);
+  assert.equal(moved[1].position?.x! - moved[0].position?.x!,10);
+  assert.equal(moved[0].properties.binding,'$session.user.id');
+  assert.equal(items[0].position?.x,0,'original page stays immutable for Undo');
+});
+
+test('Page Builder exposes modifier selection, Layers selection and one arrow handler',async()=>{
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
+  assert.match(builder,/event\.ctrlKey\|\|event\.metaKey\|\|event\.shiftKey\?'toggle'/);
+  assert.match(builder,/startCanvasMarquee/);
+  assert.match(builder,/translateCanvasSelection\(page\.components,ids,dx,dy/);
+  assert.doesNotMatch(builder,/const delta = event\.shiftKey \? 1 : canvasSnap/);
+  assert.match(navigator,/aria-multiselectable="true"/);
+  assert.match(navigator,/event\.shiftKey\?'range'/);
+});
