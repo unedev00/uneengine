@@ -259,13 +259,13 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  padding:9px 12px;line-height:1.35;
 }
 @media(max-width:360px) and (min-height:461px){
- .auth-screen {padding:8px 12px}
- .auth-screen .auth-card {padding:12px 16px}
+ .auth-screen {padding:6px 12px}
+ .auth-screen .auth-card {padding:9px 16px}
  .auth-screen .auth-card .auth-brand-logo {max-height:52px}
- .auth-screen .auth-card .eyebrow {margin:4px 0}
+ .auth-screen .auth-card .eyebrow {margin:2px 0}
  .auth-screen .auth-card :is(h1,h2){margin:2px 0 5px;font-size:22px}
- .auth-screen .auth-card > p {margin:4px 0 8px}
- .auth-screen .auth-card .form-label {margin:6px 0 3px}
+ .auth-screen .auth-card > p {margin:2px 0 6px}
+ .auth-screen .auth-card .form-label {margin:4px 0 2px}
  .auth-screen .auth-card .auth-inline-actions {margin:2px 0 4px}
  .auth-screen .auth-card .auth-submit {margin-top:4px}
  .auth-screen .auth-card .auth-signin-footer {margin-top:7px;padding-top:4px}
