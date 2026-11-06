@@ -597,3 +597,16 @@ html, body, #root { min-width:0; max-width:100%; }
  .lightning .setup-layout>.workspace { width:100%;min-width:0; }
  .lightning .mobile-settings-back-bar { min-width:0; }
 }
+
+/* Collapsed Setup rail keeps a short visible label for each permission group. */
+@media(min-width:601px) {
+ .lightning .setup-sidebar-collapsed .setup-tree-group::before {
+  content:attr(data-group-short);
+  display:block;text-align:center;font-size:10px;font-weight:700;
+  letter-spacing:.055em;color:var(--md-text-2,#526175);
+  padding:7px 0 3px;
+ }
+}
+.lightning .setup-sidebar .tree-item { gap:10px;line-height:1.4;font-weight:500; }
+.lightning .setup-sidebar .tree-item .md-setup-icon { flex-shrink:0; }
+.lightning .setup-sidebar .tree-item>span:not(.md-setup-icon) { min-width:0;overflow-wrap:normal; }
