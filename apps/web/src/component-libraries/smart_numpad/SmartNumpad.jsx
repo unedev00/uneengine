@@ -29,8 +29,11 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
  const update=(next,event)=>{
   if(p.disabled||p.readonly===true||p.previewOnly===true)return;
   valueRef.current=next;dirty.current=true;setValue(next);
-  fire("change",next);
-  if(event)fire(event,next);
+  // The shared Page Runtime publishes the edited value and invokes any
+  // configured On Change action once. Never dispatch an unconfigured Flow.
+  if(!p.builderPreview&&typeof p.onChange==="function")p.onChange(next);
+  else if(p.actionFlows?.change)fire("change",next);
+  if(event&&p.actionFlows?.[event])fire(event,next);
  };
  const press=key=>{
   if(p.disabled||p.readonly===true)return;
@@ -109,7 +112,8 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
     value={value}
     disabled={p.disabled===true||p.readonly===true||p.previewOnly===true}
     onChange={event=>update(normalizeNumpadValue(event.target.value,settings))}
-    onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();fire("click",valueRef.current);}}}/>
+    onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();
+     if(p.actionFlows?.click)fire("click",valueRef.current);}}}/>
    {p.numpadSuffix&&!isPin&&<span className="smart-numpad-suffix" aria-hidden="true">{p.numpadSuffix}</span>}
   </div>
   <div className="smart-numpad-grid" style={{gap:size(p.numpadGap,8,0,48)}}>
@@ -118,7 +122,8 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
   <div className="smart-numpad-custom-row" style={{gap:size(p.numpadGap,8,0,48)}}>
    {[1,2,3].filter(index=>p["customButton"+index+"Visible"]!==false).map(index=>sharedButton("customButton"+index,
     String(buttonLabels[index-1]||"Custom "+index),customStyle(index),
-    ()=>fire("customButton"+index,valueRef.current),true))}
+    ()=>{const event="customButton"+index;
+     if(p.actionFlows?.[event])fire(event,valueRef.current);},true))}
   </div>
  </div>;
 }
