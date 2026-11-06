@@ -335,3 +335,23 @@ test('per-step telemetry accounts for sequential FOREACH iteration without count
  assert.deepEqual(timings[0].steps.map(step=>step.name),['FOREACH','DELETERECORD','DELETERECORD']);
  assert.deepEqual(timings[0].steps.map(step=>step.requestCount),[1,1,1]);
 });
+
+test('baseline: guarded numeric cart adjustment performs GET then PATCH before publishing changes',async()=>{
+ const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
+ const events:string[]=[];
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  events.push((options?.method??'GET')+' '+path);
+  return {record:row} as T;
+ };
+ const start=performance.now();
+ const changes=await adjustNumberRecord(request,{
+  actionType:'AdjustNumber',fieldApiName:'Quantity',deltaSource:'$event.delta',
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
+  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
+ },{recordId:rowId,delta:1},{cartSessionId:sessionId,cartItems:[row]},objects,'CartLine');
+ assert.deepEqual(events,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
+ assert.deepEqual(changes.find(change=>change.key==='total')?.value,3.75);
+ console.info('optimistic numeric baseline: requests=2 order=GET>PATCH elapsedMockMs='+
+  (performance.now()-start).toFixed(2));
+});
