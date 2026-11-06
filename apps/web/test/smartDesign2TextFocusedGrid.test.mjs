@@ -64,7 +64,7 @@ test('Text Mode has no active metadata property or Design 2 control',()=>{
  const migration=read('../../server/src/system-support/migrations/20271119-smart-formula-display-runtime.sql');
  for(const table of ['md_builder_shared_properties','md_builder_ribbon_component_rules',
   'md_builder_design2_slots','md_builder_design2_slot_rules']){
-  assert.match(migration,new RegExp('DELETE FROM '+table+'\\\\s'));
+  assert.ok(migration.includes('DELETE FROM '+table+'\\n'),table+' must be retired');
  }
  assert.match(migration,/property_key='displayMode'/);
  assert.match(migration,/slot_key='textMode'/);
