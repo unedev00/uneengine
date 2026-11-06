@@ -221,3 +221,11 @@
   caret-color:#192230;
   border-color:#94a3b8;
 }
+
+/* UX-0005: 44px in-field eye control with no overlap on small devices. */
+.auth-screen .auth-card .auth-password-control .form-control { padding-right:56px; }
+.auth-screen .auth-card .auth-password-toggle {
+ display:grid;place-items:center;
+ right:2px;min-width:44px;width:44px;min-height:44px;height:44px;
+ padding:0;
+}
