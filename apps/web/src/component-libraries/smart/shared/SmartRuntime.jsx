@@ -653,10 +653,11 @@ export default function SmartRuntime(p){
  else if(name==="smart_text"||name==="smart_label"){
   // Keep each Data expression scoped to the property that actually owns it.
   // A label/value formula must not borrow defaultValue's field-filter rule.
+  const hasValue=key=>p[key]!==undefined&&p[key]!==null&&p[key]!=="";
   const valueKey=["textSource","defaultValue","value","label"]
-   .find(key=>p[key]!==undefined&&p[key]!==null)??"label";
+   .find(hasValue)??"label";
   const inputKey=["textSource","defaultValue","value"]
-   .find(key=>p[key]!==undefined&&p[key]!==null)??"defaultValue";
+   .find(hasValue)??"defaultValue";
   const contentValue=scopedExpression(p,valueKey,p[valueKey]??"",record);
   // A Data formula is a read-only value unless the author attached an actual
   // input change action (or explicitly requested an editable input).
