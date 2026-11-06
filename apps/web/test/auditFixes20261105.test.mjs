@@ -338,3 +338,15 @@ test('UX-0026 and UX-0029 security panel shows up to three distinct rows and ign
  assert.match(home,/if\(refreshInFlight\.current\)return \(\) => \{\};/);
  assert.match(home,/refreshInFlight\.current=false/);
 });
+
+test('UX-0067 Page Builder CSV filter shrinks within the available header width',()=>{
+ const builder=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(builder,/Inventory CSV device layout/);
+ assert.match(builder,/width:'min\(172px, 100%\)',minWidth:0,maxWidth:'100%'/);
+ assert.doesNotMatch(builder,/style=\{\{width:172\}\} value=\{inventoryExportVariant\}/);
+});
+test('UX-0053 Data Loader navigation aligns with the inset configuration panel',()=>{
+ const loader=source('src/core/workspace/SetupShell/UniversalDataLoaderWorkspace.tsx');
+ assert.match(loader,/maxWidth:1052,marginLeft:24/);
+ assert.match(loader,/maxWidth:1100,minWidth:0/);
+});
