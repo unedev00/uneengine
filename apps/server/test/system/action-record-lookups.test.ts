@@ -186,6 +186,6 @@ test('missing future alias field retains guarded GET fallback and permission err
   calls.push((init?.method??'GET')+' '+path.split('?')[0]);
   if(!init)throw Error('Permission denied');
   return {record:{Id:cartId}} as never;
- }}),/UPDATERECORD failed after 1 confirmed action\(s\). Permission denied/);
+ }}),/CREATERECORD failed after 1 confirmed action\(s\). Permission denied/);
  assert.deepEqual(calls,['POST /records/Item','GET /records/Item/'+cartId]);
 });
