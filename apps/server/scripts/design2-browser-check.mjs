@@ -985,6 +985,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
     return {width:canvas?.getBoundingClientRect().width??0,
      viewportWidth:viewport.clientWidth,scrollWidth:viewport.scrollWidth};
    });
+   // Wait for the Smart Button selection's Fit Width/ResizeObserver cycle
+   // to settle before attributing a zoom change to expanding Object Source.
+   await page.waitForTimeout(200);
    const before=await measureCanvas();
    await sourceToggle.click();
    assert.equal(await sourceToggle.getAttribute('aria-expanded'),'true');
@@ -993,7 +996,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    assert.equal(await sourceSection.locator('button.smart-source-add-label').count(),1);
    const after=await measureCanvas();
    assert.ok(Math.abs(after.width-before.width)<1,
-    'Expanding Object Source must not alter canvas zoom or width');
+    'Expanding Object Source must not alter canvas zoom or width: '+
+     JSON.stringify({before,after}));
    assert.ok(after.scrollWidth<=after.viewportWidth+2,
     'Fit Width must not create a horizontal canvas scrollbar: '+JSON.stringify(after));
    await chooseArea('Body');
