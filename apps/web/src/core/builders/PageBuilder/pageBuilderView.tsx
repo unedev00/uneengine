@@ -2237,6 +2237,7 @@ function PageBuilder({
         pageListSort==='apiName'?a.apiName.localeCompare(b.apiName):a.label.localeCompare(b.label);
       return pageListSortDescending?-result:result;
     });
+  const showRelatedObjectColumn=visiblePages.some(item=>Boolean(item.targetObject));
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
@@ -3619,7 +3620,7 @@ function PageBuilder({
           <label className="form-label">Related Record / Object<select className="form-control" value={pageListObject} aria-label="Related Record or Object" onChange={event=>setPageListObject(event.target.value)}><option value="">All objects</option>{objects.map(item=><option key={item.apiName} value={item.apiName}>{item.label}</option>)}</select></label>
           <label className="form-label">Search pages<input className="form-control" type="search" value={pageListSearch} onChange={event=>setPageListSearch(event.target.value)} placeholder="Search page name…"/></label>
           {!recordPageContext && <label className="form-label page-manager-layout-filter">Layout
-            <select className="form-control" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
+            <select className="form-control" aria-label="Layout" value={pageListDeviceTab} onChange={event=>setPageListDeviceTab(event.target.value)}>
               <option value="all">All devices</option>{['Desktop','Tablet','Mobile','Custom'].map(device=><option key={device} value={device}>{device}</option>)}
             </select>
           </label>}
@@ -3657,7 +3658,7 @@ function PageBuilder({
               <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort(key)}>{label}</button>
             </th>)}
           <th scope="col">Application</th><th scope="col">Version</th>
-          <th scope="col">Related object</th><th scope="col">Layout</th>
+          {showRelatedObjectColumn&&<th scope="col">Related object</th>}<th scope="col">Layout</th>
           <th scope="col" aria-sort={pageListSort==='updatedAt'?(pageListSortDescending?'descending':'ascending'):undefined}>
             <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('updatedAt')}>Last modified</button>
           </th>
@@ -3693,7 +3694,7 @@ function PageBuilder({
           <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
             ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
           <td>{item.publishedRevision?'v'+item.publishedRevision:'—'}</td>
-          <td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : '—'}</td>
+          {showRelatedObjectColumn&&<td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : '—'}</td>}
           <td title={item.pageType+' · '+pageDeviceLabel(item)+' · '+item.canvasWidth+' × '+item.canvasHeight+' · '+canvasOrientation(item.canvasWidth,item.canvasHeight)}>
             <strong>{pageDeviceLabel(item)}{layoutBadges(item)}</strong>
             <small className="page-manager-layout-metadata">{item.pageType} · {item.canvasWidth} × {item.canvasHeight}</small>
