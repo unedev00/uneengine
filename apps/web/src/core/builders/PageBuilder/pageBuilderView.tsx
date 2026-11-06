@@ -411,6 +411,7 @@ function PageBuilder({
   const [selectedRegion, setSelectedRegion] = useState<'header' | 'main' | 'sidebar' | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [editingGroupId,setEditingGroupId]=useState<string|null>(null);
+  useEffect(()=>setEditingGroupId(null),[page.apiName,page.layoutVariant]);
   const [openBuilderTabs,setOpenBuilderTabs]=useState<Record<string,string>>({});
   const [previewRecords,setPreviewRecords]=useState<RecordData[]>([]);
   const [previewRecordId,setPreviewRecordId]=useState('');
