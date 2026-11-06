@@ -1,5 +1,6 @@
 import {spawn} from 'node:child_process';
 import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -243,11 +244,15 @@ export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>
  const objects:Buffer[]=[Buffer.alloc(0)];
  const add=(body:string|Buffer)=>{objects.push(Buffer.isBuffer(body)?body:Buffer.from(body,'latin1'));return objects.length-1};
  const catalog=add(''),pages=add(''),font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+ const bold=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
  const kids:number[]=[];
  const scale=.75,w=(document.width*scale).toFixed(2),h=(document.height*scale).toFixed(2);
  for(let p=0;p<document.pages;p++){
   const commands:string[]=[];
   const imageResources:string[]=[];
+  // Preserve the authored page background, independently of component fills.
+  const fillColor=document.html.match(/#paper\{[^}]*background:(#[0-9a-fA-F]{6})/)?.[1]??'#ffffff';
+  commands.push(rgb(fillColor)+' rg 0 0 '+w+' '+h+' re f');
   for(const e of document.elements){
    if(e.y>=document.height*(p+1)||e.y+e.height<=document.height*p)continue;
    const x=(e.x*scale).toFixed(2),y=((document.height*(p+1)-e.y-e.height)*scale).toFixed(2),
@@ -284,8 +289,12 @@ export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>
      const ty=(document.height*(p+1)-e.y-e.padding)*scale-fontSize-line*lineHeight;
      line++;
      if(ty<0||ty>document.height*scale)return;
-     const tx=e.x*scale+e.padding*scale;
-     commands.push('BT '+rgb(e.color)+' rg /F1 '+fontSize.toFixed(2)+' Tf '+
+     const measured=text.length*fontSize*.52;
+     const available=Math.max(0,(e.width-2*e.padding)*scale-measured);
+     const shift=e.align==='center'?available/2:e.align==='right'?available:0;
+     const tx=e.x*scale+e.padding*scale+shift;
+     const selectedFont=Number(e.weight)>=600?'F2':'F1';
+     commands.push('BT '+rgb(e.color)+' rg /'+selectedFont+' '+fontSize.toFixed(2)+' Tf '+
       tx.toFixed(2)+' '+ty.toFixed(2)+' Td '+pdfLiteral(text)+' Tj ET');
     };
     for(const word of words){
@@ -299,7 +308,7 @@ export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>
   const bytes=Buffer.from(stream,'latin1');
   const content=add('<< /Length '+bytes.length+' >>\nstream\n'+stream+'endstream');
   const page=add('<< /Type /Page /Parent '+pages+' 0 R /MediaBox [0 0 '+w+' '+h+
-   '] /Resources << /Font << /F1 '+font+' 0 R >>'+
+   '] /Resources << /Font << /F1 '+font+' 0 R /F2 '+bold+' 0 R >>'+
    (imageResources.length?' /XObject << '+imageResources.join(' ')+' >>':'')+
    ' >> /Contents '+content+' 0 R >>');
   kids.push(page);
@@ -320,8 +329,10 @@ export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>
  chunks.push(Buffer.from(trailer));return Buffer.concat(chunks);
 }
 async function chromiumPdf(html:string):Promise<Buffer|null>{
- const bin=process.env.METADRIVE_PDF_CHROMIUM_BIN;
- if(!bin)return null; // Optional; browserless vector renderer always available.
+ const bin=process.env.METADRIVE_PDF_CHROMIUM_BIN??
+   ['/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome',
+    '/opt/google/chrome/chrome'].find(existsSync);
+ if(!bin)return null; // Browserless vector renderer always remains available.
  const dir=await mkdtemp(join(tmpdir(),'oneengine-pdf-'));
  try{
   const source=join(dir,'template.html'),target=join(dir,'template.pdf');
