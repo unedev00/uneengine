@@ -75,6 +75,7 @@ export default function AppManager({
   const [draft, setDraft] = useState<AppDraft>(initialApp ? appDraftFromMetadata(initialApp) : emptyApp());
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<'list' | 'form'>(embedded ? 'form' : 'list');
+  const [activeStep,setActiveStep] = useState('app-basics');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -218,14 +219,14 @@ export default function AppManager({
     const original = apps.find(app => app.apiName === selectedApiName);
     if (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft)
       && !window.confirm('Discard unsaved app changes?')) return;
-    setCreating(true); setView('form'); setSelectedApiName(''); setDraft(emptyApp());
+    setCreating(true); setView('form'); setSelectedApiName(''); setDraft(emptyApp());setActiveStep('app-basics');
     setError(''); setNotice('');
   };
   const editApp = (app: AppDraft) => {
     setCreating(false);
     setSelectedApiName(app.apiName);
     setDraft(appDraftFromMetadata(app));
-    setView('form');
+    setView('form');setActiveStep('app-basics');
     setError(''); setNotice('');
   };
   const returnToList = () => {
@@ -244,10 +245,25 @@ export default function AppManager({
     setDraft(appDraftFromMetadata(copy));
     setSelectedApiName('');
     setCreating(true);
-    setView('form');
+    setView('form');setActiveStep('app-basics');
     setError('');
     setNotice('Review the copied settings and select Create App to save this clone.');
   };
+  useEffect(()=>{
+    if(embedded||view!=='form'||busy||confirmDelete)return;
+    const dismiss=(event:KeyboardEvent)=>{
+      if(event.key!=='Escape'||document.querySelector('[role="dialog"]'))return;
+      event.preventDefault();
+      const original=apps.find(app=>app.apiName===selectedApiName);
+      const dirty=creating
+        ?Boolean(draft.label||draft.apiName||draft.navigationItems.length||draft.navigationPageApiNames.length)
+        :Boolean(original&&JSON.stringify(appDraftFromMetadata(original))!==JSON.stringify(draft));
+      if(dirty)setError('Unsaved changes. Choose Cancel to discard or Save Changes to keep them.');
+      else cancel();
+    };
+    document.addEventListener('keydown',dismiss);
+    return ()=>document.removeEventListener('keydown',dismiss);
+  },[embedded,view,busy,confirmDelete,creating,draft,selectedApiName,apps]);
   const openSetupWorkspace = (destination: SetupDestination) => {
     const original = apps.find(app => app.apiName === selectedApiName);
     const unsaved = creating || (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft));
@@ -292,16 +308,17 @@ export default function AppManager({
       {notice && <p className="form-success" role="status">{notice}</p>}
       <AppManagerList apps={apps} busy={busy} onEdit={editApp} onClone={cloneApp}/>
     </> : <>
-    <nav className="app-manager-stepper" aria-label="Application setup steps">
-      {steps.map((step, index) => <a href={'#' + step.id} key={step.id} className={'app-manager-step' + (index === 0 ? ' is-first' : '')}
-        onClick={event => {
-          event.preventDefault();
-          document.getElementById(step.id)?.scrollIntoView({behavior:'smooth',block:'center'});
-        }}>
-        <span className="app-manager-step-number">{index + 1}</span>
-        <span><strong>{step.name}</strong><small>{step.subtitle}</small></span>
-      </a>)}
-    </nav>
+    <ol className="app-manager-stepper" aria-label="Application setup steps">
+      {steps.map((step,index)=><li key={step.id} className="app-manager-step-item">
+        <a href={'#'+step.id} className={'app-manager-step'+(index===0?' is-first':'')}
+          aria-current={activeStep===step.id?'step':undefined}
+          aria-label={'Step '+(index+1)+' of '+steps.length+': '+step.name}
+          onClick={event=>{event.preventDefault();setActiveStep(step.id);document.getElementById(step.id)?.scrollIntoView({behavior:'smooth',block:'center'});}}>
+          <span className="app-manager-step-number">{index+1}</span>
+          <span><strong>{step.name}</strong><small>{step.subtitle}</small></span>
+        </a>
+      </li>)}
+    </ol>
 
     <div className="app-manager-layout">
       <section className="surface permission-section app-manager app-manager-form-card" aria-label="App configuration">
