@@ -1,7 +1,7 @@
 import {beginOptimisticNumberChange} from '../PageRuntime/optimisticPageNumbers';
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
 import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
-import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan,isScreenAction,PartialActionError} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
 import {useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
@@ -378,7 +378,7 @@ export default function MetadataBoundPageComponent({
     }
     return source;
   };
-  const onAction = async (action: { event: string; value?: unknown }) => {
+  const executeAction = async (action: { event: string; value?: unknown }) => {
     if(disableActions)throw new Error('Page Builder preview is read-only.');
     if(behaviorAction(properties,action.event,behaviorContext??{formFactor})!=='enabled')
       throw new Error('This action is unavailable under the published Page rules.');
@@ -589,6 +589,17 @@ export default function MetadataBoundPageComponent({
       const message = error instanceof Error ? error.message : 'Flow action failed';
       setActionError(message);
       throw error;
+    }
+  };
+  const onAction = async (action:{event:string;value?:unknown}) => {
+    try{return await executeAction(action);}
+    catch(error){
+     if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
+      window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+       detail:{pageSessionKey,sessionId,objectApiNames:error.mutatedObjectApiNames}
+      }));
+     setActionError(error instanceof Error?error.message:'Action failed');
+     throw error;
     }
   };
   useEffect(() => {
