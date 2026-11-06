@@ -54,8 +54,12 @@ test('resize handles lie on real component edges, never in the ribbon or in empt
 
 test('moving/resizing affects component metadata only and preserves page dimensions',()=>{
  const builder=read('core/builders/PageBuilder/pageBuilderView.tsx');
- assert.match(builder,/const fixedCanvas=\{width:page\.canvasWidth,height:page\.canvasHeight\}/);
- assert.match(builder,/canvasBoundPosition\(\{ \.\.\.start\.original, x, y \}, fixedCanvas, false\)/);
+ assert.match(builder,/const bounds=\{width:page\.canvasWidth,height:page\.canvasHeight\}/,
+   'multi-shape movement is constrained by the fixed page dimensions');
+ assert.match(builder,/canvasBoundPosition\(\{\.\.\.start\.original,x,y\},bounds,false\)/,
+   'selection bounds stay inside the authored canvas during preview');
+ assert.match(builder,/translateCanvasSelection\(page\.components,start\.members\.map\(item=>item\.id\),dx,dy,/,
+   'pointer release persists bounded movement to selected components only');
  assert.match(builder,/constrainCanvasRect\(size,\{width:page\.canvasWidth,height:page\.canvasHeight\}\)/);
  assert.match(builder,/Math\.min\(page\.canvasHeight - start\.y, start\.height \+ dy\)/);
  assert.match(builder,/Math\.min\(page\.canvasWidth - start\.x, start\.width \+ dx\)/);

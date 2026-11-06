@@ -574,19 +574,24 @@ test('each Smart component is explicitly mapped for Page Runtime appearance',()=
   assert.equal(pageAppearanceTarget('Custom:'+api),target,api);
 });
 
-test('PowerPoint-style canvas gestures target one component and keep resize grips visible', async () => {
+test('PowerPoint-style canvas gestures move selected shapes together and keep resize grips visible', async () => {
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
   const handles = await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css', import.meta.url), 'utf8');
   const move = builder.slice(builder.indexOf('  const startCanvasMove = '), builder.indexOf('  const reorderLayer = '));
   const resize = builder.slice(builder.indexOf('  const startCanvasResize = '), builder.indexOf('  const hasOverlappingPageAssignment = '));
-  assert.ok(move.includes('setSelectionIds([component.id])'), 'pointerdown must select only the dragged component');
-  assert.ok(!move.includes('selectionIds.includes(item.id)') && !move.includes('start.group'),
-    'the drag must not include previously selected siblings');
-  assert.ok(move.includes("hit.closest('[data-component-id]') !== element"),
+  assert.ok(move.includes('setSelectionIds(memberIds)'), 'pointerdown keeps the complete drag selection');
+  assert.ok(move.includes('const memberIds=selectionIds.includes(component.id)?selectionIds:'),
+    'dragging a selected shape must retain previously selected siblings');
+  assert.ok(move.includes('canvasGroupMembers(page.components,component).map(item=>item.id)'),
+    'dragging an unselected grouped shape must include its persisted members');
+  assert.ok(move.includes('!isCanvasLocked(item)'),
+    'locked shapes must never be moved as part of a selection');
+  assert.ok(move.includes("hit.closest('[data-component-id]')!==element"),
     'nested targets must not move a parent');
-  assert.ok(move.includes('start.element.style.translate ='),
-    'independent translation preserves author-defined component transforms');
-  assert.ok(move.includes('start.element.style.left ='), 'release must not jump to the original position');
+  assert.ok(move.includes('member.element.style.translate='),
+    'each selected shape must translate independently without overwriting authored transforms');
+  assert.ok(move.includes('member.element.style.left='),
+    'all selected shapes must retain their new position on pointer release');
   assert.ok(builder.includes('className="canvas-move-grip"'), 'the selection toolbar needs a move icon');
   assert.ok(builder.includes('onLostPointerCapture={!previewMode && !libraryPreview'),
     'a lost pointer must not leave movement stuck');
@@ -719,7 +724,10 @@ test('placement controls, component finder and full-width workspace are builder-
   assert.ok(builder.includes('design2Arrange={canvasArrangeProps}'));
   assert.ok(navigator.includes('aria-label="Find a component"'));
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
-  assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
+  assert.match(builder,/canvasGroupMembers\(page\.components,component\)\.map\(item=>item\.id\)/,
+    'a normal drag includes the persisted group members');
+  assert.match(builder,/moving\.some\(item=>canvasGroupKey\(item\)/,
+    'incomplete or locked groups are not dragged as a partial selection');
   assert.match(css,/\.page-stage/);
   assert.match(css,/canvas-group-outline/);
 });
@@ -942,4 +950,63 @@ test('Page Builder bulk delete preserves unselected nested children and repairs 
   assert.equal(childOnly.components.find(item=>item.id==='selected')?.properties.layoutParentId,'root');
   assert.deepEqual(childOnly.components.find(item=>item.id==='selected')?.position,
     {x:25,y:37,width:80,height:80});
+});
+
+import {selectCanvasIds,marqueeCanvasIds,translateCanvasSelection} from '../src/core/builders/PageBuilder/canvasSelectionInteractions';
+
+test('canvas Ctrl/Cmd toggle selects and deselects an entire authored group',()=>{
+  const items=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{canvasGroupId:'g'},position:{x:10,y:10,width:30,height:30}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{canvasGroupId:'g'},position:{x:50,y:10,width:30,height:30}},
+    {id:'c',type:'Card',label:'C',visible:true,properties:{},position:{x:100,y:10,width:30,height:30}}
+  ] as PageComponentMetadata[];
+  assert.deepEqual(selectCanvasIds(items,[],'a','replace'),['a','b']);
+  assert.deepEqual(selectCanvasIds(items,['a','b'],'c','toggle'),['a','b','c']);
+  assert.deepEqual(selectCanvasIds(items,['a','b','c'],'b','toggle'),['c']);
+  assert.deepEqual(selectCanvasIds(items,['a','b'],'a','member'),['a']);
+});
+
+test('navigator Shift range extends existing selection across sibling rows',()=>{
+  const items=['a','b','c','d'].map(id=>({
+    id,type:'Text',label:id,visible:true,properties:{},position:{x:0,y:0,width:40,height:20}
+  })) as PageComponentMetadata[];
+  assert.deepEqual(selectCanvasIds(items,['a'],'d','range','b'),['a','b','c','d']);
+  assert.deepEqual(selectCanvasIds(items,['a'],'c','replace'),['c']);
+});
+
+test('marquee hit testing ignores invisible, locked, and nested shapes',()=>{
+  const items=[
+    {id:'in',type:'Text',label:'Visible',visible:true,properties:{},position:{x:40,y:40,width:30,height:30}},
+    {id:'outside',type:'Text',label:'Other',visible:true,properties:{},position:{x:200,y:200,width:30,height:30}},
+    {id:'hidden',type:'Text',label:'Hidden',visible:false,properties:{},position:{x:40,y:40,width:30,height:30}},
+    {id:'locked',type:'Text',label:'Locked',visible:true,properties:{editorLocked:true},position:{x:40,y:40,width:30,height:30}},
+    {id:'nested',type:'Text',label:'Nested',visible:true,parentId:'container',properties:{},position:{x:40,y:40,width:30,height:30}}
+  ] as PageComponentMetadata[];
+  assert.deepEqual(marqueeCanvasIds(items,{x:30,y:30,width:50,height:50}),['in']);
+  assert.deepEqual(marqueeCanvasIds(items,{x:30,y:30,width:50,height:50},['outside']),['outside','in']);
+});
+
+test('arrow movement treats 50 selected shapes as one rigid bounded edit',()=>{
+  const items=Array.from({length:50},(_,i)=>({
+    id:'shape'+i,type:'Text',label:'Text',visible:true,properties:{binding:'$session.user.id'},
+    position:{x:i*10,y:20,width:10,height:10}
+  })) as PageComponentMetadata[];
+  const moved=translateCanvasSelection(items,items.map(item=>item.id),50,10,{width:510,height:150});
+  assert.equal(moved[0].position?.x,10,'last shape bounds clamp all movement equally');
+  assert.equal(moved[49].position?.x,500);
+  assert.equal(moved[0].position?.y,30);
+  assert.equal(moved[1].position?.x! - moved[0].position?.x!,10);
+  assert.equal(moved[0].properties.binding,'$session.user.id');
+  assert.equal(items[0].position?.x,0,'original page stays immutable for Undo');
+});
+
+test('Page Builder exposes modifier selection, Layers selection and one arrow handler',async()=>{
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
+  assert.match(builder,/event\.ctrlKey\|\|event\.metaKey\|\|event\.shiftKey\?'toggle'/);
+  assert.match(builder,/startCanvasMarquee/);
+  assert.match(builder,/translateCanvasSelection\(page\.components,ids,dx,dy/);
+  assert.doesNotMatch(builder,/const delta = event\.shiftKey \? 1 : canvasSnap/);
+  assert.match(navigator,/aria-multiselectable="true"/);
+  assert.match(navigator,/event\.shiftKey\?'range'/);
 });
