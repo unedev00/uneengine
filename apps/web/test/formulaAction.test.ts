@@ -26,6 +26,7 @@ test('independent + formula performs a guarded numeric Record API update',async(
  const result=await executePageFormulaAction(request,{...base,formula:'@Quantity + 2'},
   {recordId:rowId,delta:1},{cartItems:[row],cartSessionId:sessionId},objects,'CartLine');
  assert.equal(result.recordChanged,true);
+ assert.deepEqual(result.mutatedObjectApiNames,['CartLine']);
  assert.equal(calls[1].method,'PATCH');
  assert.deepEqual(JSON.parse(calls[1].body!),{Quantity:4,LineTotal:5});
  assert.equal(calls[1].headers?.['If-Unmodified-Since'],row.LastModifiedDate);
@@ -42,6 +43,20 @@ test('independent − formula removes a quantity-one row at zero',async()=>{
  assert.equal(calls[1].method,'DELETE');
  assert.deepEqual(result.changes.find(x=>x.key==='cartItems')?.value,[]);
 });
+test('record formula reports only objects actually written, not an unselected branch',async()=>{
+ const writes:string[]=[];
+ const request=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  if(init?.method)writes.push(path);
+  return {record:{Id:rowId}} as T;
+ };
+ const result=await executePageFormulaAction(request,{actionType:'Formula',
+  formula:'=ACTIONS(IF(FALSE, CREATERECORD(Product, Name, "skip"), CREATERECORD(CartLine, Quantity, 1)), UPDATERECORD(Cart, @cartId, Total, 3))'
+ },{cartId:rowId},{},objects,'Product');
+ assert.equal(result.recordChanged,true);
+ assert.deepEqual(result.mutatedObjectApiNames,['CartLine','Cart']);
+ assert.deepEqual(writes,['/records/CartLine','/records/Cart/'+rowId]);
+});
+
 test('numeric Page State formula works without a record or a Flow',async()=>{
  const request=async<T>():Promise<T>=>{throw Error('must not call Record API');};
  const result=await executePageFormulaAction(request,{actionType:'Formula',

@@ -1,4 +1,5 @@
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
+import {shouldInvalidatePageComponent,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
 import {useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
@@ -163,7 +164,8 @@ export default function MetadataBoundPageComponent({
   },[pageSessionKey]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,revision]);
+  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
+  const lastRequestKey=useRef('');
   const [channelAccess, setChannelAccess] = useState<{userId: string;viewAll: boolean;grants: ChannelGrant[];eligibleAssignees: {id: string;name: string;channelAccountId: string}[]}>({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
   });
@@ -205,11 +207,11 @@ export default function MetadataBoundPageComponent({
       pendingFlowOutputs.current.clear();
     };
   },[pageSessionKey]);
-  // Any Flow mutation invalidates all components sharing this page session.
+  // Only reload consumers of changed objects; session resets still affect all components.
   useEffect(() => {
     const sync = (event: Event) => {
-      const detail = (event as CustomEvent<{pageSessionKey:string;sessionId:string}>).detail;
-      if (detail?.pageSessionKey !== pageSessionKey) return;
+      const detail = (event as CustomEvent<PageMutationDetail>).detail;
+      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,[objectApiName])) return;
       if (detail.sessionId && detail.sessionId !== sessionId) {
         setSessionId(detail.sessionId);
         setSelectedCategories({});
@@ -219,14 +221,20 @@ export default function MetadataBoundPageComponent({
     };
     window.addEventListener('metadrive:page-flow-mutated', sync);
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
-  }, [pageSessionKey, sessionId]);
+  }, [pageSessionKey, sessionId, objectApiName]);
   useEffect(() => {
     let active = true;
-    setRecords([]);
-    setRecordsForRequest('');
-    setRecordTotal(0);
+    if(lastRequestKey.current!==recordRequestKey){
+      lastRequestKey.current=recordRequestKey;
+      setRecords([]);
+      setRecordsForRequest('');
+      setRecordTotal(0);
+    }
     setDataError('');
     if (!objectApiName || recordQuery.blocked || relatedQuery.blocked) {
+      setRecords([]);
+      setRecordsForRequest('');
+      setRecordTotal(0);
       setDataLoading(false);
       return () => { active = false; };
     }
@@ -243,7 +251,7 @@ export default function MetadataBoundPageComponent({
       })
       .finally(() => { if (active) setDataLoading(false); });
     return () => { active = false; };
-  }, [objectApiName, recordQueryKey, recordOffset, revision]);
+  }, [objectApiName, recordQueryKey, recordOffset, sessionId, revision]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');
@@ -325,9 +333,9 @@ export default function MetadataBoundPageComponent({
     if(!toggleBinding||!toggleCanWrite)throw new Error('Toggle field is not editable.');
     try{
       await updateSmartToggleField(apiRequest,objectApiName,toggleBinding,next);
-      setActionError('');setRevision(value=>value+1);
+      setActionError('');
       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-        detail:{pageSessionKey,sessionId}
+        detail:{pageSessionKey,sessionId,objectApiNames:[objectApiName]}
       }));
     }catch(error){setActionError(error instanceof Error?error.message:'Toggle update failed');throw error;}
   };
@@ -471,9 +479,8 @@ export default function MetadataBoundPageComponent({
           detail:{pageSessionKey,key:change.key,value:change.value}
         }));
       if(result.recordChanged){
-        setRevision(value=>value+1);
         window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-          detail:{pageSessionKey,sessionId}
+          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames}
         }));
       }
       return {updated:true};
@@ -487,9 +494,8 @@ export default function MetadataBoundPageComponent({
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
         }));
-      setRevision(value=>value+1);
       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-        detail:{pageSessionKey,sessionId}
+        detail:{pageSessionKey,sessionId,objectApiNames:[objectApiName]}
       }));
       return {updated:true};
     }
@@ -548,7 +554,6 @@ export default function MetadataBoundPageComponent({
         completedSessionId = newSession;
         setSessionId(newSession);
       }
-      setRevision((value) => value + 1);
       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated', {
         detail: {pageSessionKey,sessionId: completedSessionId}
       }));
@@ -613,7 +618,7 @@ export default function MetadataBoundPageComponent({
           &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
           void onAction({ event: 'change', value }).catch(() => {});
       },
-      loading: dataLoading, sessionId, previewOnly: disableActions, builderPreview: builderPreview===true&&disableActions,
+      loading: dataLoading && recordsForRequest !== recordRequestKey, sessionId, previewOnly: disableActions, builderPreview: builderPreview===true&&disableActions,
       // Only bind scalar expressions when one authorised record is in scope.
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(contextRecords.length===1 ? {record:contextRecords[0]} : {}),

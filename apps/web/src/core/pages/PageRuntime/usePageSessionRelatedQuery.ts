@@ -6,6 +6,13 @@ import {pageComponentSessionRelatedQuery,pageComponentRelatedQuery,
 
 type RelatedScope={blocked:boolean;filter?:PageQueryFilter};
 type RecordPage={records:Record<string,unknown>[];total:number};
+type CachedRelatedQuery={scopeKey:string;query:RelatedScope};
+
+/** Retain the authorised parent filter during same-session revalidation only. */
+export function visibleSessionRelatedQuery(enabled:boolean,scopeKey:string,
+ cached:CachedRelatedQuery|null):RelatedScope{
+ return enabled&&cached?.scopeKey===scopeKey?cached.query:{blocked:true};
+}
 type RecordLoader=(objectApiName:string,query:{
  limit:number;offset:number;filter:{field:string;value:string;related:boolean}
 })=>Promise<RecordPage>;
@@ -15,21 +22,23 @@ export function usePageSessionRelatedQuery(
  enabled:boolean,fields:ReadonlyArray<FieldMetadata>,objects:ReadonlyArray<ObjectMetadata>,
  sessionId:string,revision:number,load:RecordLoader
 ):RelatedScope{
- const key=JSON.stringify([enabled,sessionId,revision,fields
+ const scopeKey=JSON.stringify([enabled,sessionId,fields
   .filter(field=>field.relationship).map(field=>[field.apiName,field.relationship?.targetObject]),
   objects.filter(object=>object.fields.some(field=>field.apiName==='SessionKey'))
    .map(object=>object.apiName)]);
- const [result,setResult]=useState<{key:string;query:RelatedScope}|null>(null);
+ // Revision triggers revalidation, but must not invalidate a lookup for the same session.
+ const requestKey=JSON.stringify([scopeKey,revision]);
+ const [result,setResult]=useState<CachedRelatedQuery|null>(null);
  useEffect(()=>{
   if(!enabled)return;
   let active=true;
   void pageComponentSessionRelatedQuery(fields,objects,sessionId,
    (objectApiName,sessionKey)=>load(objectApiName,{
     limit:2,offset:0,filter:{field:'SessionKey',value:sessionKey,related:false}
-   })).then(query=>{if(active)setResult({key,query});});
+   })).then(query=>{if(active)setResult({scopeKey,query});});
   return()=>{active=false;};
- },[key]);
- return enabled&&result?.key===key?result.query:{blocked:true};
+ },[requestKey]);
+ return visibleSessionRelatedQuery(enabled,scopeKey,result);
 }
 
 /**

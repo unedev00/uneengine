@@ -1,4 +1,5 @@
 import {printRecordPages} from './printRecordPages';
+import {shouldInvalidatePageComponent,type PageMutationDetail} from './pageMutationScope';
 
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
@@ -387,11 +388,11 @@ function MetadataBoundPageComponent({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
   });
   const initializedSessions = useRef<Set<string>>(new Set());
-  // Any Flow mutation invalidates all components sharing this page session.
+  // Only data consumers of the written objects reload; unknown Flow writes remain broad.
   useEffect(() => {
     const sync = (event: Event) => {
-      const detail = (event as CustomEvent<{pageSessionKey:string;sessionId:string}>).detail;
-      if (detail?.pageSessionKey !== pageSessionKey) return;
+      const detail = (event as CustomEvent<PageMutationDetail>).detail;
+      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,[objectApiName])) return;
       if (detail.sessionId && detail.sessionId !== sessionId) {
         setSessionId(detail.sessionId);
         setPageState({});
@@ -400,7 +401,7 @@ function MetadataBoundPageComponent({
     };
     window.addEventListener('metadrive:page-flow-mutated', sync);
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
-  }, [pageSessionKey, sessionId]);
+  }, [pageSessionKey, sessionId, objectApiName]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const selectedRecordFilters=activePageRecordFilters(properties);
  const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
@@ -413,17 +414,25 @@ function MetadataBoundPageComponent({
     properties,component.type,fields,objects,pageState,sessionId,revision,
     loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
+  const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
+  const lastRecordDataKey=useRef('');
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
     let active = true;
     let requestId = 0;
     let pending = false;
-    setRecords([]);
-    setRecordsForQueryKey('');
-    setRecordTotal(0);
+    if(lastRecordDataKey.current!==recordDataKey){
+      lastRecordDataKey.current=recordDataKey;
+      setRecords([]);
+      setRecordsForQueryKey('');
+      setRecordTotal(0);
+    }
     setDataError('');
     setDataErrorForQueryKey('');
     if (!objectApiName || recordQuery.blocked || relatedQuery.blocked) {
+      setRecords([]);
+      setRecordsForQueryKey('');
+      setRecordTotal(0);
       setDataLoading(false);
       return () => { active = false; };
     }
@@ -442,14 +451,14 @@ function MetadataBoundPageComponent({
         if (active && request === requestId) {
           setRecords(page.records);
           setRecordTotal(page.total);
-          setRecordsForQueryKey(recordQueryKey);
+          setRecordsForQueryKey(recordDataKey);
           setDataError('');
           setDataErrorForQueryKey('');
         }
       } catch (reason) {
         if (active && request === requestId) {
           setDataError(reason instanceof Error ? reason.message : 'Unable to load records');
-          setDataErrorForQueryKey(recordQueryKey);
+          setDataErrorForQueryKey(recordDataKey);
         }
       } finally {
         pending = false;
@@ -476,7 +485,7 @@ function MetadataBoundPageComponent({
         document.removeEventListener('visibilitychange', onVisible);
       }
     };
-  }, [objectApiName, recordQueryKey, recordOffset, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions,printRows]);
+  }, [objectApiName, recordQueryKey, recordOffset, sessionId, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions,printRows]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');
@@ -527,7 +536,7 @@ function MetadataBoundPageComponent({
     phone: String(row[String(properties.contactPhoneFieldApiName??'')]??'')
   })).filter(contact => contact.id && contact.phone);
   // Data from the previous object/filter must not flash while the new query is pending.
-  const currentQueryRecords = recordsForQueryKey === recordQueryKey ? records : [];
+  const currentQueryRecords = recordsForQueryKey === recordDataKey ? records : [];
   const filteredRecords=recordQuery.filters?currentQueryRecords:filterPageComponentRecords(
     currentQueryRecords,selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND');
   const visibleRecords=relatedField?filterRelatedRecords(filteredRecords,selectedId,relatedField):filteredRecords;
@@ -555,9 +564,9 @@ function MetadataBoundPageComponent({
     if(!toggleBinding||!toggleCanWrite)throw new Error('Toggle field is not editable.');
     try{
       await updateSmartToggleField(apiRequest,objectApiName,toggleBinding,next);
-      setActionError('');setRevision(value=>value+1);
+      setActionError('');
       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-        detail:{pageSessionKey,sessionId}
+        detail:{pageSessionKey,sessionId,objectApiNames:[objectApiName]}
       }));
     }catch(error){setActionError(error instanceof Error?error.message:'Toggle update failed');throw error;}
   };
@@ -724,9 +733,8 @@ function MetadataBoundPageComponent({
           detail:{pageSessionKey,key:change.key,value:change.value}
         }));
       if(result.recordChanged){
-        setRevision(value=>value+1);
         window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-          detail:{pageSessionKey,sessionId}
+          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames}
         }));
       }
       return {updated:true};
@@ -740,9 +748,8 @@ function MetadataBoundPageComponent({
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
         }));
-      setRevision(value=>value+1);
       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-        detail:{pageSessionKey,sessionId}
+        detail:{pageSessionKey,sessionId,objectApiNames:[objectApiName]}
       }));
       return {updated:true};
     }
@@ -827,7 +834,6 @@ function MetadataBoundPageComponent({
         }
       }
       if (binding.mutatesData !== false) {
-        setRevision((value) => value + 1);
         window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated', {
         detail: {pageSessionKey,sessionId: completedSessionId}
         }));
@@ -870,14 +876,10 @@ function MetadataBoundPageComponent({
     const timer=window.setInterval(()=>{void refresh();},interval);
     const onVisibility=()=>{if(document.visibilityState==='visible')void refresh();};
     document.addEventListener('visibilitychange',onVisibility);
-    const onMutated=(event:Event)=>{
-      const detail=(event as CustomEvent<{pageSessionKey?:string}>).detail;
-      if(detail?.pageSessionKey===pageSessionKey)void refresh();
-    };
-    window.addEventListener('metadrive:page-flow-mutated',onMutated);
+    // Do not run a refresh Flow in response to the mutation it may itself emit.
+    // Interval and document visibility remain the opt-in refresh triggers.
     return()=>{active=false;window.clearInterval(timer);
-      document.removeEventListener('visibilitychange',onVisibility);
-      window.removeEventListener('metadrive:page-flow-mutated',onMutated);};
+      document.removeEventListener('visibilitychange',onVisibility);};
   },[pageSessionKey,disableActions,properties.liveFlowRefreshEnabled,
     properties.liveFlowRefreshEvents,properties.liveFlowRefreshIntervalMs]);
   useEffect(() => {
@@ -890,7 +892,7 @@ function MetadataBoundPageComponent({
   return <div style={definition.apiName==='smart_toggle'||(definition.apiName==='ui_image'&&Boolean(component.position))||(definition.apiName.startsWith('smart_')&&Boolean(component.position))
     ?{width:'100%',height:'100%',minHeight:0,minWidth:0}
     :properties.fillRegion===true?{height:'100%',minHeight:0,minWidth:0,display:'flex',flexDirection:'column'}:undefined}>
-    {dataError && dataErrorForQueryKey === recordQueryKey && <div className="records-message" role="alert">{dataError}</div>}
+    {dataError && dataErrorForQueryKey === recordDataKey && <div className="records-message" role="alert">{dataError}</div>}
     {actionError && <div className="records-message" role="alert">{actionError}</div>}
     {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
     <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent
@@ -916,7 +918,7 @@ function MetadataBoundPageComponent({
           &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
           void onAction({ event: 'change', value }).catch(() => {});
       },
-      loading: dataLoading, sessionId, stateChannel,
+      loading: dataLoading && recordsForQueryKey !== recordDataKey, sessionId, stateChannel,
       // Page Builder only: the same builder flags the unbound canvas render passes, so a
       // component bound to an object still shows its Data Source icons on the canvas.
       ...(builderPreview===true&&disableActions?{previewOnly:true,builderPreview:true}:{}),
