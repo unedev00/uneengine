@@ -141,20 +141,33 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
   const [quickFind, setQuickFind] = useState('');
   const [recordSearch, setRecordSearch] = useState('');
   const [launcherOpen, setLauncherOpen] = useState(false);
-  const [setupSidebarCollapsed, setSetupSidebarCollapsed] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+  // UX-0023: distinguish the user's desktop preference from forced compact-drawer state.
+  const readDesktopSidebarPreference = () => {
+    try { return window.localStorage.getItem('md.setup.sidebar.collapsed') === 'true'; }
+    catch { return false; }
+  };
+  const [setupSidebarCollapsed, setSidebarCollapsedState] = useState(() =>
+    window.matchMedia('(max-width: 1024px)').matches || readDesktopSidebarPreference()
   );
+  const setSetupSidebarCollapsed = (value: React.SetStateAction<boolean>) => {
+    const next = typeof value === 'function' ? value(setupSidebarCollapsed) : value;
+    if (!window.matchMedia('(max-width: 1024px)').matches) {
+      try { window.localStorage.setItem('md.setup.sidebar.collapsed', String(next)); }
+      catch { /* Browsers may disable storage; keep the current session usable. */ }
+    }
+    setSidebarCollapsedState(next);
+  };
   useEffect(() => {
     const compact = window.matchMedia('(max-width: 1024px)');
-    // Closing the compact drawer must not leave an icon rail when resizing back.
-    const respond = (event: MediaQueryListEvent) => setSetupSidebarCollapsed(event.matches);
+    // Compact mode always starts with a closed drawer; desktop restores the explicit user choice.
+    const respond = (event: MediaQueryListEvent) =>
+      setSidebarCollapsedState(event.matches ? true : readDesktopSidebarPreference());
     compact.addEventListener('change', respond);
     return () => compact.removeEventListener('change', respond);
   }, []);
   useEffect(() => {
-    // Navigation and direct route changes always dismiss compact drawers.
-    // Prevent an open drawer from intercepting taps on the next page.
-    if (window.matchMedia('(max-width: 1023px)').matches) setSetupSidebarCollapsed(true);
+    // Navigation and direct route changes dismiss the compact drawer without persisting.
+    if (window.matchMedia('(max-width: 1023px)').matches) setSidebarCollapsedState(true);
   }, [route]);
   const [shortcutHelpOpen,setShortcutHelpOpen] = useState(false);
   useEffect(()=>{
