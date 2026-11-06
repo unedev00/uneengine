@@ -97,3 +97,10 @@
  .app-manager-list .md-responsive-rows, .app-manager-list .md-responsive-item { min-width: 0; }
  .app-manager-list .md-responsive-item-text, .app-manager-list .md-responsive-trailing { min-width: 0; overflow-wrap: anywhere; }
 }
+
+/* The responsive application sorter exposes the same direction control as desktop headers. */
+@media(max-width:1023px) {
+ .app-manager-mobile-sort { min-width:0; }
+ .app-manager-sort-direction { min-height:44px;padding:0 12px;border:1px solid var(--md-border,#d6dce5);border-radius:7px;background:var(--surface,#fff);color:inherit;cursor:pointer;font:inherit; }
+ .app-manager-sort-direction:focus-visible { outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px; }
+}
