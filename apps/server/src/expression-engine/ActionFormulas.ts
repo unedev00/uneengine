@@ -287,6 +287,21 @@ export type ActionPlanTiming={
  completedActionCount:number;requestCount:number;status:'completed'|'failed';
  steps:ActionPlanStepTiming[];
 };
+/** A previous record write was confirmed before a later plan step failed.
+ * Metadata contains only Object API names, never record field values or tokens.
+ * Consumers reconcile persisted state but MUST NOT replay non-idempotent steps.
+ */
+export class PartialActionError extends Error {
+ readonly mutatedObjectApiNames:readonly string[];
+ readonly completedActionCount:number;
+ constructor(message:string,mutatedObjectApiNames:readonly string[],completedActionCount:number){
+  super('Action partially completed: '+message);
+  this.name='PartialActionError';
+  this.mutatedObjectApiNames=[...new Set(mutatedObjectApiNames)];
+  this.completedActionCount=completedActionCount;
+ }
+}
+
 export type ActionServices={
  request:<T>(path:string,init?:{method:string;body?:string})=>Promise<T>;
  print?:(template:string,id:string)=>Promise<void>;
@@ -682,6 +697,11 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
     recordChanges,...(planWindow?.includeVariables?{variables,completedActionCount:completed}:{})};
   }catch(error){
    status='failed';
+   if(recordChanged){
+    if(error instanceof PartialActionError)throw error;
+    throw new PartialActionError(error instanceof Error?error.message:String(error),
+     [...mutatedObjectApiNames],completed);
+   }
    throw error;
   }finally{
    if(trace){
