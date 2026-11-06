@@ -153,6 +153,7 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
     className={tab===key?'btn btn-brand':'btn'} role="tab" aria-selected={tab===key} aria-controls={'data-loader-panel-'+key} id={'data-loader-tab-'+key}
     tabIndex={tab===key?0:-1} style={{flexShrink:0,minHeight:44,scrollSnapAlign:'start'}}
     onKeyDown={event=>{const keys=['objects','records','ribbon'] as const;const index=keys.indexOf(key);const next=event.key==='ArrowRight'?keys[(index+1)%keys.length]:event.key==='ArrowLeft'?keys[(index+keys.length-1)%keys.length]:undefined;if(next){event.preventDefault();setTab(next);document.getElementById('data-loader-tab-'+next)?.focus();}}}
+    onPointerUp={event=>{if(event.pointerType==='mouse')setTab(key);}}
     onClick={()=>setTab(key)}><Icon size={16}/>{label}</button>)}
   </nav>
   <div id={"data-loader-panel-"+tab} role="tabpanel" aria-labelledby={"data-loader-tab-"+tab} style={{maxWidth:1100,minWidth:0}}>
