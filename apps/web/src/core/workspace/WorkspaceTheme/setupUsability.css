@@ -526,7 +526,8 @@ html, body, #root { min-width:0; max-width:100%; }
 .lightning .page-manager-layout-metadata { display:block;font-size:11px;color:var(--md-muted,#596779);font-weight:400;line-height:1.4; }
 .lightning .page-manager-design-layout-trigger { box-sizing:border-box;min-width:32px;min-height:32px;width:32px;height:32px; }
 .page-manager-mobile-sort { display:none; }
-@media(max-width:1023px) {
+/* The page list switches to cards through 1199px, so sorting must remain visible there. */
+@media(max-width:1199px) {
  .lightning .page-manager-mobile-sort { display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0; }
  .lightning .page-manager-mobile-sort select { min-height:40px;max-width:100%;width:auto; }
 }
@@ -756,4 +757,11 @@ html, body, #root { min-width:0; max-width:100%; }
 @media(max-width:399px){
  .lightning .object-manager-mobile-sort {flex-wrap:wrap}
  .lightning .object-manager-mobile-sort select {flex:1 1 130px;min-width:0}
+}
+
+.lightning .page-manager-mobile-sort .page-manager-sort-direction {
+ min-height:40px;flex:0 0 auto;white-space:nowrap;
+}
+@media(max-width:399px){
+ .lightning .page-manager-mobile-sort .form-control{flex:1 1 125px;min-width:0}
 }
