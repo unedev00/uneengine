@@ -410,6 +410,7 @@ function PageBuilder({
   const [selectedId, setSelectedId] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<'header' | 'main' | 'sidebar' | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
+  const [editingGroupId,setEditingGroupId]=useState<string|null>(null);
   const [openBuilderTabs,setOpenBuilderTabs]=useState<Record<string,string>>({});
   const [previewRecords,setPreviewRecords]=useState<RecordData[]>([]);
   const [previewRecordId,setPreviewRecordId]=useState('');
@@ -703,9 +704,11 @@ function PageBuilder({
       ?'Component Name already exists on this page layout.':null;
   };
   const selectedGroupMembers = selected && page.layoutMode === 'free-canvas'
-    ? selectionIds.length>1 && selectionIds.every(id=>page.components.some(item=>item.id===id&&!rawLayoutParentId(item)))
-      ? page.components.filter(item=>selectionIds.includes(item.id))
-      : canvasGroupMembers(page.components,selected).filter(item=>!rawLayoutParentId(item))
+    ? editingGroupId && canvasGroupKey(selected)===editingGroupId
+      ? page.components.filter(item=>selectionIds.includes(item.id)&&canvasGroupKey(item)===editingGroupId)
+      : selectionIds.length>1 && selectionIds.every(id=>page.components.some(item=>item.id===id&&!rawLayoutParentId(item)))
+        ? page.components.filter(item=>selectionIds.includes(item.id))
+        : canvasGroupMembers(page.components,selected).filter(item=>!rawLayoutParentId(item))
     : [];
   const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
   // Shift selection and persisted canvas groups use one shared-property context.
@@ -1388,7 +1391,7 @@ function PageBuilder({
       startCanvasGroupGesture(event,'move');
       return;
     }
-    if (canvasGroupKey(component)) return;
+    if (canvasGroupKey(component) && editingGroupId !== canvasGroupKey(component)) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -1478,7 +1481,7 @@ function PageBuilder({
       setSelectionIds(ids);setSelectedId(ids[ids.length-1]??'');
       setSelectedRegion(null);setPageSettingsOpen(false);
     },
-    onClear:()=>{setSelectedId('');setSelectionIds([]);setSelectedRegion(null);}
+    onClear:()=>{setSelectedId('');setSelectionIds([]);setSelectedRegion(null);setEditingGroupId(null);}
   });
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
     if (!component.position || isCanvasLocked(component) || event.button !== 0
@@ -2029,7 +2032,7 @@ function PageBuilder({
         else wrapSelectedInContainer();
       } else if (!command && event.key==='Escape' && !previewMode &&
         !(target instanceof HTMLElement && target.closest('[role="dialog"],[aria-modal="true"]'))) {
-        setSelectionIds([]);setSelectedId('');setSelectedRegion(null);
+        setSelectionIds([]);setSelectedId('');setSelectedRegion(null);setEditingGroupId(null);
       } else if (!previewMode && page.layoutMode === 'free-canvas'
         && !event.altKey && !command && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
         const ids=selectionIds.length?selectionIds:selectedId?[selectedId]:[];
@@ -2040,7 +2043,7 @@ function PageBuilder({
         const dx=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;
         const dy=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;
         const next=nudgeCanvasSelection(page.components,ids,dx,dy,
-          {width:page.canvasWidth,height:page.canvasHeight});
+          {width:page.canvasWidth,height:page.canvasHeight},!editingGroupId);
         if(next.some((item,index)=>item!==page.components[index]))applyPage({...page,components:next});
       }
     };
@@ -2641,8 +2644,15 @@ function PageBuilder({
       event.stopPropagation();
       if (suppressCanvasClickRef.current){suppressCanvasClickRef.current=false;return;}
       const additive=page.layoutMode==='free-canvas'&&(event.ctrlKey||event.metaKey||event.shiftKey);
-      const next=selectCanvasIds(page.components,selectionIds,component.id,
-        additive?(event.shiftKey?'add':'toggle'):'replace');
+      const editingMember=!!editingGroupId && canvasGroupKey(component)===editingGroupId;
+      const next=editingMember
+        ? !additive?[component.id]
+          : event.shiftKey?[...new Set([...selectionIds,component.id])]
+          : selectionIds.includes(component.id)?selectionIds.filter(id=>id!==component.id)
+            :[...selectionIds,component.id]
+        :selectCanvasIds(page.components,selectionIds,component.id,
+          additive?(event.shiftKey?'add':'toggle'):'replace');
+      if(!editingMember)setEditingGroupId(null);
       setSelectionIds(next);
       setSelectedRegion(null);
       setSelectedId(next.includes(component.id)?component.id:next[next.length-1]??'');
@@ -2714,7 +2724,12 @@ function PageBuilder({
             event.stopPropagation();
             selectCanvasComponent(event);
           } : undefined}
-      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) { setSelectedRegion(null); setSelectedId(component.id); selectRibbonTab('Component Design 2'); } } : undefined}
+      onDoubleClick={!libraryPreview ? event => { event.stopPropagation(); if (!previewMode) {
+        // Double-click enters a persisted group so children can be edited individually.
+        setEditingGroupId(canvasGroupKey(component));
+        setSelectionIds([component.id]);setSelectedRegion(null);setSelectedId(component.id);
+        selectRibbonTab('Component Design 2');
+      } } : undefined}
       onContextMenu={!libraryPreview && !previewMode ? event => { event.preventDefault(); event.stopPropagation(); setSelectedRegion(null); setSelectedId(component.id); setComponentMenuId(component.id); } : undefined}
       onPointerDown={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => {
         // A scrollable component is still a movable shape. Only native scrollbar
@@ -2731,8 +2746,16 @@ function PageBuilder({
         if (event.currentTarget !== event.target || previewMode) return;
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          const ids=selectCanvasIds(page.components,selectionIds,component.id,
-            event.shiftKey?'add':event.ctrlKey||event.metaKey?'toggle':'replace');
+          const editingMember=!!editingGroupId&&canvasGroupKey(component)===editingGroupId;
+          const ids=editingMember
+            ? event.shiftKey?[...new Set([...selectionIds,component.id])]
+              : event.ctrlKey||event.metaKey
+                ?selectionIds.includes(component.id)?selectionIds.filter(id=>id!==component.id)
+                  :[...selectionIds,component.id]
+                :[component.id]
+            :selectCanvasIds(page.components,selectionIds,component.id,
+              event.shiftKey?'add':event.ctrlKey||event.metaKey?'toggle':'replace');
+          if(!editingMember)setEditingGroupId(null);
           setSelectionIds(ids);
           setSelectedId(ids.includes(component.id)?component.id:ids[ids.length-1]??'');
           setPageSettingsOpen(false);
@@ -3279,6 +3302,7 @@ function PageBuilder({
               pageKey={page.apiName+':'+(page.layoutVariant??'Desktop')}
               selectedId={selectedId} selectedIds={selectionIds}
               onSelect={(id,mode)=>{
+                setEditingGroupId(null);
                 const ids=selectCanvasIds(page.components,selectionIds,id,mode,selectedId);
                 setSelectedId(ids.includes(id)?id:ids[ids.length-1]??'');
                 setSelectionIds(ids);setSelectedRegion(null);setPageSettingsOpen(false);
