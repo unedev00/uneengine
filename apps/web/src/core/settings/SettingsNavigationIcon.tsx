@@ -41,6 +41,7 @@ const items: Record<string, NavigationAppearance> = {
   'Flows': {icon: Workflow, tone: 'orange'},
   'Paused and Waiting Interviews': {icon: CirclePause, tone: 'lavender'},
   'Scheduled Flows': {icon: CalendarClock, tone: 'teal'},
+  'Scheduled Actions': {icon: CalendarClock, tone: 'orange'},
   'Flow History': {icon: History, tone: 'coral'},
   'Process Automation Settings': {icon: Settings2, tone: 'royal'},
   'Reports': {icon: FileText, tone: 'red'},

@@ -5,7 +5,7 @@ import {ConnectedAppService} from './connected-app-service.js';
 import {SecurityMonitorService} from './security-monitor-service.js';
 import {normalizedLoginIp} from './session-policy-service.js';
 import {registerConnectedPublicRoutes,registerGovernanceRoutes} from './security-governance-routes.js';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {ComponentLibraryService} from './component-library-service.js';
 import {DashboardSnapshotService} from './dashboard-snapshot-service.js';
 import {DashboardSubscriptionService} from './dashboard-subscription-service.js';
@@ -21,7 +21,6 @@ import {seedLocationSrnForExistingTenants} from '../app-seeders/core-location-sr
 import {seedAppointmentObjectsForExistingTenants} from '../app-seeders/core-appointment-objects.js';
 import {seedCoreCashLedgerForExistingTenants} from '../app-seeders/core-cash-ledger.js';
 import {seedCommunicationObjectsForExistingTenants} from '../app-seeders/core-communication-objects.js';
-import {seedScheduledActionObjectsForExistingTenants} from '../app-seeders/core-scheduled-action-objects.js';
 import {seedAcetillLockFlows} from '../app-seeders/acetill-lock-flow.js';
 import {backfillAcetillOperationalFlows} from '../app-seeders/acetill-operational-backfill.js';
 import {seedAcetillAppCatalog} from '../app-seeders/acetill-app-catalog.js';
@@ -109,6 +108,7 @@ import {createIntegrationCommunicationWriter,IntegrationCommunicationOutbox} fro
 import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-inspection-routes.js';
 import {registerDurableJobAdminRoutes} from './durable-job-admin-routes.js';
 import {registerScheduledActionRoutes} from './scheduled-action-routes.js';
+import {sendActionCommunication} from './action-formula-communication-service.js';
 import {registerSeederManagerRoutes} from './seeder-manager-routes.js';
 import {registerPlatformDeploymentRoutes} from './platform-deployment-routes.js';
 import {assertMetadataPackageEditable,MetadataPackageService} from './metadata-package-service.js';
@@ -1404,11 +1404,12 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Vary','Authorization, Cookie');
     res.json({page});
   }));
-  app.get('/api/apps/:appId/in-screen-pages/:pageApiName',route(async(req,res)=>{
+  app.get(['/api/apps/:appId/in-screen-pages/:pageApiName','/api/apps/:appId/print-templates/:pageApiName'],route(async(req,res)=>{
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'App:'+req.params.appId,'read');
     const page=await pages.resolveInScreenPage(actor.tenant_id,req.params.appId,
-      req.params.pageApiName,String(req.query.formFactor??'Desktop'));
+      req.params.pageApiName,String(req.query.formFactor??'Desktop'),
+      req.path.split('/').at(-2)==='print-templates'?'Print Template':'In-Screen Page');
     if(!page)throw new Error('In-Screen Page is not published or permitted for this app');
     res.setHeader('Cache-Control','private, no-store');
     res.setHeader('Vary','Authorization, Cookie');
@@ -1891,6 +1892,20 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     res.setHeader('Cache-Control','no-store');
     res.json(await oauth.start(actor.tenant_id,actor.user_id,req.params.id));
+  }));
+  app.get('/api/action-formulas/credentials',route(async(req,res)=>{
+    const actor=req.actor!;
+    const credentials=await namedCredentials.list(actor.tenant_id,actor.user_id);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json(credentials.filter(item=>item.enabled).map(({name,label})=>({apiName:name,label})));
+  }));
+  app.post('/api/action-formulas/communication',route(async(req,res)=>{
+    const actor=req.actor!;
+    const {channel,credential,values}=req.body??{};
+    if(!['EMAIL','WHATSAPP','SMS'].includes(channel))throw Error('Invalid communication channel');
+    const result=await sendActionCommunication(db,rbac,namedCredentials,
+      actor.tenant_id,actor.user_id,channel,credential,values,randomUUID());
+    res.json(result);
   }));
   app.post('/api/named-credentials/:id/test',route(async(req,res)=>{
     const actor=req.actor!;
@@ -2776,7 +2791,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerPackageApiController(app,metadataPackages);
   registerOpenApiExternalServiceRoutes(app,externalServices);
   registerDurableJobAdminRoutes(app,db,rbac);
-  registerScheduledActionRoutes(app,db,rbac);
+  registerScheduledActionRoutes(app,db,rbac,records);
   registerSeederManagerRoutes(app,db,platformTenants);
   registerPlatformDeploymentRoutes(app,db,rbac);
   registerDeclarativeRuleRoutes(app,db,rbac);
@@ -2886,7 +2901,6 @@ export async function startSystemServer() {
     await seedCoreCashLedgerForExistingTenants(db);
     await seedAceAssistCrudFlows(db); // Installed tenants only; preserves edited Flow metadata.
     await seedCommunicationObjectsForExistingTenants(db);
-    await seedScheduledActionObjectsForExistingTenants(db);
     console.info('Core metadata seeder: existing tenants backfilled:',seededTenants);
     await bootstrapFreshTenant(db);
     const deploymentPermission=await seedPlatformOneEngineDeploymentPermission(db);

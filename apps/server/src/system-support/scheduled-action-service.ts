@@ -1,217 +1,297 @@
-import {randomUUID} from 'node:crypto';
-import type {PoolClient} from 'pg';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
-import {Parser} from '../expression-engine/FormulaParser.js';
-import {tokenize} from '../expression-engine/FormulaTokenizer.js';
-import {validateFormulaFunctions} from '../expression-engine/FormulaFunctionRegistry.js';
-import {waitDelaySeconds} from '../expression-engine/FormulaActions.js';
+import type {RbacEngine} from '../system-files/rbac-engine.js';
+import type {RecordEngine} from '../system-files/record-engine.js';
+import type {NamedCredentialService} from './named-credential-service.js';
+import type {FlowRuntime} from '../system-files/flow-runtime.js';
+import type {DurableJobWorker,ClaimedJob} from './durable-job-worker.js';
 import {DurableJobService} from './durable-job-service.js';
+import {compileActionPlan,type ActionStep} from '../expression-engine/ActionFormulas.js';
+import {formulaTruth,type Expression} from '../expression-engine/FormulaParser.js';
+import {evaluateFlowFormula} from '../system-files/flow-formula-runtime.js';
+import {sendActionCommunication} from './action-formula-communication-service.js';
+import {BackendPrintTemplatePdfService} from './backend-print-template-pdf-service.js';
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const source=/^[A-Za-z][A-Za-z0-9_]{0,79}$/;
-const varName=/^[A-Za-z_$][A-Za-z0-9_$.]{0,127}$/;
-type Scalar=string|number|boolean|null;
-export type ScheduledActionInput={
-  tenantId:string;userId:string;sessionId:string;sourcePageApi?:string;
-  minutes:number;seconds:number;remainingSteps:readonly string[];
-  completedSteps?:readonly string[];
-  variables?:Readonly<Record<string,Scalar>>;
+const reserved=/(?:password|secret|token|cookie|authorization|credentialkey)/i;
+const own=(value:unknown):value is Record<string,unknown>=>
+ !!value&&typeof value==='object'&&!Array.isArray(value);
+function bounded(value:unknown,depth=0):unknown {
+ if(depth>3)throw Error('Action snapshot nesting limit exceeded');
+ if(value===null||typeof value==='boolean')return value;
+ if(value instanceof Date)return value.toISOString();
+ if(typeof value==='number'&&Number.isFinite(value))return value;
+ if(typeof value==='string'&&value.length<=4096)return value;
+ if(Array.isArray(value)&&value.length<=100)return value.map(item=>bounded(item,depth+1));
+ if(own(value)&&Object.keys(value).length<=100){
+  const output:Record<string,unknown>=Object.create(null);
+  for(const [key,item] of Object.entries(value)){
+   if(item===undefined||!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(key)||reserved.test(key))continue;
+   output[key]=bounded(item,depth+1);
+  }
+  return output;
+ }
+ throw Error('Invalid action snapshot');
+}
+function safeSnapshot(value:unknown):Record<string,unknown>{
+ if(!own(value))throw Error('Expected action scope');
+ const safe=bounded(value);
+ if(!own(safe)||JSON.stringify(safe).length>16384)throw Error('Action snapshot too large');
+ return safe;
+}
+function expressionSource(node:Expression):string{
+ switch(node.kind){
+  case 'literal':return JSON.stringify(node.value);
+  case 'reference':return '{!'+node.value+'}';
+  case 'unary':return '('+node.operator+' '+expressionSource(node.value)+')';
+  case 'binary':return '('+expressionSource(node.left)+' '+node.operator+' '+expressionSource(node.right)+')';
+  case 'call':return node.name+'('+node.args.map(expressionSource).join(',')+')';
+ }
+}
+function lookup(source:Record<string,unknown>,reference:string):unknown{
+ const normalized=reference.replace(/^\$state\./,'state.')
+  .replace(/^\$event\./,'event.')
+  .replace(/^\$session$/,'sessionId');
+ const segments=normalized.replace(/^@/,'').split('.');
+ let value:unknown=source;
+ for(const key of segments){
+  if(!own(value)||!Object.prototype.hasOwnProperty.call(value,key))return null;
+  value=value[key];
+ }
+ return value;
+}
+function evaluate(node:Expression,scope:Record<string,unknown>):unknown{
+ return evaluateFlowFormula(expressionSource(node),name=>lookup(scope,name));
+}
+function textValue(value:unknown,label:string):string{
+ if(typeof value!=='string'||!value.trim()||value.length>32768)
+  throw Error('Invalid '+label);
+ return value;
+}
+function savedId(value:unknown):string{
+ if(typeof value!=='string'||!uuid.test(value))throw Error('Invalid record ID');
+ return value;
+}
+type ScheduledActionRow={
+ id:string;tenant_id:string;job_id:string;scheduled_by:string;origin_session_id:string|null;
+ action_formula:string;next_step:number;input_snapshot:Record<string,unknown>;
+ result_snapshot:Record<string,unknown>;status:string;execute_at:Date;
 };
-type ScheduledRow={id:string;job_id:string;status:string;initiated_by:string;session_id:string;
-  current_step:number;source_page_api:string|null;due_at:Date};
-
-/** Persist WAIT as an SQL job. Nothing depends on a live page/login session. */
 export class ScheduledActionService {
  private readonly jobs:DurableJobService;
  constructor(private readonly db:SqlPersistence){this.jobs=new DurableJobService(db);}
-
- async schedule(input:ScheduledActionInput):Promise<{id:string;jobId:string;dueAt:Date}> {
-  const {tenantId,userId,sessionId,sourcePageApi,minutes,seconds,remainingSteps}=input;
-  if(!uuid.test(tenantId)||!uuid.test(userId)
-    ||typeof sessionId!=='string'||!sessionId.trim()||sessionId.length>200
-    ||sourcePageApi!==undefined&&!source.test(sourcePageApi))
-    throw Error('Invalid scheduled action source');
-  const delay=waitDelaySeconds(minutes,seconds);
-  const completedSteps=input.completedSteps??[];
-  if(!Array.isArray(completedSteps)||completedSteps.length>128
-    ||!Array.isArray(remainingSteps)||!remainingSteps.length
-    ||completedSteps.length+remainingSteps.length>128)
-    throw Error('WAIT requires 1–128 actions');
-  for(const formula of [...completedSteps,...remainingSteps]){
-   if(typeof formula!=='string'||formula.length>4000)throw Error('Invalid scheduled action');
-   validateFormulaFunctions(new Parser(tokenize(formula)).parse(),'action_formula');
-  }
-  const values=Object.entries(input.variables??{});
-  if(values.length>128)throw Error('Too many scheduled action variables');
-  for(const [name,value] of values)
-   if(!varName.test(name)||typeof value==='object'&&value!==null
-      ||typeof value==='number'&&!Number.isFinite(value)
-      ||typeof value==='string'&&value.length>4096
-      ||!['string','number','boolean'].includes(typeof value)&&value!==null)
-    throw Error('Invalid scheduled action variable');
-  const dueAt=new Date(Date.now()+delay*1000),id=randomUUID();
-  const jobId=await this.db.transaction(async (client:PoolClient)=>{
-   const job=await this.jobs.enqueue(tenantId,'action.resume',{
-    actorUserId:userId,resourceId:id,scheduledAt:dueAt,maxAttempts:1
+ async schedule(tenantId:string,userId:string,options:{
+  formula:string;nextStep:number;seconds:number;scope:unknown;variables:unknown;sessionId?:unknown
+ }){
+  const steps=compileActionPlan(options.formula);
+  if(!Number.isInteger(options.nextStep)||options.nextStep<1||options.nextStep>=steps.length
+    ||steps[options.nextStep-1].name!=='WAIT')throw Error('Invalid WAIT continuation');
+  if(!Number.isInteger(options.seconds)||options.seconds<1||options.seconds>31536000)
+   throw Error('WAIT duration is outside the supported range');
+  // Browser actions cannot execute after the initiating user closes their tab.
+  // Reject at scheduling time rather than silently failing many hours later.
+  const interactive=steps.slice(options.nextStep).find(step=>
+   ['SCREEN','PRINT'].includes(step.name));
+  if(interactive)throw Error(interactive.name+
+   ' must run before WAIT; delayed actions require server execution');
+  const scope=safeSnapshot(options.scope),variables=safeSnapshot(options.variables);
+  const wait=steps[options.nextStep-1];
+  const values={...scope,...variables};
+  if(wait.guards?.some(guard=>formulaTruth(evaluate(guard.condition,values))!==guard.expected))
+   throw Error('WAIT action is not selected');
+  const [minutes,seconds]=(wait.values??[]).map(node=>evaluate(node,values));
+  if(typeof minutes!=='number'||typeof seconds!=='number'||!Number.isInteger(minutes)||
+    !Number.isInteger(seconds)||minutes<0||seconds<0||seconds>=60||
+    minutes*60+seconds!==options.seconds)
+   throw Error('WAIT duration does not match the formula');
+  const sessionId=typeof options.sessionId==='string'&&options.sessionId.length<=128
+   ?options.sessionId:null;
+  return this.db.transaction(async client=>{
+   const {rows:actors}=await client.query(
+    "SELECT 1 FROM md_users u JOIN md_tenants t ON t.id=u.tenant_id WHERE u.tenant_id=$1 AND u.id=$2 AND u.enabled=true AND t.status='ACTIVE'",
+    [tenantId,userId]);
+   if(!actors.length)throw Error('Scheduling user is no longer active');
+   const scheduledAt=new Date(Date.now()+options.seconds*1000);
+   const id=await this.jobs.enqueue(tenantId,'scheduled.action',{
+    actorUserId:userId,scheduledAt,maxAttempts:1
    },client);
-   await client.query(`INSERT INTO md_scheduled_actions
-    (id,tenant_id,job_id,initiated_by,session_id,source_page_api,due_at,current_step)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
-    [id,tenantId,job,userId,sessionId,sourcePageApi??null,dueAt,completedSteps.length]);
-   for(const [index,formula] of [...completedSteps,...remainingSteps].entries()){
-    const finished=index<completedSteps.length;
-    await client.query(`INSERT INTO md_scheduled_action_steps
-      (tenant_id,scheduled_action_id,step_index,formula_text,status,finished_at)
-      VALUES($1,$2,$3,$4,$5,CASE WHEN $5='completed' THEN now() ELSE NULL END)`,
-       [tenantId,id,index,formula,finished?'completed':'pending']);
-   }
-   for(const [name,value] of values)
-    await client.query(`INSERT INTO md_scheduled_action_values
-     (tenant_id,scheduled_action_id,name,value_text,value_number,value_boolean)
-     VALUES($1,$2,$3,$4,$5,$6)`,[tenantId,id,name,
-     typeof value==='string'?value:null,typeof value==='number'?value:null,
-     typeof value==='boolean'?value:null]);
-   // Record Workspace projection: status is descriptive, never used to dispatch.
-   await client.query(`INSERT INTO md_records(id,tenant_id,object_api,owner_id)
-     VALUES($1,$2,'Scheduledaction',$3)`,[id,tenantId,userId]);
-   const entries=[
-     ['Name','Scheduled '+id.slice(0,8)],['Status','Pending'],
-     ['ScheduledBy',userId],['SessionId',sessionId],
-     ['JobId',job],['SourcePage',sourcePageApi??'']
-   ] as const;
-   for(const [field,value] of entries)
-    await client.query(`INSERT INTO md_record_values
-     (tenant_id,record_id,object_api,field_api,value_text)
-     VALUES($1,$2,'Scheduledaction',$3,$4)`,[tenantId,id,field,value]);
-   for(const [field,value] of [['ScheduledAt',dueAt.toISOString()],
-     ['CurrentStep',String(completedSteps.length)],['TotalSteps',String(completedSteps.length+remainingSteps.length)]] as const)
-    await client.query(`INSERT INTO md_record_values
-     (tenant_id,record_id,object_api,field_api,value_text,
-       value_number,value_datetime) VALUES($1,$2,'Scheduledaction',$3,NULL,$4,$5)`,
-     [tenantId,id,field,field==='ScheduledAt'?null:Number(value),
-      field==='ScheduledAt'?value:null]);
-   return job;
+   const {rows}=await client.query<{id:string}>(`
+    INSERT INTO md_scheduled_actions(tenant_id,job_id,scheduled_by,origin_session_id,
+      action_formula,next_step,input_snapshot,result_snapshot,execute_at)
+    VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9) RETURNING id
+   `,[tenantId,id,userId,sessionId,options.formula,options.nextStep,
+    JSON.stringify(scope),JSON.stringify(variables),scheduledAt]);
+   await client.query(`INSERT INTO md_scheduled_action_history
+      (tenant_id,scheduled_action_id,event_type,actor_user_id,detail_code)
+      VALUES($1,$2,'scheduled',$3,'WAIT')`,[tenantId,rows[0].id,userId]);
+   return {id:rows[0].id,executeAt:scheduledAt.toISOString(),status:'Pending'};
   });
-  return {id,jobId,dueAt};
  }
-
- async list(tenantId:string,userId:string,all=false){
-  const {rows}=await this.db.query(`
-    SELECT id,job_id,status,initiated_by,session_id,source_page_api,
-      due_at,current_step,created_at,finished_at
-    FROM md_scheduled_actions WHERE tenant_id=$1 AND ($3::boolean OR initiated_by=$2)
-    ORDER BY created_at DESC,id DESC LIMIT 100`,[tenantId,userId,all]);
+ async list(tenantId:string,userId:string,canManage:boolean){
+  const {rows}=await this.db.query(`SELECT id,scheduled_by,origin_session_id,status,
+    execute_at,next_step,created_at,finished_at,error_code
+    FROM md_scheduled_actions WHERE tenant_id=$1 AND ($3 OR scheduled_by=$2)
+    ORDER BY created_at DESC LIMIT 200`,[tenantId,userId,canManage]);
   return rows;
  }
-
- /** Atomic with the queue update: queued jobs can be cancelled or acknowledged,
-  * but a running/leased job must finish or fail and be reconciled separately. */
- async decide(tenantId:string,id:string,actorUserId:string,
-   decision:'cancel'|'complete',allowManage=false){
-  if(!uuid.test(id)||!uuid.test(actorUserId)||!['cancel','complete'].includes(decision))
-   throw Error('Invalid scheduled action decision');
+ async history(tenantId:string,userId:string,id:string,canManage:boolean){
+  if(!uuid.test(id))throw Error('Invalid ScheduledAction ID');
+  const {rows:check}=await this.db.query(`SELECT id FROM md_scheduled_actions
+    WHERE tenant_id=$1 AND id=$2 AND ($4 OR scheduled_by=$3)`,
+    [tenantId,id,userId,canManage]);
+  if(!check.length)throw Error('ScheduledAction unavailable');
+  const {rows}=await this.db.query(`SELECT step_number,action_name,event_type,
+    actor_user_id,detail_code,occurred_at FROM md_scheduled_action_history
+    WHERE tenant_id=$1 AND scheduled_action_id=$2 ORDER BY id`,[tenantId,id]);
+  return rows;
+ }
+ async close(tenantId:string,userId:string,id:string,decision:'Cancelled'|'ManuallyCompleted',canManage:boolean){
+  if(!uuid.test(id)||!['Cancelled','ManuallyCompleted'].includes(decision))
+   throw Error('Invalid ScheduledAction operation');
   return this.db.transaction(async client=>{
-   const {rows}=await client.query<ScheduledRow>(`
-    SELECT * FROM md_scheduled_actions WHERE tenant_id=$1 AND id=$2 FOR UPDATE`,
-    [tenantId,id]);
-   const action=rows[0];
-   if(!action||!allowManage&&action.initiated_by!==actorUserId)
-    throw Error('Scheduled action not found');
-   if(action.status!=='pending')throw Error('Only pending actions may be changed');
-   const final=decision==='cancel'?'cancelled':'manually_completed';
-   const durable=decision==='cancel'?'cancelled':'completed';
-   const changed=await client.query(`UPDATE md_durable_jobs SET
-      status=$3,updated_at=now() WHERE tenant_id=$1 AND id=$2 AND status='queued'`,
-     [tenantId,action.job_id,durable]);
-   if(!changed.rowCount)throw Error('Scheduled action already running');
-   await this.setStatus(client,tenantId,id,final,action.current_step,true);
-   await client.query(`INSERT INTO md_security_events
-      (tenant_id,actor_user_id,action,details) VALUES($1,$2,$3,$4::jsonb)`,
-      [tenantId,actorUserId,'scheduled_action.'+decision,
-       JSON.stringify({scheduledActionId:id,jobId:action.job_id})]);
-   return {id,status:final};
+   const {rows}=await client.query<{job_id:string}>(`
+    UPDATE md_scheduled_actions SET status=$4,finished_at=now(),updated_at=now()
+    WHERE tenant_id=$1 AND id=$2 AND ($5 OR scheduled_by=$3)
+      AND status='Pending' RETURNING job_id
+   `,[tenantId,id,userId,decision,canManage]);
+   if(!rows[0])throw Error('Only pending ScheduledActions can be closed');
+   await client.query(`UPDATE md_durable_jobs SET status='cancelled',updated_at=now()
+     WHERE tenant_id=$1 AND id=$2 AND status='queued'`,[tenantId,rows[0].job_id]);
+   await client.query(`INSERT INTO md_scheduled_action_history
+     (tenant_id,scheduled_action_id,event_type,actor_user_id,detail_code)
+     VALUES($1,$2,$3,$4,'OPERATOR')`,[tenantId,id,
+      decision==='Cancelled'?'cancelled':'manually_completed',userId]);
+   return {id,status:decision};
   });
  }
-
- private async setStatus(client:PoolClient,tenantId:string,id:string,status:string,
-   currentStep:number,finished=false){
-  await client.query(`UPDATE md_scheduled_actions SET status=$3,current_step=$4,
-    finished_at=CASE WHEN $5 THEN now() ELSE finished_at END,updated_at=now()
-    WHERE tenant_id=$1 AND id=$2`,[tenantId,id,status,currentStep,finished]);
-  const label=({pending:'Pending',running:'Running',completed:'Completed',
-   cancelled:'Cancelled',manually_completed:'Manually Completed',
-   failed:'Failed'} as Record<string,string>)[status];
-  for(const [field,value] of [['Status',label],['CurrentStep',String(currentStep)]] as const)
-   await client.query(`INSERT INTO md_record_values
-     (tenant_id,record_id,object_api,field_api,value_text,value_number)
-     VALUES($1,$2,'Scheduledaction',$3,$4,$5)
-     ON CONFLICT (tenant_id,record_id,field_api)
-     DO UPDATE SET value_text=EXCLUDED.value_text,value_number=EXCLUDED.value_number`,
-      [tenantId,id,field,field==='Status'?value:null,
-       field==='CurrentStep'?Number(value):null]);
-  if(finished)await client.query(`INSERT INTO md_record_values
-    (tenant_id,record_id,object_api,field_api,value_datetime)
-    VALUES($1,$2,'Scheduledaction','CompletedAt',now())
-    ON CONFLICT (tenant_id,record_id,field_api)
-    DO UPDATE SET value_datetime=EXCLUDED.value_datetime`,[tenantId,id]);
+ async load(job:ClaimedJob):Promise<ScheduledActionRow|null>{
+  const {rows}=await this.db.query<ScheduledActionRow>(`
+    SELECT * FROM md_scheduled_actions WHERE tenant_id=$1 AND job_id=$2
+     AND scheduled_by=$3 AND status='Pending' AND execute_at<=now()
+   `,[job.tenant_id,job.id,job.actor_user_id]);
+  return rows[0]??null;
  }
-
- /** Worker calls this only after fresh authorization. One job can execute one time;
-  * an ambiguous lease is failed closed by the existing durable worker. */
- async resume(tenantId:string,id:string,
-   execute:(formula:string,variables:Readonly<Record<string,Scalar>>)=>Promise<Record<string,Scalar>|void>){
-  if(!uuid.test(id))throw Error('Invalid scheduled action ID');
-  const row=await this.db.query<ScheduledRow>(`
-    SELECT * FROM md_scheduled_actions WHERE tenant_id=$1 AND id=$2`,[tenantId,id]);
-  const action=row.rows[0];
-  if(!action||action.status!=='pending')throw Error('Scheduled action is not pending');
-  const stepRows=await this.db.query<{step_index:number;formula_text:string;status:string}>(`
-    SELECT step_index,formula_text,status FROM md_scheduled_action_steps
-    WHERE tenant_id=$1 AND scheduled_action_id=$2 ORDER BY step_index`,[tenantId,id]);
-  const vars=await this.db.query<{name:string;value_text:string|null;value_number:number|null;value_boolean:boolean|null}>(`
-    SELECT name,value_text,value_number,value_boolean FROM md_scheduled_action_values
-    WHERE tenant_id=$1 AND scheduled_action_id=$2`,[tenantId,id]);
-  const values:Record<string,Scalar>={};
-  for(const v of vars.rows)values[v.name]=v.value_text??v.value_number??v.value_boolean??null;
-  await this.db.transaction(async client=>this.setStatus(client,tenantId,id,'running',action.current_step));
-  for(const step of stepRows.rows){
-   if(step.step_index<action.current_step)continue;
-   if(step.status!=='pending')throw Error('Scheduled action step requires reconciliation');
-   const result=await execute(step.formula_text,values);
-   // The side effect is not retried if the worker disappears before this marker:
-   // the durable lease fails closed and requires operator reconciliation.
-   await this.db.transaction(async client=>{
-    for(const [name,value] of Object.entries(result??{})){
-     if(!varName.test(name)||typeof value==='object'&&value!==null
-        ||typeof value==='number'&&!Number.isFinite(value)
-        ||typeof value==='string'&&value.length>4096)
-       throw Error('Invalid scheduled action result');
-     await client.query(`INSERT INTO md_scheduled_action_values
-      (tenant_id,scheduled_action_id,name,value_text,value_number,value_boolean)
-      VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(tenant_id,scheduled_action_id,name)
-      DO UPDATE SET value_text=EXCLUDED.value_text,value_number=EXCLUDED.value_number,
-       value_boolean=EXCLUDED.value_boolean`,
-      [tenantId,id,name,typeof value==='string'?value:null,
-       typeof value==='number'?value:null,typeof value==='boolean'?value:null]);
-     values[name]=value;
-    }
-    await client.query(`UPDATE md_scheduled_action_steps SET status='completed',finished_at=now()
-      WHERE tenant_id=$1 AND scheduled_action_id=$2 AND step_index=$3 AND status='pending'`,
-      [tenantId,id,step.step_index]);
-    await this.setStatus(client,tenantId,id,'running',step.step_index+1);
-   });
-  }
-  await this.db.transaction(client=>this.setStatus(client,tenantId,id,'completed',
-    stepRows.rows.length,true));
+ async start(row:ScheduledActionRow){
+  const {rowCount}=await this.db.query(`UPDATE md_scheduled_actions
+    SET status='Running',updated_at=now() WHERE tenant_id=$1 AND id=$2
+    AND status='Pending' AND execute_at<=now()`,[row.tenant_id,row.id]);
+  if(!rowCount)throw Error('ScheduledAction no longer pending');
+  await this.event(row,'started',null,null);
  }
-
- async fail(tenantId:string,id:string){
-  if(!uuid.test(id))return;
+ async event(row:ScheduledActionRow,eventType:string,step:number|null,detail:string|null,action?:string){
+  await this.db.query(`INSERT INTO md_scheduled_action_history
+    (tenant_id,scheduled_action_id,step_number,action_name,event_type,actor_user_id,detail_code)
+    VALUES($1,$2,$3,$4,$5,$6,$7)`,[row.tenant_id,row.id,step,action??null,eventType,
+     row.scheduled_by,detail]);
+ }
+ async progress(row:ScheduledActionRow,index:number,variables:Record<string,unknown>,name:string){
+  const output=safeSnapshot(variables);
   await this.db.transaction(async client=>{
-   const {rows}=await client.query<{current_step:number}>(`
-    SELECT current_step FROM md_scheduled_actions
-    WHERE tenant_id=$1 AND id=$2 AND status='running' FOR UPDATE`,[tenantId,id]);
-   if(rows[0])await this.setStatus(client,tenantId,id,'failed',rows[0].current_step,true);
+   await client.query(`UPDATE md_scheduled_actions SET next_step=$3,
+      result_snapshot=$4::jsonb,updated_at=now()
+      WHERE tenant_id=$1 AND id=$2 AND status='Running'`,
+     [row.tenant_id,row.id,index,JSON.stringify(output)]);
+   await client.query(`INSERT INTO md_scheduled_action_history
+      (tenant_id,scheduled_action_id,step_number,action_name,event_type,actor_user_id)
+      VALUES($1,$2,$3,$4,'step_completed',$5)`,[row.tenant_id,row.id,index-1,name,row.scheduled_by]);
   });
  }
+ async terminal(row:ScheduledActionRow,status:'Completed'|'Failed',code?:string){
+  await this.db.transaction(async client=>{
+   await client.query(`UPDATE md_scheduled_actions SET status=$3,finished_at=now(),
+     error_code=$4,updated_at=now() WHERE tenant_id=$1 AND id=$2 AND status='Running'`,
+     [row.tenant_id,row.id,status,code??null]);
+   await client.query(`INSERT INTO md_scheduled_action_history
+     (tenant_id,scheduled_action_id,event_type,actor_user_id,detail_code)
+     VALUES($1,$2,$3,$4,$5)`,[row.tenant_id,row.id,
+       status==='Completed'?'completed':'failed',row.scheduled_by,code??null]);
+  });
+ }
+}
+export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPersistence,
+ rbac:RbacEngine,records:RecordEngine,credentials:NamedCredentialService,flows:FlowRuntime){
+ const service=new ScheduledActionService(db);
+ const pdfService=new BackendPrintTemplatePdfService(db,rbac,records);
+ const authorize=async(job:ClaimedJob)=>{
+  if(job.job_type!=='scheduled.action'||!job.actor_user_id)return false;
+  const {rows}=await db.query(`SELECT 1 FROM md_users u
+   JOIN md_tenants t ON t.id=u.tenant_id AND t.status='ACTIVE'
+   WHERE u.tenant_id=$1 AND u.id=$2 AND u.enabled=true`,
+   [job.tenant_id,job.actor_user_id]);
+  if(!rows.length)return false;
+  return !!await service.load(job);
+ };
+ worker.register('scheduled.action',async job=>{
+  const row=await service.load(job);
+  if(!row)throw Error('ScheduledAction unavailable');
+  await service.start(row);
+  const scope=safeSnapshot(row.input_snapshot),variables=safeSnapshot(row.result_snapshot);
+  const steps=compileActionPlan(row.action_formula);
+  try{
+   for(let i=row.next_step;i<steps.length;i++){
+    const step=steps[i];
+    const values={...scope,...variables};
+    const evalNode=(node:Expression)=>evaluate(node,values);
+    if(step.guards?.some(guard=>formulaTruth(evalNode(guard.condition))!==guard.expected)){
+     await service.progress(row,i+1,variables,step.name+' (skipped)');
+     continue;
+    }
+    if(step.name==='WAIT'){
+     const [minutes,seconds]=(step.values??[]).map(evalNode);
+     if(typeof minutes!=='number'||typeof seconds!=='number'||
+       !Number.isInteger(minutes)||!Number.isInteger(seconds)||
+       minutes<0||seconds<0||seconds>=60||minutes*60+seconds<1)
+      throw Error('Invalid scheduled WAIT duration');
+     if(i+1<steps.length)await service.schedule(row.tenant_id,row.scheduled_by,{
+      formula:row.action_formula,nextStep:i+1,seconds:minutes*60+seconds,
+      scope,variables,sessionId:row.origin_session_id
+     });
+     await service.progress(row,i+1,variables,step.name);
+     break;
+    }
+    if(step.name==='SCREEN'||step.name==='PRINT')
+     throw Error('Interactive navigation and printing are unavailable after WAIT');
+    if(step.name==='CREATEPDF'){
+     const recordId=savedId(evalNode(step.id!));
+     const pdf=await pdfService.create(row.tenant_id,row.scheduled_by,step.object,recordId);
+     if(step.alias)variables[step.alias]=pdf;
+     await service.progress(row,i+1,variables,step.name);
+     continue;
+    }
+    if(step.name==='FLOW'){
+     const {rows:active}=await db.query<{flow_type:string}>(`
+      SELECT flow_type FROM md_flow_definitions
+      WHERE tenant_id=$1 AND api_name=$2 AND active=true AND archived=false
+      ORDER BY version DESC LIMIT 1`,[row.tenant_id,step.object]);
+     if(active[0]?.flow_type!=='Autolaunched Flow')throw Error('Only Autolaunched Flows can resume in background');
+     await flows.execute(row.tenant_id,step.object,row.scheduled_by,{});
+     await service.progress(row,i+1,variables,step.name);
+     continue;
+    }
+    if(['EMAIL','WHATSAPP','SMS'].includes(step.name))
+     await sendActionCommunication(db,rbac,credentials,
+       row.tenant_id,row.scheduled_by,step.name as 'EMAIL'|'WHATSAPP'|'SMS',
+       step.object,(step.values??[]).map(evalNode),
+       'scheduled-action:'+row.id+':'+i);
+    else {
+     const id=step.id?savedId(evalNode(step.id)):undefined;
+     const data=Object.fromEntries([...step.fields].map(([name,node])=>[name,evalNode(node)]));
+     if(step.name==='CREATERECORD'){
+      const created=await records.create(row.tenant_id,row.scheduled_by,step.object,data);
+      if(step.alias)variables[step.alias]=await records.get(row.tenant_id,row.scheduled_by,step.object,created);
+     }else if(step.name==='UPDATERECORD'){
+      await records.update(row.tenant_id,row.scheduled_by,step.object,id!,data);
+      if(step.alias)variables[step.alias]=await records.get(row.tenant_id,row.scheduled_by,step.object,id!);
+     }else if(step.name==='DELETERECORD')
+      await records.remove(row.tenant_id,row.scheduled_by,step.object,id!);
+     else throw Error('Unknown scheduled action type');
+    }
+    await service.progress(row,i+1,variables,step.name);
+   }
+   await service.terminal(row,'Completed');
+  }catch{
+   await service.terminal(row,'Failed','ACTION_EXECUTION_FAILED');
+   throw Error('ScheduledAction execution failed');
+  }
+ });
+ return authorize;
 }

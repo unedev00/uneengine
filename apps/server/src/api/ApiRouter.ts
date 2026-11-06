@@ -8,12 +8,10 @@ import {registerObjectApiController} from './ObjectApiController.js';
 import {registerMetadataApiController} from './MetadataApiController.js';
 import {registerFlowApiController} from './FlowApiController.js';
 import {registerPageApiController} from './PageApiController.js';
-import {registerActionFormulaApiController} from './ActionFormulaApiController.js';
 /** Existing dynamic routes, preserved with the original API paths and tenant guards. */
 export function registerDynamicApiRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine,records:RecordEngine,flows:FlowRuntime){
  registerFlowApiController(app,db,rbac,flows);
  registerObjectApiController(app,records);
  registerMetadataApiController(app,db,rbac,records);
  registerPageApiController(app,db,rbac);
- registerActionFormulaApiController(app,db,rbac,records,flows);
 }

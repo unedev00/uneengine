@@ -8,6 +8,7 @@ const pageTypes: ReadonlyArray<Tab> = [
   { value: 'Home Page', label: 'Home' },
   { value: 'App Page', label: 'App' },
   { value: 'Record Page', label: 'Record' },
+  { value:'Print Template',label:'Print templates' },
   { value: 'In-Screen Page', label: 'In-Screen' },
 ];
 

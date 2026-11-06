@@ -11,7 +11,6 @@ import {seedFreshUiComponents} from '../app-seeders/ui-components.js';
 import {seedFreshSmartComponents} from '../app-seeders/smart-components.js';
 import {seedFreshProductImageField} from '../app-seeders/product-image-field.js';
 import {seedCommunicationObjects} from '../app-seeders/core-communication-objects.js';
-import {seedScheduledActionObject} from '../app-seeders/core-scheduled-action-objects.js';
 
 export type TenantRequest={
   slug:string;
@@ -113,7 +112,6 @@ export class TenantProvisioning {
       // Fresh tenant catalog belongs to the same SQL transaction; business records are never seeded.
       await seedFreshCoreObjects(client,tenantId);
       await seedCommunicationObjects(client,tenantId);
-      await seedScheduledActionObject(client,tenantId);
       // Central integration delivery uses its own tenant-scoped, non-login RBAC actor.
       await client.query('SELECT md_ensure_communication_logger($1::uuid)',[tenantId]);
       await seedQuotationObjects(client,tenantId);

@@ -691,20 +691,6 @@ function RecordWorkspace({
   },[route.objectApiName]);
   const listPageSize = 50;
   const [refreshKey, setRefreshKey] = useState(0);
-  const [scheduledActionBusy,setScheduledActionBusy]=useState(false);
-  const [scheduledActionError,setScheduledActionError]=useState('');
-  const decideScheduledAction=async(decision:'cancel'|'complete')=>{
-    if(object?.apiName!=='Scheduledaction'||!record?.Id||scheduledActionBusy)return;
-    setScheduledActionBusy(true);setScheduledActionError('');
-    try{
-      await apiRequest('/scheduled-actions/'+encodeURIComponent(record.Id)+'/'+decision,
-        {method:'POST'});
-      setRefreshKey(value=>value+1);
-    }catch(err){
-      setScheduledActionError(err instanceof Error?err.message:'Unable to update scheduled action');
-    }finally{setScheduledActionBusy(false);}
-  };
-
   const [fieldHistory, setFieldHistory] = useState<Array<Record<string, unknown>>>([]);
   const [relatedRecords, setRelatedRecords] = useState<Record<string, { objectApiName: string; fieldApiName: string; records: RecordData[]; total: number }>>({});
   const [relatedError, setRelatedError] = useState('');
@@ -2595,31 +2581,21 @@ function RecordWorkspace({
         <button type="button" className="btn" onClick={()=>setRefreshKey(current=>current+1)}>Retry loading</button>
       </div>}
       {!loading && !error && record && <>
-        {object.apiName==='Scheduledaction'&&scheduledActionError&&
-          <div className="records-message" role="alert">{scheduledActionError}</div>}
         <section className="record-detail-heading surface">
           <div className="record-object-icon"><Database size={18} /></div>
           <div><div className="eyebrow">{object.label}</div><h1>{recordName}</h1><p>Record ID: <code>{record.Id}</code></p></div>
           <div className="record-detail-actions">
-            {object.apiName==='Scheduledaction'&&record.Status==='Pending'&&<>
-              <button type="button" className="btn"
-                disabled={scheduledActionBusy}
-                onClick={()=>void decideScheduledAction('complete')}>Mark Complete</button>
-              <button type="button" className="btn btn-danger"
-                disabled={scheduledActionBusy}
-                onClick={()=>void decideScheduledAction('cancel')}>Cancel Scheduled Action</button>
-            </>}
-            {object.apiName!=='Scheduledaction'&&canEdit && showRecordAction('Edit') && canShowStandard('Edit') &&
+            {canEdit && showRecordAction('Edit') && canShowStandard('Edit') &&
               <button className="btn btn-brand" disabled={Boolean(customActionPendingId)||pageActionState('Edit')==='disabled'}
                onClick={()=>{const action=standardOverride('Edit');
                 if(action)void runCustomObjectAction(action);else openEditForm(record);}}>
                <Pencil size={14}/>{standardOverride('Edit')?.label??'Edit'}</button>}
-            {canCreate&&object.apiName!=='User'&&object.apiName!=='Scheduledaction'&&showRecordAction('Clone')&&canShowStandard('Clone')&&
+            {canCreate&&object.apiName!=='User'&&showRecordAction('Clone')&&canShowStandard('Clone')&&
               <button className="btn" disabled={Boolean(customActionPendingId)||pageActionState('Clone')==='disabled'}
                onClick={()=>{const action=standardOverride('Clone');
                 if(action)void runCustomObjectAction(action);else void cloneCurrentRecord();}}>
                <Copy size={14}/>{standardOverride('Clone')?.label??'Clone'}</button>}
-            {object.apiName!=='Scheduledaction'&&canDelete && showRecordAction('Delete') && canShowStandard('Delete') &&
+            {canDelete && showRecordAction('Delete') && canShowStandard('Delete') &&
               <button className="btn btn-danger" disabled={Boolean(customActionPendingId)||pageActionState('Delete')==='disabled'}
                onClick={()=>{const action=standardOverride('Delete');
                 if(action)void runCustomObjectAction(action);else void deleteCurrentRecord();}}>

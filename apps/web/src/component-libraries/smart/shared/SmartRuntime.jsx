@@ -546,7 +546,9 @@ export default function SmartRuntime(p){
   const grid=gridViewportRef.current;
   if(!grid)return;
   const measureGridViewport=()=>{
-   const height=grid.clientHeight;
+   // Reserve the Card Grid's 4px inset on both edges so authored card
+   // borders, rounded corners and shadows are not clipped by the scroller.
+   const height=Math.max(0,grid.clientHeight-8);
    setGridViewportHeight(previous=>previous===height?previous:height);
   };
   measureGridViewport();
@@ -692,12 +694,15 @@ export default function SmartRuntime(p){
    style={{
    boxSizing:"border-box",width:"100%",height:"100%",minHeight:0,minWidth:0,
    overflowY:"auto",overflowX:"auto",overscrollBehavior:"contain",
+   // Keep the full border and shadow inside the scroll viewport in both
+   // published pages and the Page Builder (all Cards/Rows settings).
+   padding:4,scrollPadding:4,
    gap,
    gridTemplateColumns:"repeat("+columns+",minmax("+minimumCardWidth+"px,1fr))",
    // Keep every authorised record; 'Rows' controls the *visible* viewport only.
    // A measured pixel row height avoids percentage tracks shrinking to their
    // min-content size and painting a second row within a one-row viewport.
-   gridAutoRows:"max("+minimumCardHeight+"px, calc((100% - "+(rows-1)*gap+"px) / "+rows+"))",
+   gridAutoRows:"max("+minimumCardHeight+"px, calc((100% - 8px - "+(rows-1)*gap+"px) / "+rows+"))",
    ...(gridViewportHeight>0?{
     gridAutoRows:Math.max(minimumCardHeight,(gridViewportHeight-(rows-1)*gap)/rows)+"px"
    }:{}),

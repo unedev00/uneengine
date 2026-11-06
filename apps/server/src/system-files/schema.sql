@@ -554,7 +554,7 @@ WHERE l.layout_id='default' AND NOT EXISTS (
 -- Existing app seed pages are retained; no JSON/JSONB storage.
 CREATE TABLE IF NOT EXISTS md_lightning_page_details (
  tenant_id uuid NOT NULL, page_id uuid NOT NULL,
- page_type text NOT NULL CHECK(page_type IN ('Record Page','App Page','Home Page','In-Screen Page')),
+ page_type text NOT NULL CHECK(page_type IN ('Record Page','App Page','Home Page','In-Screen Page','Print Template')),
  target_object text NOT NULL DEFAULT '',
  layout_mode text NOT NULL CHECK(layout_mode IN ('template','free-canvas')),
  template text,

@@ -33,8 +33,7 @@ export class DurableJobWorker {
   for(const job of due){
    let replayBlocked=false;
    try {
-    if(['flow.execute','flow.resume','flow.scheduled','flow.platform-event','action.resume'].includes(job.job_type)&&job.attempt>1)replayBlocked=true;
-    if(replayBlocked)throw Error('Ambiguous job replay requires manual reconciliation');
+    if(['flow.execute','flow.resume','flow.scheduled','flow.platform-event'].includes(job.job_type)&&job.attempt>1)replayBlocked=true;
     const handler=this.handlers.get(job.job_type);
     if(!handler)throw new Error('Unregistered job type');
     if(!await this.authorize(job))throw new Error('Job no longer authorised');
@@ -44,7 +43,7 @@ export class DurableJobWorker {
    } catch {
     // Never serialize arbitrary error text, secrets or other tenant information.
     try {
-     await this.jobs.fail(job.tenant_id,job.id,this.workerId,replayBlocked?(job.job_type==='action.resume'?'ACTION_RECONCILIATION_REQUIRED':'FLOW_RECONCILIATION_REQUIRED'):'JOB_EXECUTION_FAILED',
+     await this.jobs.fail(job.tenant_id,job.id,this.workerId,replayBlocked?'FLOW_RECONCILIATION_REQUIRED':'JOB_EXECUTION_FAILED',
       Math.min(3600,Math.pow(2,Math.min(job.attempt,10))*15));
     } catch {
      // Failed leases are reclaimable by a subsequent worker after expiration.

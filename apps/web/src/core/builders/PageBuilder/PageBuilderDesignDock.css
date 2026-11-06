@@ -223,20 +223,25 @@
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-group .smart-ribbon-row[data-design-row="3"]::before{content:"Typography"}
 
-/* Vertical Design uses the SAME seventh grid cell beside R1C6 H/V.
- * It does not inherit any horizontal position from top-ribbon coordinates.
- * No control is moved offscreen to manufacture a scrollbar-free dock. */
+/* Appearance and Position each have a compact shared seventh grid cell.
+ * Labels and numeric values remain inside their own single bordered box. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-group .smart-design2-count{
  position:relative!important;grid-column:7!important;grid-row:1!important;
  left:auto!important;top:auto!important;
- flex:0 0 79px!important;min-width:79px!important;width:79px!important;
- max-width:79px!important;margin:0!important;
+ flex:0 0 110px!important;min-width:110px!important;width:110px!important;
+ max-width:110px!important;margin:0!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-group .smart-design2-count-choice{
- position:absolute!important;top:28px!important;right:0!important;
- left:auto!important;z-index:3!important;
+ position:static!important;top:auto!important;right:auto!important;
+ left:auto!important;z-index:auto!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-group .smart-design2-padding{
+ position:relative!important;grid-column:7!important;grid-row:1!important;
+ flex:0 0 76px!important;min-width:76px!important;width:76px!important;
+ max-width:76px!important;margin:0!important;
 }
 /* The optional Calendar/Image contextual editors occupy their own next line
  * in the dock. They cannot extend the panel's horizontal scroll width. */
@@ -450,14 +455,20 @@
 }
 
 
-/* Requested blank-line gaps between the compact collapsible section groups. */
+/* Compact accordion: replace the retired blank gaps with two thin lines
+ * separated by only 3px, consistently between EVERY adjacent section. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
- .smart-design2-area-list > .smart-design2-area-section:is(
- [data-design-area="Body"],[data-design-area="Badge"],
- [data-design-area="Header"],[data-design-area="Table"],
- [data-design-area="Button"]) {
- margin-top:12px!important;
+ .smart-design2-area-list > .smart-design2-area-section{
+ margin-top:0!important;
 }
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-area-list > .smart-design2-area-section + .smart-design2-area-section{
+ border-top:1px solid #cbd5e1!important;
+ box-shadow:inset 0 3px 0 #f4f5f7,inset 0 4px 0 #cbd5e1;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-area-list > .smart-design2-area-section + .smart-design2-area-section
+ >.smart-inspector-section-toggle{padding-top:7px!important;}
 /* Moved legacy properties stay in Body below the unchanged 17-icon grid. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-supplemental {

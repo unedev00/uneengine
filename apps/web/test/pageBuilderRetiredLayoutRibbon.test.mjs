@@ -22,21 +22,22 @@ test('Retire Layout only after remapping all component property definitions to D
    assert.match(page,new RegExp('data-ribbon-property="'+key+'"'));
 });
 
-test('Hand control edits the existing count metadata, not a new counter',()=>{
- assert.match(design,/<Hand size=\{16\}/);
- assert.match(design,/['"]tabCount['"]/);
- for(const key of ['cardsPerRow','cardsPerColumn'])
+test('Appearance selector edits only existing count and calendar metadata',()=>{
+ assert.doesNotMatch(design,/<Hand size=\{16\}/);
+ for(const key of ['cardsPerRow','cardsPerColumn','tabCount','tabIndex','showDays','firstDay'])
   assert.ok(design.includes(key),key+' remains supported');
  assert.match(design,/\[property!\.valueKeys\?\.\[api\]\?\?key\]:next/);
  assert.match(css,/smart-design2-count/);
  assert.match(css,/position:relative;grid-column:7;grid-row:1/);
  assert.match(design,/row===1&&\(\(\)=>\{/);
- assert.match(design,/gridTemplateColumns:design2GridColumns\(row\)\+\(row===1\?' 79px':''\)/);
+ assert.match(design,/row===1\?' 110px':row===2\?' 76px'/);
+ assert.match(design,/className="smart-design2-count-choice"/);
  assert.match(design,/className="smart-design2-count-field"/);
  assert.match(design,/className="smart-office-number" step=\{1\}/);
- assert.doesNotMatch(design,/value="tabIndex"/);
- assert.match(design,/data-source-bound=\{sourceBound\?'true':'false'\}/);
+ assert.match(design,/sourceBound=api==='smart_tabs'&&key==='tabCount'/);
  assert.match(design,/area==='Body'&&supported&&!sourceBound/);
+ assert.match(design,/className="smart-design2-days-trigger"/);
+ assert.match(design,/className="smart-design2-padding"/);
 });
 
 test('Tab dimensions, orientation and count resize canvas frame together',()=>{
@@ -51,8 +52,9 @@ test('Calendar, image and header settings stay directly editable in Design',()=>
  for(const key of ['showDays','firstDay','imageFill','imagePlacement','imageHeight',
    'headerBoxHeight','supportingBoxHeight','imageBorderColor'])
    assert.ok(design.includes(key),'Missing '+key);
- assert.match(design,/area==='Calendar'/);
- assert.match(design,/area==='Image'&&api==='smart_card_grid'/);
+ assert.match(design,/key==='showDays'/);
+ assert.match(design,/key==='firstDay'/);
+ assert.doesNotMatch(design,/className="smart-design2-image-border"/);
 });
 
 test('Badge visibility follows rendered nonempty text, including spaces',()=>{
