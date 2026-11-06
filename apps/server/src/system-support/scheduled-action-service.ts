@@ -9,6 +9,7 @@ import {compileActionPlan,type ActionStep} from '../expression-engine/ActionForm
 import {formulaTruth,type Expression} from '../expression-engine/FormulaParser.js';
 import {evaluateFlowFormula} from '../system-files/flow-formula-runtime.js';
 import {sendActionCommunication} from './action-formula-communication-service.js';
+import {BackendPrintTemplatePdfService} from './backend-print-template-pdf-service.js';
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const reserved=/(?:password|secret|token|cookie|authorization|credentialkey)/i;
@@ -89,7 +90,7 @@ export class ScheduledActionService {
   // Browser actions cannot execute after the initiating user closes their tab.
   // Reject at scheduling time rather than silently failing many hours later.
   const interactive=steps.slice(options.nextStep).find(step=>
-   ['SCREEN','PRINT','CREATEPDF'].includes(step.name));
+   ['SCREEN','PRINT'].includes(step.name));
   if(interactive)throw Error(interactive.name+
    ' must run before WAIT; delayed actions require server execution');
   const scope=safeSnapshot(options.scope),variables=safeSnapshot(options.variables);
@@ -209,6 +210,7 @@ export class ScheduledActionService {
 export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPersistence,
  rbac:RbacEngine,records:RecordEngine,credentials:NamedCredentialService,flows:FlowRuntime){
  const service=new ScheduledActionService(db);
+ const pdfService=new BackendPrintTemplatePdfService(db,rbac,records);
  const authorize=async(job:ClaimedJob)=>{
   if(job.job_type!=='scheduled.action'||!job.actor_user_id)return false;
   const {rows}=await db.query(`SELECT 1 FROM md_users u
@@ -246,8 +248,15 @@ export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPers
      await service.progress(row,i+1,variables,step.name);
      break;
     }
-    if(step.name==='SCREEN'||step.name==='PRINT'||step.name==='CREATEPDF')
-     throw Error('This action has no background execution adapter: '+step.name);
+    if(step.name==='SCREEN'||step.name==='PRINT')
+     throw Error('Interactive navigation and printing are unavailable after WAIT');
+    if(step.name==='CREATEPDF'){
+     const recordId=savedId(evalNode(step.id!));
+     const pdf=await pdfService.create(row.tenant_id,row.scheduled_by,step.object,recordId);
+     if(step.alias)variables[step.alias]=pdf;
+     await service.progress(row,i+1,variables,step.name);
+     continue;
+    }
     if(step.name==='FLOW'){
      const {rows:active}=await db.query<{flow_type:string}>(`
       SELECT flow_type FROM md_flow_definitions
