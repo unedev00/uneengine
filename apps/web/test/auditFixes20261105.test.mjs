@@ -43,7 +43,7 @@ test('Page Builder list actions and editor dialogs have accessible controls',()=
   assert.match(builder,/aria-label=\{"Download component inventory for "/);
   assert.match(builder,/handleCreatePageDialogKey/);
   assert.match(details,/dialogKeyDown/);
-  assert.match(details,/aria-current=\{activeSection/);
+  assert.match(details,/aria-selected=\{activeSection/);
   assert.doesNotMatch(builder,/aria-pressed=\{item.status==='Active'\}/);
 });
 
