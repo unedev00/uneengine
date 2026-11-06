@@ -276,3 +276,9 @@ test('UX-0037 Create Object is first in DOM and tab order, before secondary tool
  assert.ok(toolbar.indexOf('aria-label="Create new object"')<toolbar.indexOf('showDeletedObjects()'));
  assert.ok(toolbar.indexOf('aria-label="Create new object"')<toolbar.indexOf('aria-label="Universal Data Loader"'));
 });
+
+test('UX-0008 failed sign-in focuses email while MFA failures return to code',()=>{
+ const login=source('src/core/authentication/Login/loginView.tsx');
+ assert.match(login,/getElementById\(challenge\?'login-mfa':'login-email'\)\?\.focus\(\)/);
+ assert.doesNotMatch(login,/getElementById\(challenge\?'login-mfa':'login-password'\)\?\.focus\(\)/);
+});
