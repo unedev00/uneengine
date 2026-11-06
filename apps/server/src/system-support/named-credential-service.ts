@@ -1034,7 +1034,9 @@ export class NamedCredentialService {
  /** One reusable, host-independent outbound HTTP transport. Credential secrets are never returned to a Flow. */
  async callout(tenantId:string,userId:string,config:Record<string,unknown>,
    variables:Record<string,string|number|boolean|null>,idempotencyKey:string,
-   previouslyPrepared=false){
+   previouslyPrepared=false,maxBodyBytes=32768){
+  if(!Number.isInteger(maxBodyBytes)||maxBodyBytes<1||maxBodyBytes>8*1024*1024)
+   throw Error('Invalid HTTP Callout body size limit');
   // Guard before any provider side effect; Flow configuration never controls logging.
   if(!this.integrationActivityWriter)throw new Error('Central Communication writer is unavailable');
   await this.rbac.require(tenantId,userId,'NamedCredential','read');
@@ -1062,7 +1064,7 @@ export class NamedCredentialService {
   const prepared=previouslyPrepared?{
    path:String(config.path??''),body:typeof config.body==='string'&&config.body
     ?config.body:undefined
-  }:prepareFlowHttpRequest(config,flowVariables);
+  }:prepareFlowHttpRequest(config,flowVariables,maxBodyBytes);
   const method=String(config.method??'GET').toUpperCase();
   if(!['GET','POST','PUT','PATCH','DELETE'].includes(method))throw new Error('Unsupported HTTP method');
   if(config.deliveryMode==='DURABLE_ASYNC')
@@ -1201,7 +1203,7 @@ export class NamedCredentialService {
   }
   if(method!=='GET')header['Idempotency-Key']=idempotencyKey;
   const body=prepared.body;
-  if(body&&Buffer.byteLength(body)>32768)throw new Error('HTTP Callout body too large');
+  if(body&&Buffer.byteLength(body)>maxBodyBytes)throw new Error('HTTP Callout body too large');
   if(body)header['Content-Type']='application/json';
   const timeout=Math.min(30000,Math.max(1000,Number(config.timeoutMs)||15000));
   const requestStartedAt=Date.now();

@@ -39,12 +39,13 @@ export async function executePageFormulaAction(
  pageState:Readonly<Record<string,unknown>>,
  objects:ReadonlyArray<{apiName:string;fields:ReadonlyArray<FieldMetadata>}>,
  objectApiName:string,sessionId='',print?:(template:string,id:string)=>Promise<void>,
- runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>
+ runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>,
+ createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>
 ):Promise<{changes:Change[];recordChanged:boolean}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
   return executeActionFormula(formula,{...payload,state:pageState,event:payload},
-   {pageState,sessionId,timeZone:'UTC',now:new Date()},{request,print,runPageAction});
+   {pageState,sessionId,timeZone:'UTC',now:new Date()},{request,print,runPageAction,createPdf});
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');

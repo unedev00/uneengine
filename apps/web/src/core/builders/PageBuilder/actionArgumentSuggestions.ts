@@ -19,8 +19,8 @@ export function actionArgumentSuggestions(before:string,objects:readonly Source[
   }else if(token.kind==='punctuation'&&token.value===')'){
    stack.pop();
    const parent=stack.at(-1);
-   if(frame?.name==='AS'&&parent&&['CREATERECORD','UPDATERECORD'].includes(parent.name))
-    aliases.set(frame.args[0].join(''),parent.args[0].join(''));
+   if(frame?.name==='AS'&&parent&&['CREATERECORD','UPDATERECORD','CREATEPDF'].includes(parent.name))
+    aliases.set(frame.args[0].join(''),parent.name==='CREATEPDF'?'__PDF__':parent.args[0].join(''));
   }else if(token.kind==='punctuation'&&token.value===',')frame?.args.push([]);
   else frame?.args.at(-1)?.push(token.value);
  }
@@ -29,11 +29,12 @@ export function actionArgumentSuggestions(before:string,objects:readonly Source[
  const index=frame.args.length-1;
  const [alias,field]=suffix.split('.');
  if(field!==undefined){
+  if(aliases.get(alias)==='__PDF__')return {query:suffix,choices:[{apiName:alias+'.FileId',label:'Generated PDF file ID'}]};
   const source=objects.find(object=>object.apiName===aliases.get(alias));
   return source?{query:suffix,choices:source.fields.map(item=>({...item,apiName:alias+'.'+item.apiName}))}:null;
  }
- if(index===0&&['SCREEN','PRINT'].includes(frame.name))
-  return {query:suffix,choices:pages.filter(item=>item.status==='Active'&&(frame.name==='PRINT'
+ if(index===0&&['SCREEN','PRINT','CREATEPDF'].includes(frame.name))
+  return {query:suffix,choices:pages.filter(item=>item.status==='Active'&&(['PRINT','CREATEPDF'].includes(frame.name)
    ?item.pageType==='Print Template':['App Page','In-Screen Page'].includes(item.pageType)))};
  if(index===1&&frame.name==='SCREEN')return {query:suffix,choices:['current','popup','newwindow'].map(apiName=>({apiName,label:apiName}))};
  if(index===0&&['EMAIL','WHATSAPP','SMS'].includes(frame.name))return {query:suffix,choices:credentials};

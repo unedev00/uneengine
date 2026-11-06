@@ -1,4 +1,5 @@
 import {printRecordPages} from './printRecordPages';
+import {createTemplatePdf} from './createTemplatePdf';
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
@@ -708,6 +709,13 @@ function MetadataBoundPageComponent({
             objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
           },onNavigate,pageSessionKey,sessionId,String(payload.recordId??pageState.recordId??recordId??''));
           return runSequenceFlow(target,availableFlows,apiRequest,onLaunchFlow);
+        },
+        async(template,id)=>{
+          const definition=pages.find(item=>item.apiName===template&&item.pageType==='Print Template'&&item.status==='Active');
+          if(!definition)throw Error('Choose a published Print Template');
+          return createTemplatePdf(template,id,apiRequest,
+            ()=>previewPrintTemplate(template,id,pageSessionKey,sessionId,currentAppId),
+            {width:definition.canvasWidth,height:definition.canvasHeight});
         });
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{

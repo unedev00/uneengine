@@ -19,6 +19,7 @@ export type WorkspaceId =
   | 'report-builder'
   | 'flow-builder'
   | 'flow-interviews'
+  | 'scheduled-actions'
   | 'scheduled-flows'
   | 'flow-logs'
   | 'automation-settings'
@@ -1044,6 +1045,7 @@ export const workspaces: WorkspaceMetadata[] = [
   { id: 'report-builder', label: 'Reports', icon: FileText },
   { id: 'flow-builder', label: 'Flows', icon: Workflow },
   { id: 'automation-settings', label: 'Process Automation Settings', icon: Workflow },
+  { id: 'scheduled-actions', label: 'Scheduled Actions', icon: Workflow },
   { id: 'app-manager', label: 'App Manager', icon: LayoutTemplate },
   { id: 'app-exchange', label: 'AppExchange', icon: Store },
   { id: 'named-credentials', label: 'Named Credentials', icon: Database },
@@ -1057,7 +1059,7 @@ export const setupNavigation = [
   { group: 'Company Settings', items: ['Company Settings', 'Security & Recovery', 'Connected Apps', 'Audit Trail'] },
   { group: 'Platform Tools', items: ['Setup Home', 'Object Manager', 'Records', 'Universal Data Loader', 'Page Builder', 'App Manager', 'AppExchange'] },
   { group: 'Integrations', items: ['Named Credentials', 'Webhook Endpoints', 'Named Devices'] },
-  { group: 'Automation', items: ['Flows', 'Paused and Waiting Interviews', 'Scheduled Flows', 'Flow History', 'Process Automation Settings'] },
+  { group: 'Automation', items: ['Flows', 'Paused and Waiting Interviews', 'Scheduled Actions', 'Scheduled Flows', 'Flow History', 'Process Automation Settings'] },
   { group: 'Analytics', items: ['Reports Builder', 'Reports View', 'Dashboard Builder', 'Dashboard View'] },
   { group: 'Security', items: ['Users', 'Roles', 'Public Groups', 'Profiles', 'Permission Sets', 'Permission Set Groups', 'Sharing Settings', 'Sharing Rules'] }
 ];

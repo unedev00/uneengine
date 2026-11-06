@@ -1,5 +1,5 @@
 import {actionArgumentSuggestions} from './actionArgumentSuggestions';
-import {isScreenAction,parseScreenAction,compileActionPlan,isActionPlan,normalizeFlowCalls,actionFunctionNames} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isScreenAction,parseScreenAction,compileActionPlan,isActionPlan,normalizeFlowCalls} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {usePageFormulaScope} from '../../components/RegisteredComponent/PageFormulaScope';
 import {useState,useRef,useEffect,useLayoutEffect,useId,type KeyboardEvent} from 'react';
 import {createPortal} from 'react-dom';
@@ -9,7 +9,7 @@ import {formulaDollarSuggestions} from './formulaDollarSuggestions';
 import {formulaSignatureAt} from './formulaSignatureHelp';
 import {Parser} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
-import {formulaFunctionPrefix,matchingFormulaFunctions,getFormulaFunctionNames,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
+import {formulaFunctionPrefix,matchingFormulaFunctions,getFormulaNamesForEditor,validateFormulaFunctions} from '../../../../../server/src/expression-engine/FormulaFunctionRegistry.js';
 import type {MentionKind} from '../../../component-libraries/shared/primitives/SmartFieldInput/smartFieldMentions';
 // Styles are loaded by the Page Builder entrypoint so this reusable editor
 // can also render in lightweight server-side ribbon contract tests.
@@ -57,7 +57,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
  const [activeSuggestion,setActiveSuggestion]=useState(0);
  const suggestionListId=useId();
  useEffect(()=>setActiveSuggestion(0),[matches?.query,functionMatch?.query]);
- const functions=[...getFormulaFunctionNames('ribbon_binding'),...(flowReferences?[...actionFunctionNames,'AS']:[])];
+ const functions=getFormulaNamesForEditor(flowReferences?'action':'data');
  const functionSuggestions=functionMatch?matchingFormulaFunctions(functions,functionMatch.query):[];
  const [hintPosition,setHintPosition]=useState<{top:number;left:number;above:boolean}|null>(null);
  const hint=focused?formulaSignatureAt(draft,caret,Boolean(flowReferences)):null;
@@ -154,7 +154,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
       if(!object)return 'Unknown object: '+step.object;
       for(const field of step.fields.keys())if(!object.fields.some(item=>item.apiName===field))return 'Unknown field: '+step.object+'.'+field;
      }
-     if(step.name==='PRINT'&&!actionPages.some(item=>item.apiName===step.object&&item.pageType==='Print Template'&&item.status==='Active'))return 'Unknown published Print Template: '+step.object;
+     if(['PRINT','CREATEPDF'].includes(step.name)&&!actionPages.some(item=>item.apiName===step.object&&item.pageType==='Print Template'&&item.status==='Active'))return 'Unknown published Print Template: '+step.object;
      if(step.name==='FLOW'&&!flowReferences.some(item=>item.apiName===step.object))return 'Unknown active Flow: '+step.object;
      if(['EMAIL','SMS','WHATSAPP'].includes(step.name)&&!actionCredentials.some(item=>item.apiName===step.object))return 'Choose an enabled Named Credential';
     }
