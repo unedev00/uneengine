@@ -546,6 +546,17 @@ function SmartToggle({p,fire}){
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
    <span className="smart-switch-thumb"/></span></label>;
 }
+// An editable Smart Input stays focused while its authorised formula/default
+// value changes asynchronously. Do not key/remount the native input on changes.
+function SmartReactiveInput({value,onValueChange,...props}){
+ const [draft,setDraft]=React.useState(value);
+ React.useEffect(()=>{setDraft(value);},[value]);
+ return <input {...props} value={draft} onChange={event=>{
+  const next=event.target.value;
+  setDraft(next);
+  onValueChange(next);
+ }}/>;
+}
 export default function SmartRuntime(p){
  // Re-render when the tenant brand arrives so $session.tenant.name / .logo show without a reload.
  React.useSyncExternalStore(subscribeTenantBrand,getTenantBrand,getTenantBrand);
@@ -688,12 +699,11 @@ export default function SmartRuntime(p){
      background:p.backgroundColor||"transparent",
      borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
      borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
-   :<input key={inputContentValue} data-md-bind={p.builderPreview?inputKey:undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
+   :<SmartReactiveInput value={inputContentValue} data-md-bind={p.builderPreview?inputKey:undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
     ?"Text Here":label||text(p.placeholder||"")}
-  defaultValue={inputContentValue}
   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     // Explicit solid border on every side instead of the browser's native inset border.
@@ -703,7 +713,7 @@ export default function SmartRuntime(p){
     borderColor:p.borderColor||"#b8c7d7",padding:"8px 12px",
     background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
-  onChange={e=>fire("change",e.target.value)}/>;
+  onValueChange={value=>fire("change",value)}/>;
  }
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,
