@@ -3641,7 +3641,11 @@ function PageBuilder({
             {apiName:'device',label:'Devices',phoneRole:'trailing',render:item=><>{pageDeviceLabel(item)}{layoutBadges(item)}</>},
             {apiName:'actions',label:'Actions',render:item=><div className="page-manager-mobile-actions">
               <button type="button" className="btn" aria-label={"Page properties for "+item.label} disabled={saving} onClick={()=>setPageDetailsApi(item.apiName)}>Page properties</button>
-              <button type="button" className="btn" aria-label={"Design "+item.label} onClick={()=>void openPageDesign(item.apiName)}>Design</button>
+              <button type="button" className="btn" aria-label={"Download component inventory for "+item.label}
+                disabled={Boolean(inventoryDownloading)} onClick={()=>void downloadPageInventory(item)}>Download inventory</button>
+              <PageDesignSplitAction label={item.label} summary={layoutSummaries[item.apiName]}
+                onOpenDefault={()=>void openPageDesign(item.apiName)}
+                onOpenLayout={variant=>void openPageDesignLayout(item.apiName,variant)}/>
               <button type="button" className="btn" aria-label={(item.status==="Active"?"Deactivate ":"Activate ")+item.label} disabled={saving} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
               <button type="button" className="btn" aria-label={"Delete "+item.label} disabled={saving||Boolean(archivingPageApiName)} onClick={()=>setPendingArchivePageApiName(item.apiName)}>Delete</button>
             </div>}
