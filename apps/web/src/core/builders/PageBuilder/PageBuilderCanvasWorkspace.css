@@ -122,3 +122,9 @@
 .builder-page.builder-interactive-preview .page-builder-live-runtime{
   width:100%;min-width:0;max-width:100%;
 }
+
+/* Selection marquee is editor chrome only; never saved or published. */
+.builder-editor-mode .modern-canvas-builder .canvas-marquee-selection{
+  position:absolute;z-index:950;box-sizing:border-box;pointer-events:none;
+  border:1px solid #2457d6;background:rgba(37,99,235,.09);
+}
