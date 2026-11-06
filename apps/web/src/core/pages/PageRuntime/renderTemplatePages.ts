@@ -46,16 +46,17 @@ function paintText(ctx:CanvasRenderingContext2D,node:Text,style:CSSStyleDeclarat
  const range=document.createRange();
  ctx.save();ctx.fillStyle=style.color||'#111';ctx.font=font(style);
  ctx.textAlign='left';ctx.textBaseline='alphabetic';
- let measured=0;
- for(let i=0;i<text.length;i++){
+ let measured=0,offset=0;
+ for(const character of text){
+  const start=offset;offset+=character.length;
   if(++measured>15000)throw Error('Print Template text length exceeds export limit');
-  if(/\s/.test(text[i])&&text[i]!==' '&&text[i]!=='\u00a0')continue;
-  range.setStart(node,i);range.setEnd(node,i+1);
+  if(/\s/.test(character)&&character!==' '&&character!=='\u00a0')continue;
+  range.setStart(node,start);range.setEnd(node,offset);
   const box=range.getBoundingClientRect();
   if(!box.width||!box.height)continue;
   const x=(box.left-origin.left)*scale;
   const y=(box.bottom-origin.top)*scale-(parseFloat(style.fontSize)||14)*.16;
-  ctx.fillText(text[i],x,y);
+  ctx.fillText(character,x,y);
  }
  range.detach();
  ctx.restore();
