@@ -567,3 +567,15 @@ html, body, #root { min-width:0; max-width:100%; }
 @media(min-width:1024px){
  .lightning .page-manager-table th:nth-child(2),.lightning .page-manager-table td:nth-child(2){left:200px;}
 }
+
+/* Small desktop, tablet and landscape widths use the readable object cards. */
+@media(min-width:781px) and (max-width:1199px) {
+ .lightning .object-manager-desktop-list { display:none; }
+ .lightning .object-manager-mobile-list { display:block;margin-top:12px;border:1px solid var(--md-border,#d8dfe9);border-radius:10px;overflow:hidden;background:var(--md-surface,#fff); }
+ .lightning .object-manager-mobile-list [role="listitem"]+[role="listitem"] { border-top:1px solid var(--md-border,#e2e8f0); }
+ .lightning .object-manager-mobile-row { width:100%;min-height:60px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;border:0;background:transparent;text-align:left;color:inherit;font:inherit; }
+ .lightning .object-manager-mobile-row-labels { display:grid;min-width:0;gap:3px;overflow-wrap:anywhere; }
+ .lightning .object-manager-mobile-row:focus-visible { outline:2px solid var(--md-primary,#1d4ed8);outline-offset:-2px; }
+ .lightning .object-manager-mobile-sort { display:flex;align-items:center;gap:8px;margin:12px 0; }
+ .lightning .object-manager-mobile-sort select { min-height:44px; }
+}
