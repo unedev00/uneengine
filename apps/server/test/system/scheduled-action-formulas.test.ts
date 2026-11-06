@@ -4,6 +4,7 @@ import {compileActionPlan,executeActionPlan,isActionPlan} from '../../src/expres
 import {formulaAllowedInContext,formulaCategory} from '../../src/expression-engine/FormulaCategories.js';
 import {ScheduledActionService} from '../../src/system-support/scheduled-action-service.js';
 import {imagesToPdf} from '../../../web/src/core/pages/PageRuntime/createTemplatePdf.js';
+import {executeActionFormula} from '../../../web/src/component-libraries/shared/FieldExpression.js';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import type {Expression} from '../../src/expression-engine/FormulaParser.js';
 
@@ -124,4 +125,20 @@ test('IF skips an empty branch and never calls a side effect',async()=>{
   {request:async path=>{invoked.push(path);return {} as never;}}
  );
  assert.deepEqual(invoked,[]);
+});
+
+test('AS(pdf).FileId still resolves with hydrated object field mentions',async()=>{
+ let attachment='';
+ await executeActionFormula(
+  '=ACTIONS(CREATEPDF(CustomForm,"11111111-1111-4111-8111-111111111111",AS(pdf)),EMAIL(Brevo,"a@example.com","Form","Attached",pdf.FileId))',
+  {__mentionValues:{},state:{}},{pageState:{},sessionId:'test',timeZone:'UTC',now:new Date()},
+  {createPdf:async()=>({FileId:'asset:11111111-1111-4111-8111-111111111111'}),
+   request:async(path:string,init?:{method:string;body?:string})=>{
+    if(path!=='/action-formulas/communication')throw Error('Unexpected request');
+    const data=JSON.parse(init!.body!) as {values:string[]};
+    attachment=data.values.at(-1)??'';
+    return {} as never;
+   }}
+ );
+ assert.equal(attachment,'asset:11111111-1111-4111-8111-111111111111');
 });
