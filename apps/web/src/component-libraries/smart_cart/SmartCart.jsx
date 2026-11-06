@@ -66,6 +66,25 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   }
   return expression(source,summaryRecord);
  };
+ // Summary slots accept free-form text as well as numeric bindings. Only
+ // numeric results (and explicitly numeric Object fields) receive the default
+ // currency formatter; user-authored text must never be coerced to a number.
+ const summaryValue=(source,key)=>{
+  const value=summarySource(source,key);
+  if(value===null||value===undefined||value==="")return null;
+  const fieldName=directField(source);
+  const sourceObject=Array.isArray(p.objects)
+   ?p.objects.find(item=>item.apiName===p.objectApiName):null;
+  const field=fieldName?sourceObject?.fields?.find(item=>item.apiName===fieldName):null;
+  if(field){
+   if(numericType.test(field.dataType))return money(value);
+   return typeof value==="string"||typeof value==="number"||typeof value==="boolean"
+    ?String(value):null;
+  }
+  if(typeof value==="number"||typeof value==="string"&&value.trim()!==""
+    &&Number.isFinite(Number(value)))return money(value);
+  return typeof value==="string"||typeof value==="boolean"?String(value):null;
+ };
  const displayFormula=(key,source,fallback)=>typeof source==='string'&&source.trim()
   ?fieldExpression(key,source,{}):fallback;
  const summaryLabel=(key,fallback)=>displayFormula(key,p[key],fallback);
@@ -75,10 +94,10 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
   Tax:summaryLabel('taxLabel','Tax'),
   Total:summaryLabel('totalLabel','Total')
  };
- const summaryAmounts={Subtotal:money(summarySource(p.subtotalValue,'subtotalValue')),
-  Discount:money(summarySource(p.discountValue,'discountValue')),
-  Tax:money(summarySource(p.taxValue,'taxValue')),
-  Total:money(summarySource(p.totalValue,'totalValue'))};
+ const summaryAmounts={Subtotal:summaryValue(p.subtotalValue,'subtotalValue'),
+  Discount:summaryValue(p.discountValue,'discountValue'),
+  Tax:summaryValue(p.taxValue,'taxValue'),
+  Total:summaryValue(p.totalValue,'totalValue')};
  const rowHeight=n(p.rowHeight,64,24);
  const rowLimit=Math.floor(n(p.cardsPerRow,5,1,50));
  const visible=Array.isArray(p.columnVisibility)
