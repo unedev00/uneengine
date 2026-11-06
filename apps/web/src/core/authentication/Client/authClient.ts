@@ -1,4 +1,5 @@
 import {createRecordPageCoalescer} from './recordPageCoalescer';
+import {setAuthenticatedFormulaBindingContext} from '../../components/RegisteredComponent/fieldExpressionRuntime';
 // Same-origin API for deployed builds and development's Vite /api proxy.
 export const apiBase = import.meta.env.VITE_API_BASE_URL ?? `${window.location.origin}/api`;
 let accessToken: string | undefined;
@@ -32,7 +33,7 @@ function refreshAccessToken() {
           // Only expire the session if our token didn't change while refreshing.
           // Otherwise another tab already refreshed and we hold a stale in-memory token.
           if (accessToken === startedToken) {
-            accessToken = undefined;
+            setAccessToken(undefined);
             window.dispatchEvent(new Event('metadrive:session-expired'));
           }
           return undefined;
@@ -43,7 +44,7 @@ function refreshAccessToken() {
       })
       .catch((error: unknown) => {
         if (accessToken === startedToken) {
-          accessToken = undefined;
+          setAccessToken(undefined);
           window.dispatchEvent(new Event('metadrive:session-expired'));
         }
         throw new Error(`Unable to refresh the login session: ${error instanceof Error ? error.message : String(error)}`);
@@ -122,6 +123,8 @@ async function performApiRequest<T>(path: string, init?: RequestInit): Promise<T
       payload, response.status
     );
   }
+  if(path==='/auth/me' && payload && typeof payload==='object' && 'user' in payload)
+    setAuthenticatedFormulaBindingContext((payload as {user:unknown}).user);
   return payload;
 }
 
@@ -241,4 +244,7 @@ export async function loadFlowScreenRecords(
 
 
 export function getAccessToken() { return accessToken; }
-export function setAccessToken(value: string | undefined) { accessToken = value; }
+export function setAccessToken(value: string | undefined) {
+  if(value!==accessToken)setAuthenticatedFormulaBindingContext(null);
+  accessToken=value;
+}
