@@ -365,8 +365,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await chooseArea('Image');
  const imagePlacement=row.locator('[data-design-row="2"] [data-design-slot="placement"]');
  const imageFill=row.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
- assert.equal(await imagePlacement.getAttribute('data-design-column'),'5');
- assert.equal(await imageFill.getAttribute('data-design-column'),'6');
+ assert.equal(await imagePlacement.getAttribute('data-design-column'),'4');
+ assert.equal(await imageFill.getAttribute('data-design-column'),'5');
  assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
  assert.equal(await imageFill.getAttribute('data-supported'),'true');
  assert.equal(await imagePlacement.locator('.design2-icon-trigger').count(),1,
@@ -381,19 +381,19 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.ok(bounds&&Math.abs(bounds.width-40)<1&&Math.abs(bounds.height-26)<1,
     'Image icon dropdown must occupy exactly 40x26 px at its R/C position');
  }
- // Placement must have only the standard 4px grid gap after Width (R2C4).
- const widthRect=await row.locator('[data-design-row="2"] [data-design-slot="width"]').boundingBox();
- assert.ok(widthRect&&placementRect&&Math.abs(placementRect.x-(widthRect.x+widthRect.width+4))<1,
-   'Image Placement has an unnecessary gap after the Width field');
+ // Placement now follows the Shadow selector in compact Position.
+ const shadowRect=await row.locator('[data-design-row="2"] [data-design-slot="shadow"]').boundingBox();
+ assert.ok(shadowRect&&placementRect&&Math.abs(placementRect.x-(shadowRect.x+shadowRect.width+4))<1,
+  'Image Placement must immediately follow Shadow in the fixed Position row');
  assert.equal(Math.round(fillRect.x),Math.round(
-   template.find(item=>item.row===3&&item.column===6).x+
+   template.find(item=>item.row===3&&item.column===5).x+
    (await row.locator('[data-design-row="3"]').boundingBox()).x));
  // Old flex!important plus grid-area:auto!important collapsed Image slots into C1.
  const firstImageCell=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
  const firstRect=await firstImageCell.boundingBox();
- assert.ok(firstRect&&placementRect.x>firstRect.x+200,
+ assert.ok(firstRect&&placementRect.x>firstRect.x+150,
    'Image R2C5 appears at C1 instead of the fixed C5 position');
- assert.ok(firstRect&&fillRect.x>firstRect.x+200,
+ assert.ok(firstRect&&fillRect.x>firstRect.x+150,
    'Image R3C6 appears at C1 instead of the fixed C6 position');
  for(const index of [1,2,3]){
   assert.equal(await row.locator('[data-design-row="'+index+'"]').evaluate(
@@ -428,8 +428,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Area switching must not change the selected component or old Design view.
  await chooseArea('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
-   .getAttribute('data-design-column'),'1','Table Focus must remain at R2C1');
+ assert.equal(await row.locator('[data-design-slot="focused"]').count(),0,
+  'Focus shortcut must be absent from the main Design rows');
+ await chooseArea('Focused');
+ assert.equal(await row.locator('[data-design-row="1"] [data-design-slot="fill"]').count(),1,
+  'Focused accordion retains the existing focus property controls');
  await chooseArea('Body');
  // Both user-reported "blank spaces" must contain the actual DISABLED icons,
  // immediately after their 40px predecessor, not a phantom 80px C3 track.
@@ -620,6 +623,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await chooseArea('Body');
  assert.equal(await dock.locator('.smart-design2-dimensions').count(),0,
   'Dimensions controls must collapse when Body is expanded');
+ // Count is edited in Extras; returning to Body must preserve its value.
+ await chooseArea('Extras');
  const dockCountInput=dock.locator('.smart-design2-count input.smart-office-number');
  if(!await dockCountInput.isDisabled()){
   const original=await dockCountInput.inputValue();
@@ -627,6 +632,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   await replaceNumeric(dockCountInput,replacement);
   await replaceNumeric(dockCountInput,original);
  }
+ await chooseArea('Body');
  const editableBodyNumber=dock.locator('.smart-ribbon-row .smart-property[data-kind="number"] input:not([disabled])').first();
  if(await editableBodyNumber.count()){
   const original=await editableBodyNumber.inputValue();
