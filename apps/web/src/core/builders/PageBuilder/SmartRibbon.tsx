@@ -208,11 +208,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
  const activeDesign2Area=expandedInspector&&design2Areas.includes(expandedInspector)?expandedInspector:'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
- // A SINGLE ribbon scaffold for all Design 2 sections and all components.
- // Body owns the approved R1-R3 visual icon matrix; the two Image icons
- // occupy their fixed R2C5/R3C6 positions on EVERY section (disabled when
- // the current area/component has no matching supported property).
- // Existing SQL still owns each selected area's semantic property binding.
+ // A SINGLE, fixed Design scaffold for all sections and selected components.
+ // Image placement and fill participate in the shared Position/Typography rows.
+ // SQL still owns every semantic property binding and enabled/disabled rule.
  // Focused and Extras are canonical sections, not component-specific overlays.
  // Fixed VISUAL order, shared across all Design areas and components.
  // SQL continues to own bindings, persisted property keys and eligibility.
@@ -281,10 +279,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0,
        designDisplay:original.kind==='align'||original.kind==='shadow'?'dropdown' as const:original.designDisplay};
    }):[];
- // Independent properties from legacy areas stay editable below the same
- // 17-cell Body icon matrix; SQL owns their types, values and eligibility.
- // Only the two Card Grid extras remain outside the shared icon matrix.
- // Other former Body extras now edit their original keys in canonical slots.
+ // Independent properties stay editable below the 16-icon shared matrix.
+ // Count, Padding and supplemental Card Grid properties live in Extras at
+ // fixed positions; all retain their original keys, types and eligibility.
  const design2SupplementalProperties:UneRibbonProperty[]=tab==='Design2'?design2Slots
    .filter(slot=>slot.area==='Extras'&&
      ['extra_cardGap','extra_selectionMode'].includes(slot.slotKey))
@@ -297,12 +294,9 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
        tab:'Design2' as const,group:'Extras',designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}]:[];
    }):[];
- // The Excel specifies the WIDTH of each control at its R/C coordinate,
- // NOT one uniform 80px column width shared across all three rows.
- // R1C3 Shape and R3C3 Bold are 40px, so their C4 neighbours must start
- // 44px later, while R2C3 Height (80px) needs an 84px step to R2C4.
- // Preserve every SQL C1..C6 index, including empty leading cells for
- // Image R2C5 / R3C6; never repack enabled controls to the left.
+ // Physical dock placement only: fixed six/four/six columns use 60px
+ // numeric editors and existing 40px icon editors. SQL property bindings,
+ // values and enable/disable states do not depend on those dimensions.
  const design2GridColumns=(row:number)=>{
    const slots=design2TemplateSlots.filter(slot=>slot.row===row);
    return Array.from({length:row===2?4:6},(_,index)=>{
