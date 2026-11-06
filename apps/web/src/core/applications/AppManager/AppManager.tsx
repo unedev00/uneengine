@@ -283,7 +283,8 @@ export default function AppManager({
     setNotice('Review the copied settings and select Create App to save this clone.');
   };
   useEffect(()=>{
-    if(embedded||view!=='form'||busy||confirmDelete)return;
+    // The alertdialog owns Escape while either confirmation is visible.
+    if(embedded||view!=='form'||busy||confirmDelete||confirmDiscard)return;
     const dismiss=(event:KeyboardEvent)=>{
       if(event.key!=='Escape'||document.querySelector('[role="dialog"]'))return;
       event.preventDefault();
@@ -297,7 +298,7 @@ export default function AppManager({
     };
     document.addEventListener('keydown',dismiss);
     return ()=>document.removeEventListener('keydown',dismiss);
-  },[embedded,view,busy,confirmDelete,creating,draft,selectedApiName,apps]);
+  },[embedded,view,busy,confirmDelete,confirmDiscard,creating,draft,selectedApiName,apps]);
   const openSetupWorkspace = (destination: SetupDestination) => {
     const original = apps.find(app => app.apiName === selectedApiName);
     const unsaved = creating || (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft));
