@@ -199,7 +199,7 @@ export function createLoginView(logoUrl: string) {
         <button className="btn btn-brand auth-submit" disabled={submitting}>
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
-        {!branding && <nav className="auth-signin-footer" aria-label="Sign-in help and legal">
+        {<nav className="auth-signin-footer" aria-label="Sign-in help and legal">
           <a href="mailto:support@unesolutions.co.uk">Contact support</a>
           <a href={import.meta.env.VITE_PRIVACY_POLICY_URL?.startsWith('https://')?import.meta.env.VITE_PRIVACY_POLICY_URL:`${import.meta.env.BASE_URL}privacy`} rel="noopener noreferrer">Privacy Policy</a>
           <a href={import.meta.env.VITE_TERMS_URL?.startsWith('https://')?import.meta.env.VITE_TERMS_URL:`${import.meta.env.BASE_URL}terms`} rel="noopener noreferrer">Terms</a>
