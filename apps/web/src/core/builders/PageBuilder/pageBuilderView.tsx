@@ -363,10 +363,15 @@ function PageBuilder({
   // $tenant.name / $tenant.logo formulas: load the signed-in tenant's brand once.
   useEffect(()=>{void ensureTenantBrand();},[]);
   const isPhoneBuilder = useFormFactor() === 'Phone';
-  const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId);
+  // An existing App Page keeps its saved App Default assignment as the builder app, so it can be
+  // activated in a later session (the prepared app context only exists in the session that created it).
+  const assignedAppApiName = page.activationAssignments
+    ?.find(item => item.scope === 'App Default' && item.appId)?.appId ?? '';
+  const [builderAppApiName, setBuilderAppApiName] = useState(preparedAppId || assignedAppApiName);
   useEffect(() => {
     if (preparedAppId) setBuilderAppApiName(preparedAppId);
-  }, [preparedAppId]);
+    else if (assignedAppApiName) setBuilderAppApiName(current => current || assignedAppApiName);
+  }, [preparedAppId, assignedAppApiName]);
   const template = pageTemplates.find((item) => item.id === page.template) ?? pageTemplates[0];
   const builderApp = apps.find((app) => app.apiName === builderAppApiName);
   const appPageApiNames = new Set(builderApp?.navigationPageApiNames ?? []);
