@@ -1,6 +1,5 @@
 import {dispatchComponentEvent as fire} from '../../shared/componentEventDispatch.js';
 import {resolvePhoneColumns} from "../../../core/records/ResponsiveDataList/phoneColumns.mjs";
-};
 const data=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
 const valid=v=>typeof v==="string"&&/^[A-Za-z][A-Za-z0-9_]*$/.test(v);
 const field=(r,k,fallback="")=>valid(k)?r?.[k]??fallback:fallback;
