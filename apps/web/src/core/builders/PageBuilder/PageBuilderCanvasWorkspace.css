@@ -122,3 +122,14 @@
 .builder-page.builder-interactive-preview .page-builder-live-runtime{
   width:100%;min-width:0;max-width:100%;
 }
+
+/* Selection UI belongs to the builder only, never to the published page. */
+.builder-editor-mode .modern-canvas-builder .canvas-selection-marquee{
+  display:none;position:absolute;z-index:1200;box-sizing:border-box;pointer-events:none;
+  background:rgba(37,99,235,.12);border:1px dashed #2563eb;
+}
+.builder-editor-mode .modern-canvas-builder .canvas-group-selection-count{
+  position:absolute;left:0;bottom:calc(100% + 7px);
+  pointer-events:none;padding:3px 6px;border-radius:4px;background:#1d4ed8;
+  color:white;font-size:10px;line-height:1.25;white-space:nowrap;
+}
