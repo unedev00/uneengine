@@ -17,7 +17,8 @@ import {resolveMetadataProperties} from '../../metadata/Definitions/metadataRefe
 import {useFlowStateChannel} from '../../automation/FlowScreen/useFlowStateChannel';
 import { presentPageRecords, type ChannelGrant } from '../../records/RecordWorkspace/recordPresentationAdapters';
 import TemplatePageRuntimeLayout from '../TemplatePageRuntime/TemplatePageRuntimeLayout';
-import { loadFlowScreenRecordPage, loadFlowScreenRecords } from '../../authentication/Client/authClient';
+import { getAccessToken, loadFlowScreenRecordPage, loadFlowScreenRecords } from '../../authentication/Client/authClient';
+import {requestPageMediaAsset} from './pageMediaAssetCoalescer';
 import { pageLayoutForRecord, compactLayoutForRecord, matchesLookupFilterGroup, relatedLookupFilterOperators, type RecordData } from '../../records/RecordWorkspace/recordMetadataUtils';
 import { formatRecordValue, parseCsvImport } from '../../records/RecordWorkspace/recordCsvUtils';
 import { initialScreenValues, screenFieldIsVisible } from '../../automation/FlowScreen/flowScreenRuntimeUtils';
@@ -210,9 +211,7 @@ import {FormulaScreenDialog} from './FormulaScreenDialog';
 export function createPageRuntimeViews(apiRequest: <T>(path:string, init?:RequestInit) => Promise<T>) {
 // Shared authenticated loader for both record-bound and unbound registered components.
 // Tenant isolation and access checks remain on the existing media endpoint.
-const loadPageMediaAsset = (id:string) => /^[0-9a-f-]{36}$/i.test(id)
-  ? apiRequest<{contentType:string;contentBase64:string}>('/media-assets/'+id)
-  : Promise.reject(new Error('Invalid media asset ID'));
+const loadPageMediaAsset = (id:string) => requestPageMediaAsset<{contentType:string;contentBase64:string}>(apiRequest,id,getAccessToken()??'');
 function RuntimeReportChart({ report, objects, recordContext }: {
   report: ReportMetadata | undefined; objects: ObjectMetadata[];
   recordContext?: {objectApiName:string;recordId:string;relationshipFieldApiName?:string};
