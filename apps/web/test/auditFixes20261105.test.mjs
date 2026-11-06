@@ -322,3 +322,11 @@ test('UX-0070 Page Builder metadata loading shows a toolbar, six rows and retry 
   assert.match(css,/\.md-page-list-loading-row/);
   assert.match(css,/prefers-reduced-motion:reduce/);
 });
+
+test('UX-0073 Escape in a dirty App Manager edit offers an accessible discard decision',()=>{
+  const manager=source('src/core/applications/AppManager/AppManager.tsx');
+  assert.match(manager,/if\(dirty\)setConfirmDiscard\(true\);\s*else cancel\(\);/);
+  assert.match(manager,/role="alertdialog"/);
+  assert.match(manager,/Discard unsaved changes\?/);
+  assert.match(manager,/if\(event\.key==='Escape'\)/);
+});
