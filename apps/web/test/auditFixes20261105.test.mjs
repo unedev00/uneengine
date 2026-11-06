@@ -173,3 +173,21 @@ test('UX-0062 Page Details exposes selected tabs and accessible owned panels',()
  assert.match(dialog,/role="tabpanel" aria-labelledby="page-details-tab-history"/);
  assert.match(css,/\[role="tabpanel"\]\[hidden\]/);
 });
+
+test('UX-0031 collapsed Setup sidebar displays item initials and group abbreviations',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ const nav=source('src/core/workspace/SetupShell/setupShellPresentation.tsx');
+ assert.match(css,/\.setup-sidebar\.setup-sidebar-collapsed \.tree-item::after/);
+ assert.match(css,/content:attr\(data-short-label\)/);
+ assert.match(css,/content:attr\(data-group-short\)/);
+ assert.match(nav,/data-short-label=/);
+ assert.match(nav,/aria-label=\{item === "Tenant Management"/);
+});
+test('UX-0004 and UX-0006 define auth action states and desktop rhythm',()=>{
+ const css=source('src/core/authentication/Login/standaloneLogin.css');
+ assert.match(css,/--auth-primary-disabled:/);
+ assert.match(css,/--auth-primary-hover:/);
+ assert.match(css,/--auth-focus:/);
+ assert.match(css,/#login-email \{margin-bottom:18px\}/);
+ assert.match(css,/\.auth-submit \{margin-top:24px\}/);
+});
