@@ -720,7 +720,7 @@ test('placement controls, component finder and full-width workspace are builder-
   assert.ok(builder.includes('design2Arrange={canvasArrangeProps}'));
   assert.ok(navigator.includes('aria-label="Find a component"'));
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
-  assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
+  assert.match(builder,/startCanvasGroupGesture\(event,'move','se',members\)/, 'persisted groups move through the shared group gesture from the first drag');
   assert.match(css,/\.page-stage/);
   assert.match(css,/canvas-group-outline/);
 });
