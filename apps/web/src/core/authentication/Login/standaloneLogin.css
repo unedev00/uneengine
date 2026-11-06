@@ -1,62 +1,63 @@
+@import './authTokens.css';
 /* Product route styling only. Login/API/MFA controls remain those of MetaDrive. */
 .auth-screen--standalone {
-  --standalone-accent: #1769d2;
+  --standalone-accent: var(--auth-color-accent);
   background: radial-gradient(ellipse at 18% 15%, color-mix(in srgb, var(--standalone-accent) 22%, transparent), transparent 46%),
-              linear-gradient(140deg, #0b162b 0%, #132b46 52%, #07111e 100%);
+              linear-gradient(140deg, var(--auth-color-gradient-start) 0%, var(--auth-color-gradient-middle) 52%, var(--auth-color-gradient-end) 100%);
   min-height: 100vh;
   min-height: 100dvh;
 }
 .auth-screen--standalone .auth-card {
-  background: #fff;
-  border: 1px solid #e8edf3;
+  background: var(--auth-color-white);
+  border: 1px solid var(--auth-color-stroke);
   box-shadow: 0 26px 80px rgba(0,0,0,.25);
   border-radius: 24px;
   max-width: 465px;
   padding: clamp(24px, 5vw, 46px);
 }
 .auth-product-identity { display:flex; align-items:center; gap:16px; margin-bottom:30px; }
-.auth-product-identity h1 { margin:2px 0 0; font-size:clamp(28px,4vw,36px); letter-spacing:-.045em; color:#17243a; }
+.auth-product-identity h1 { margin:2px 0 0; font-size:clamp(28px,4vw,36px); letter-spacing:-.045em; color:var(--auth-color-heading); }
 .auth-product-identity .eyebrow { color:var(--standalone-accent); font-size:11px; font-weight:800; letter-spacing:.13em; }
 .auth-product-monogram { display:grid; place-items:center; width:62px; height:62px; flex-shrink:0; font-size:33px; font-weight:800; border-radius:18px; background:var(--standalone-accent); color:white; }
 .auth-product-heading { margin:0 0 6px; font-size:24px; letter-spacing:-.025em; }
-.auth-product-subline { margin:0 0 24px; color:#64748b; font-size:13px; }
+.auth-product-subline { margin:0 0 24px; color:var(--auth-color-slate); font-size:13px; }
 .auth-screen--standalone .btn-brand { background:var(--standalone-accent); border-color:var(--standalone-accent); }
-.auth-product-powered { display:flex; align-items:center; justify-content:center; gap:9px; font-size:12px; color:#64748b; margin-top:22px; padding-top:16px; border-top:1px solid #e6eaf1; }
+.auth-product-powered { display:flex; align-items:center; justify-content:center; gap:9px; font-size:12px; color:var(--auth-color-slate); margin-top:22px; padding-top:16px; border-top:1px solid var(--auth-color-divider); }
 .auth-product-powered .auth-product-powered-logo { height:28px; }
 @media(max-width:540px) { .auth-screen--standalone { padding:16px; } .auth-screen--standalone .auth-card { padding:24px; } }
 
 /* Keep light authentication surfaces readable regardless of workspace/theme inheritance.
    The card is always white, so its foregrounds must be defined locally. */
 .auth-screen .auth-card {
-  color: #192230;
-  --text: #192230;
-  --muted: #526175;
-  --md-text: #192230;
-  --md-muted: #526175;
-  --border: #cbd5e1;
+  color: var(--auth-color-ink);
+  --text: var(--auth-color-ink);
+  --muted: var(--auth-color-muted);
+  --md-text: var(--auth-color-ink);
+  --md-muted: var(--auth-color-muted);
+  --border: var(--auth-color-border);
   color-scheme: light;
 }
-.auth-screen .auth-card :is(h1,h2,h3,.auth-product-heading) { color: #192230; opacity: 1; }
-.auth-screen .auth-card :is(p,.eyebrow,.form-label) { color: #475569; opacity: 1; }
+.auth-screen .auth-card :is(h1,h2,h3,.auth-product-heading) { color: var(--auth-color-ink); opacity: 1; }
+.auth-screen .auth-card :is(p,.eyebrow,.form-label) { color: var(--auth-color-text); opacity: 1; }
 .auth-screen .auth-card :is(.form-control,input:not([type="checkbox"]),textarea,select) {
-  color: #192230;
-  background: #fff;
-  border-color: #94a3b8;
-  -webkit-text-fill-color: #192230;
+  color: var(--auth-color-ink);
+  background: var(--auth-color-white);
+  border-color: var(--auth-color-control-border);
+  -webkit-text-fill-color: var(--auth-color-ink);
   opacity: 1;
 }
 .auth-screen .auth-card :is(input,textarea)::placeholder {
-  color: #596579;
+  color: var(--auth-color-placeholder);
   opacity: 1;
 }
 .auth-screen .auth-card :is(input,textarea,select):focus-visible {
-  outline: 2px solid #1769d2;
+  outline: 2px solid var(--auth-color-accent);
   outline-offset: 2px;
 }
-.auth-screen .auth-card .auth-submit { color: #fff; -webkit-text-fill-color: #fff; }
+.auth-screen .auth-card .auth-submit { color: var(--auth-color-white); -webkit-text-fill-color: var(--auth-color-white); }
 .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {
-  background: #0b57d0;
-  border-color: #0b57d0;
+  background: var(--auth-color-primary);
+  border-color: var(--auth-color-primary);
 }
 .auth-inline-actions {
   display: flex;
@@ -65,11 +66,11 @@
   gap: 12px;
   margin-top: 2px;
 }
-.auth-screen .auth-card .auth-error { color: #9b332c; }
+.auth-screen .auth-card .auth-error { color: var(--auth-color-error-text); }
 
 /* grok: muted text contrast on auth card */
 .auth-screen .auth-card :is(p, .eyebrow, .form-label, .auth-product-subline, .auth-product-powered) {
-  color: #475569;
+  color: var(--auth-color-text);
 }
 .auth-screen .auth-card :is(.form-control, input:not([type="checkbox"]), textarea, select) {
   border-radius: 10px;
@@ -90,13 +91,13 @@
 .auth-screen .auth-card .auth-field-error {
   display: block;
   margin: -2px 0 8px;
-  color: #9b332c;
+  color: var(--auth-color-error-text);
   font-size: 13px;
   line-height: 1.45;
 }
 .auth-screen .auth-card .form-control[aria-invalid="true"] {
-  border-color: #b42318;
-  box-shadow: 0 0 0 1px #b42318;
+  border-color: var(--auth-color-error-border);
+  box-shadow: 0 0 0 1px var(--auth-color-error-border);
 }
 
 /* UX-0001–0003, UX-0014–0018: compact, reflow-safe authentication screens. */
@@ -145,12 +146,12 @@
 }
 .auth-recovery-unavailable {
   padding: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--auth-color-border);
   border-radius: 10px;
   overflow-wrap: anywhere;
 }
 .auth-recovery-unavailable a {
-  color: #075b95;
+  color: var(--auth-color-link);
   text-decoration: underline;
 }
 @media (max-width: 360px) {
@@ -176,16 +177,16 @@
  position:absolute;right:4px;top:50%;transform:translateY(-50%);
  min-width:48px;min-height:40px;padding:0 6px;
  border:0;border-radius:8px;background:transparent;
- color:var(--standalone-accent,#075b95);font-weight:600;
+ color:var(--standalone-accent,var(--auth-color-link));font-weight:600;
 }
 .auth-screen .auth-card .auth-recovery-action { justify-content:flex-end;margin:3px 0 10px; }
 .auth-screen .auth-card .auth-inline-actions .text-action { min-height:40px; }
 .auth-screen .auth-card :is(input,select,textarea) { padding-inline:12px; }
 .auth-screen .auth-card .auth-signin-footer {
- margin-top:14px; padding-top:12px;border-top:1px solid #e2e8f0;
+ margin-top:14px; padding-top:12px;border-top:1px solid var(--auth-color-soft-border);
  text-align:center;font-size:13px;
 }
-.auth-screen .auth-card .auth-signin-footer a {color:#075b95;text-decoration:underline;min-height:40px;display:inline-flex;align-items:center;}
+.auth-screen .auth-card .auth-signin-footer a {color:var(--auth-color-link);text-decoration:underline;min-height:40px;display:inline-flex;align-items:center;}
 .auth-screen .auth-card .auth-brand-logo {height:auto;max-height:82px;}
 .auth-screen .auth-card .eyebrow { margin:10px 0; }
 @media(max-height:460px) and (orientation:landscape){
@@ -196,16 +197,16 @@
 
 /* One auth action palette; keep the contrast-appropriate white text on blue. */
 .auth-screen:not(.auth-screen--standalone) {
- --auth-action:#0b57d0;
- --md-primary:#0b57d0;
- --md-focus-ring:#0b57d0;
+ --auth-action:var(--auth-color-primary);
+ --md-primary:var(--auth-color-primary);
+ --md-focus-ring:var(--auth-color-primary);
 }
 .auth-screen:not(.auth-screen--standalone) .auth-card :is(a,.text-action,.auth-password-toggle) {
  color:var(--auth-action);
 }
 .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit,
 .auth-screen:not(.auth-screen--standalone) .auth-card .btn-brand {
- background:var(--auth-action);border-color:var(--auth-action);color:#fff;
+ background:var(--auth-action);border-color:var(--auth-action);color:var(--auth-color-white);
 }
 .auth-screen:not(.auth-screen--standalone) .auth-card :is(input,select,textarea,button,a):focus-visible {
  outline:2px solid var(--auth-action);outline-offset:2px;
@@ -216,10 +217,10 @@
 .auth-screen .auth-card input:-webkit-autofill,
 .auth-screen .auth-card input:-webkit-autofill:hover,
 .auth-screen .auth-card input:-webkit-autofill:focus {
-  -webkit-box-shadow:0 0 0 1000px #fff inset;
-  -webkit-text-fill-color:#192230;
-  caret-color:#192230;
-  border-color:#94a3b8;
+  -webkit-box-shadow:0 0 0 1000px var(--auth-color-white) inset;
+  -webkit-text-fill-color:var(--auth-color-ink);
+  caret-color:var(--auth-color-ink);
+  border-color:var(--auth-color-control-border);
 }
 
 /* UX-0005: 44px in-field eye control with no overlap on small devices. */
@@ -237,7 +238,7 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
 }
 
 /* Remaining auth audit findings UX-0002–0004, UX-0006, UX-0010 and UX-0016. */
-.auth-screen:not(.auth-screen--standalone) { --auth-action:#0b57d0; }
+.auth-screen:not(.auth-screen--standalone) { --auth-action:var(--auth-color-primary); }
 .auth-screen:not(.auth-screen--standalone) .auth-card {
  --auth-label-gap:6px; --auth-group-gap:14px;
 }
@@ -309,10 +310,10 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
 /* UX-0004 and UX-0006: explicit desktop auth rhythm and one shared control ramp.
  * The compact/landscape geometry above retains precedence on short viewports. */
 .auth-screen:not(.auth-screen--standalone) {
- --auth-primary:#0b57d0;
- --auth-primary-hover:#0946a7;
- --auth-primary-disabled:#698ac0;
- --auth-focus:#0b57d0;
+ --auth-primary:var(--auth-color-primary);
+ --auth-primary-hover:var(--auth-color-hover);
+ --auth-primary-disabled:var(--auth-color-disabled);
+ --auth-focus:var(--auth-color-primary);
  --auth-action:var(--auth-primary);
 }
 .auth-screen:not(.auth-screen--standalone) .auth-card :is(a,.text-action,.auth-password-toggle) {color:var(--auth-primary)}
