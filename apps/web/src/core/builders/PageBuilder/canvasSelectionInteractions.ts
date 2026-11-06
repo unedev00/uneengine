@@ -1,5 +1,5 @@
 import type {PageComponentMetadata} from '../../metadata/Definitions/metadata';
-import {canvasGroupKey,canvasGroupMembers} from './canvasLayerGroups';
+import {canvasGroupMembers} from './canvasLayerGroups';
 
 type Component = PageComponentMetadata;
 type Rect = {x:number;y:number;width:number;height:number};
@@ -58,8 +58,7 @@ export function translateCanvasSelection(
   const selected=new Set(ids);
   const targets=components.filter(item=>selected.has(item.id)&&item.position
     &&!parentOf(item)&&item.properties.editorLocked!==true
-    &&(!canvasGroupKey(item)||canvasGroupMembers(components,item).every(member=>
-      selected.has(member.id)&&member.properties.editorLocked!==true)));
+    );
   if(!targets.length||(!dx&&!dy))return [...components];
   const minX=Math.min(...targets.map(item=>item.position!.x));
   const minY=Math.min(...targets.map(item=>item.position!.y));
