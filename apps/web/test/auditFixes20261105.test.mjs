@@ -301,3 +301,11 @@ test('UX-0023 desktop sidebar preference survives compact resize without persist
   assert.match(shell,/setSidebarCollapsedState\(true\)/);
   assert.match(shell,/window\.localStorage\.setItem/);
 });
+
+test('UX-0027 Setup Home consumes declared typography, icon and shared grid spacing tokens',()=>{
+  const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+  assert.match(css,/\.home-content \.page-heading h1\s*\{\s*font-size:\s*var\(--text-h1,\s*28px\)/);
+  assert.match(css,/\.home-content \.home-lower-grid\s*\{\s*gap:\s*var\(--grid-gutter,\s*12px\)/);
+  assert.match(css,/\.home-content \.shortcut-icon\s*\{\s*width:\s*var\(--icon-tile,\s*36px\)/);
+  assert.match(css,/@media \(max-width: 599px\)\s*\{\s*\.lightning \.setup-layout \.home-content \{ --text-h1: 20px;/);
+});
