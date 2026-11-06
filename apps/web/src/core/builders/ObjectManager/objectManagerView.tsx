@@ -2028,9 +2028,9 @@ function ObjectManager({
       {visibleObjects.length>0&&<div ref={objectListScrollRef} className="table-scroll object-manager-desktop-list"><table className="slds-table">
         <thead><tr>
           {([['label','Object label'],['apiName','API name'],['kind','Type']] as const).map(([key,label])=>
-            <th key={key} aria-sort={objectSortKey===key?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort(key)}>{label}</button></th>)}
+            <th key={key} aria-sort={objectSortKey===key?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort(key)}>{label} {objectSortKey===key&&<span className="md-sort-indicator" aria-hidden="true">{objectSortDescending?'↓':'↑'}</span>}</button></th>)}
           {showDescriptionColumn&&<th>Description</th>}{showDeploymentColumn&&<th>Deployment</th>}
-          <th aria-sort={objectSortKey==='fields'?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort('fields')}>Fields</button></th>
+          <th aria-sort={objectSortKey==='fields'?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort('fields')}>Fields {objectSortKey==='fields'&&<span className="md-sort-indicator" aria-hidden="true">{objectSortDescending?'↓':'↑'}</span>}</button></th>
         </tr></thead>
         <tbody>{paginatedObjects.map(item => <tr key={item.apiName}>
           <td><a className="field-link" href={'/une/setup/object-manager/'+encodeURIComponent(item.apiName)+'/Details'}
@@ -2040,7 +2040,7 @@ function ObjectManager({
           {showDeploymentColumn&&<td>{item.settings?.deploymentStatus ?? "Deployed"}</td>}
           <td>{item.fields.length}</td>
         </tr>)}</tbody></table></div>}
-      <label className="object-manager-mobile-sort">Sort objects <select value={objectSortKey} onChange={event=>changeObjectSort(event.target.value as typeof objectSortKey)}><option value="label">Label</option><option value="apiName">API name</option><option value="kind">Type</option><option value="fields">Field count</option></select></label>
+      <div className="object-manager-mobile-sort"><label htmlFor="object-mobile-sort">Sort objects</label><select id="object-mobile-sort" value={objectSortKey} onChange={event=>{const key=event.target.value as typeof objectSortKey;if(key!==objectSortKey)changeObjectSort(key);}}><option value="label">Label</option><option value="apiName">API name</option><option value="kind">Type</option><option value="fields">Field count</option></select><button type="button" className="btn object-manager-sort-direction" onClick={()=>setObjectSortDescending(value=>!value)} aria-label={'Sort '+(objectSortDescending?'ascending':'descending')} title={'Sort '+(objectSortDescending?'ascending':'descending')}>{objectSortDescending?'↓ Descending':'↑ Ascending'}</button></div>
       <div className="object-manager-mobile-list" role="list" aria-label="Objects">
         {paginatedObjects.map(item => <div role="listitem" key={item.apiName}>
           <button type="button" className="object-manager-mobile-row" onClick={() => onObjectSelect(item)}>
