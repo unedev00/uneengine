@@ -703,7 +703,7 @@ test('Smart Icon SQL enables only approved appearance and layout properties',()=
  assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM\s+md_builder_shared_properties/i);
  const seeder=read('../../server/src/app-seeders/smart-components.ts');
  assert.match(seeder,/"smart_icon"/);
- assert.match(seeder,/core-smart-components-v6/);
+ assert.match(seeder,/core-smart-components-v7/);
 });
 
 
