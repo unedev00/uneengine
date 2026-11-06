@@ -201,3 +201,32 @@ test('UX-0043 Setup sidebar shares one navigation registry and exposes current i
  assert.match(shell,/resolveSetupNavigation\(quickFind/);
  assert.match(navigation,/return setupNavigation/);
 });
+
+test('UX-0029 Setup Home refresh is visibly busy and only marks successful updates',()=>{
+ const home=source('src/core/settings/SetupHome/setupHomeView.tsx');
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(home,/setup-refresh-spinning/);
+ assert.match(home,/aria-busy=\{loading\}/);
+ assert.match(home,/setEvents\(result\.events \?\? \[\]\);setLastUpdated\(Date\.now\(\)\)/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+});
+test('UX-0046 Object Manager exposes sort direction for both desktop and cards',()=>{
+ const obj=source('src/core/builders/ObjectManager/objectManagerView.tsx');
+ assert.match(obj,/md-sort-indicator/);
+ assert.match(obj,/object-manager-sort-direction/);
+ assert.match(obj,/aria-sort=\{objectSortKey===/);
+ assert.match(obj,/setObjectSortDescending\(value=>!value\)/);
+});
+test('UX-0054 Excel export has its own announced pending state',()=>{
+ const loader=source('src/core/builders/ObjectManager/UniversalMetadataLoader.tsx');
+ assert.match(loader,/\[exporting,setExporting\]/);
+ assert.match(loader,/aria-busy=\{exporting\}/);
+ assert.match(loader,/Preparing the Excel workbook for download/);
+ assert.match(loader,/setNotice\('Downloaded '\+downloadedName/);
+});
+test('UX-0057 Page Builder card sort offers a direction control',()=>{
+ const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(page,/page-manager-sort-direction/);
+ assert.match(page,/page-manager-card-sort/);
+ assert.match(page,/setPageListSortDescending\(value=>!value\)/);
+});
