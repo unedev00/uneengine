@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {Pencil,LayoutTemplate,History,LockKeyhole} from 'lucide-react';
 import type {LightningPageMetadata,LightningAppMetadata,PageActivationAssignmentMetadata,ProfileMetadata} from '../../metadata/Definitions/metadata';
 import PageDetailsAssignmentEditor,{assignmentValidationError} from './PageDetailsAssignmentEditor';
@@ -56,11 +56,12 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  layoutSummary?:PageLayoutSummary|null;
 }){
  const dialogRef=useRef<HTMLElement>(null);
+ const [activeSection,setActiveSection]=useState<'properties'|'history'>('properties');
  const originRef=useRef<HTMLElement|null>(typeof document==='undefined'?null:document.activeElement as HTMLElement);
  useEffect(()=>{
   return ()=>originRef.current?.focus();
  },[]);
- const dialogKeyDown=(event:React.KeyboardEvent<HTMLElement>)=>{
+ const dialogKeyDown=(event:ReactKeyboardEvent<HTMLElement>)=>{
   if(event.key==='Escape'){event.preventDefault();event.stopPropagation();if(!busy)onClose();return;}
   if(event.key!=='Tab')return;
   const focusable=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')??[]);
@@ -198,8 +199,10 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
    </header>
    <div className="page-details-body">
     <nav className="page-details-nav" aria-label="Page edit sections">
-     <a href="#page-details-properties">Page Properties</a>
-     <a href="#page-details-history">Versions</a>
+     <a href="#page-details-properties" aria-current={activeSection==='properties'?'location':undefined}
+       onClick={()=>setActiveSection('properties')}>Page Properties</a>
+     <a href="#page-details-history" aria-current={activeSection==='history'?'location':undefined}
+       onClick={()=>setActiveSection('history')}>Versions</a>
     </nav>
     <div id="page-details-properties" className="page-details-grid">
      <div className="page-details-main">
