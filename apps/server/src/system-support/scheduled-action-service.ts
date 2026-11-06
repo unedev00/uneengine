@@ -86,6 +86,12 @@ export class ScheduledActionService {
     ||steps[options.nextStep-1].name!=='WAIT')throw Error('Invalid WAIT continuation');
   if(!Number.isInteger(options.seconds)||options.seconds<1||options.seconds>31536000)
    throw Error('WAIT duration is outside the supported range');
+  // Browser actions cannot execute after the initiating user closes their tab.
+  // Reject at scheduling time rather than silently failing many hours later.
+  const interactive=steps.slice(options.nextStep).find(step=>
+   ['SCREEN','PRINT','CREATEPDF'].includes(step.name));
+  if(interactive)throw Error(interactive.name+
+   ' must run before WAIT; delayed actions require server execution');
   const scope=safeSnapshot(options.scope),variables=safeSnapshot(options.variables);
   const wait=steps[options.nextStep-1];
   const values={...scope,...variables};
