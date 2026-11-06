@@ -1,4 +1,3 @@
-import React from "react";
 import {smartShapeAppearance} from "../smart/shared/SmartShapeAppearance.js";
 import {applyNumpadKey,normalizeNumpadValue,numpadSettings} from "./numpadValue.mjs";
 const size=(value,defaultValue,min=0,max=2000)=>{
