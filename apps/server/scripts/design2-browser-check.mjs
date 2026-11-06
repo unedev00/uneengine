@@ -854,25 +854,42 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await gridBlock.locator('.smart-card-content').first().evaluate(element=>
   getComputedStyle(element).whiteSpace),'normal','Card Grid Wrap must change header wrapping');
 
- // Measure the REAL card DOM in Chromium; both components share SmartCard.
+ // Measure the REAL card DOM in Chromium. Both use SmartCard, but an
+ // explicitly authored Card Grid header height must remain bounded and
+ // scrollable; standalone Image captions still grow intrinsically.
  const checkLargeCardTitle=async(id)=>{
-  const metric=await page.locator('[data-component-id="'+id+'"] .smart-card-content').first().evaluate(caption=>{
-   const card=caption.closest('.smart-card');
-   const rect=caption.getBoundingClientRect();
-   return {fontSize:getComputedStyle(caption).fontSize,
-     height:rect.height,boxHeight:caption.style.height,
-     minHeight:getComputedStyle(caption).minHeight,
-     contentHeight:caption.scrollHeight,clientHeight:caption.clientHeight,
+  const caption=page.locator('[data-component-id="'+id+'"] .smart-card-content').first();
+  const metric=await caption.evaluate(element=>{
+   const card=element.closest('.smart-card');
+   const rect=element.getBoundingClientRect();
+   return {fontSize:getComputedStyle(element).fontSize,
+     height:rect.height,boxHeight:element.style.height,
+     minHeight:getComputedStyle(element).minHeight,
+     overflowY:getComputedStyle(element).overflowY,
+     contentHeight:element.scrollHeight,clientHeight:element.clientHeight,
      cardScrollHeight:card.scrollHeight,cardClientHeight:card.clientHeight,
      cardOverflow:getComputedStyle(card).overflowY};
   });
   assert.equal(metric.fontSize,'122px',id+' did not render the editor font size');
   assert.equal(metric.boxHeight,'44px',id+' lost Header Box Height metadata');
-  assert.ok(metric.height>44,id+' still clips large text into the default 44px header: '+JSON.stringify(metric));
-  assert.equal(metric.minHeight,'max-content',id+' caption must grow with its contents');
   assert.equal(metric.cardOverflow,'auto',id+' card must scroll if content exceeds its frame');
-  assert.ok(metric.contentHeight<=metric.clientHeight+2,
-   id+' still clips content within its caption: '+JSON.stringify(metric));
+  if(id==='four-grid'){
+   assert.equal(metric.minHeight,'0px','Authored Card Grid header must remain bounded');
+   assert.ok(metric.height<=46,'Card Grid header exceeds authored height: '+JSON.stringify(metric));
+   assert.equal(metric.overflowY,'auto','Oversized Card Grid title must scroll inside header');
+   assert.ok(metric.contentHeight>metric.clientHeight+2,
+    'Card Grid fixture must exercise oversized text: '+JSON.stringify(metric));
+   const scrolled=await caption.evaluate(element=>{
+    element.scrollTop=element.scrollHeight;
+    return element.scrollTop;
+   });
+   assert.ok(scrolled>0,'Card Grid title must remain reachable through its own scrollbar');
+  }else{
+   assert.ok(metric.height>44,id+' caption must grow beyond the initial box: '+JSON.stringify(metric));
+   assert.equal(metric.minHeight,'max-content',id+' caption must grow with its contents');
+   assert.ok(metric.contentHeight<=metric.clientHeight+2,
+    id+' still clips content within its caption: '+JSON.stringify(metric));
+  }
   if(metric.cardScrollHeight>metric.cardClientHeight+2){
    const scrolled=await page.locator('[data-component-id="'+id+'"] .smart-card').first()
     .evaluate(card=>{card.scrollTop=card.scrollHeight;return card.scrollTop;});
