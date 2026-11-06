@@ -659,6 +659,7 @@ export default function SmartRuntime(p){
   const inputKey=["textSource","defaultValue","value"]
    .find(hasValue)??"defaultValue";
   const contentValue=scopedExpression(p,valueKey,p[valueKey]??"",record);
+  const inputContentValue=scopedExpression(p,inputKey,p[inputKey]??"",record);
   // A Data formula is a read-only value unless the author attached an actual
   // input change action (or explicitly requested an editable input).
   // Rendering it as an uncontrolled input can leave the initial empty value
@@ -687,12 +688,12 @@ export default function SmartRuntime(p){
      background:p.backgroundColor||"transparent",
      borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
      borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
-   :<input data-md-bind={p.builderPreview?valueKey:undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
+   :<input key={inputContentValue} data-md-bind={p.builderPreview?inputKey:undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
     ?"Text Here":label||text(p.placeholder||"")}
-  defaultValue={scopedExpression(p,inputKey,p[inputKey]??"",record)}
+  defaultValue={inputContentValue}
   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     // Explicit solid border on every side instead of the browser's native inset border.
