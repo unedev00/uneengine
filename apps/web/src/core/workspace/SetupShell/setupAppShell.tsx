@@ -150,6 +150,11 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
     compact.addEventListener('change', respond);
     return () => compact.removeEventListener('change', respond);
   }, []);
+  useEffect(() => {
+    // Navigation and direct route changes always dismiss compact drawers.
+    // Prevent an open drawer from intercepting taps on the next page.
+    if (window.matchMedia('(max-width: 1023px)').matches) setSetupSidebarCollapsed(true);
+  }, [route]);
   const [shortcutHelpOpen,setShortcutHelpOpen] = useState(false);
   useEffect(()=>{
     const onWorkspaceKey=(event:KeyboardEvent)=>{
