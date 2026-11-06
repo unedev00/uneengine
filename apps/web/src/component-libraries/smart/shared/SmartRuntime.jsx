@@ -1,4 +1,5 @@
 import SmartCart from "../../smart_cart/SmartCart.jsx";
+import SmartNumpad from "../../smart_numpad/SmartNumpad.jsx";
 import icons from "../../smart_icon/iconCatalog.json";
 import {smartShapeAppearance} from "./SmartShapeAppearance.js";
 import {smartCustomButtonAppearance} from "./SmartCustomButtonAppearance.js";
@@ -603,6 +604,16 @@ export default function SmartRuntime(p){
    }}/>}
    {label&&<span className="smart-button-label">{label}</span>}
  </button>;
+ else if(name==="smart_numpad")content=<SmartNumpad
+   p={{...p,
+     numpadPlaceholder:scopedExpression(p,"numpadPlaceholder",p.numpadPlaceholder??"Enter number",record),
+     numpadPrefix:scopedExpression(p,"numpadPrefix",p.numpadPrefix??"",record),
+     numpadSuffix:scopedExpression(p,"numpadSuffix",p.numpadSuffix??"",record)}}
+   fire={fire}
+   sourceValue={scopedExpression(p,"textSource",p.textSource??p.defaultValue??"",record)}
+   buttonLabels={[1,2,3].map(index=>scopedExpression(p,
+     "customButton"+index+"Label",p["customButton"+index+"Label"]??
+       (index===3?"Submit":"Custom "+index),record))}/>;
  else if(name==="smart_toggle")content=<SmartToggle p={p} fire={fire}/>;
  else if(name==="smart_textbox"){
   // A single native surface composed of two independently styled halves.

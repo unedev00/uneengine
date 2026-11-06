@@ -17,12 +17,12 @@ test('Smart Formula uses Excel semantics for maths, literals, fields and &',()=>
  for(const operator of ['+','-','*','/','&'])
    assert.equal(evaluateFieldExpression('"'+operator+'"',row),operator);
 });
-test('Smart component catalog is independent, fifteen components and SQL-owned',async()=>{
+test('Smart component catalog is independent, sixteen components and SQL-owned',async()=>{
  const source=JSON.parse(read('../src/component-libraries/manifest.json'));
  const names=source.components.map(p=>p.split('/')[0]).filter(name=>name.startsWith('smart_'));
  assert.deepEqual(names.sort(),['smart_button','smart_toggle','smart_lookup','smart_tabs',
   'smart_text','smart_textbox','smart_label','smart_card_grid','smart_image','smart_calendar','smart_navigation',
-  'smart_container','smart_cart','smart_icon','smart_table'].sort());
+  'smart_container','smart_cart','smart_icon','smart_table','smart_numpad'].sort());
  const catalog=await loadComponentCatalog();
  for(const name of names){
   const c=catalog.components.find(c=>c.apiName===name);
@@ -703,7 +703,7 @@ test('Smart Icon SQL enables only approved appearance and layout properties',()=
  assert.doesNotMatch(sql,/UPDATE\s+md_page_|DELETE\s+FROM\s+md_builder_shared_properties/i);
  const seeder=read('../../server/src/app-seeders/smart-components.ts');
  assert.match(seeder,/"smart_icon"/);
- assert.match(seeder,/core-smart-components-v6/);
+ assert.match(seeder,/core-smart-components-v7/);
 });
 
 

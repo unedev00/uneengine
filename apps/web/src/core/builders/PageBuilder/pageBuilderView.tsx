@@ -847,12 +847,12 @@ function PageBuilder({
       })});
     }else updateComponent(selected.id,{properties:{...selected.properties,actionFlows}});
   };
-  // Cart and Card Grid button visibility is component metadata, independent of the configured event.
-  // Preserve other instance properties and any existing Flow/Formula bindings.
-  const applyCartButtonVisibility=(key:'qtyIncrease'|'qtyDecrease'|'customButton1'|'customButton2',visible:boolean)=>{
+  // Shared Action-button visibility is component metadata, independent of the
+  // configured Flow or formula. No app-specific action implementation is needed.
+  const applyCartButtonVisibility=(key:'qtyIncrease'|'qtyDecrease'|'customButton1'|'customButton2'|'customButton3',visible:boolean)=>{
     if(!selected||actionSelectionDisabled||!actionMembers.length||
-      actionMembers.some(member=>member.type!=='Custom:smart_cart'&&
-        !(member.type==='Custom:smart_card_grid'&&key.startsWith('customButton'))))return;
+      actionMembers.some(member=>!supportsSmartActionEvent(
+        member.type.startsWith('Custom:')?member.type.slice(7):member.type,key)))return;
     const property=key+'Visible';
     if(actionMembers.length>1){
       const ids=new Set(actionMembers.map(item=>item.id));
@@ -3402,7 +3402,8 @@ function PageBuilder({
                 qtyIncrease:selected?.properties.qtyIncreaseVisible!==false,
                 qtyDecrease:selected?.properties.qtyDecreaseVisible!==false,
                 customButton1:selected?.properties.customButton1Visible!==false,
-                customButton2:selected?.properties.customButton2Visible!==false
+                customButton2:selected?.properties.customButton2Visible!==false,
+                customButton3:selected?.properties.customButton3Visible!==false
               }}
               onButtonVisibilityChange={applyCartButtonVisibility}/>}
           {selected?.type==='Custom:smart_icon' && ribbonTab==='Component Design 2' &&
