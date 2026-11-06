@@ -1,3 +1,4 @@
+import {dispatchComponentEvent} from './componentEventDispatch.js';
 import {componentAppearance} from './componentAppearance.js';
 export const options = (value, fallback = []) =>
   Array.isArray(value)
@@ -12,9 +13,7 @@ export const options = (value, fallback = []) =>
           .filter(Boolean)
       : fallback;
 export function shared(p) { return componentAppearance(p, 'layout'); }
-export function fire(p, event, value) {
-  if (typeof p.onAction === "function") return p.onAction({ event, value });
-}
+export const fire = dispatchComponentEvent;
 export function useOneLayout(p) {
   const kind = p.kind || "Container",
     css = shared(p);
