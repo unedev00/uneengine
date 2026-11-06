@@ -22,11 +22,43 @@ const own=(value:unknown,key:string):unknown=>
  value&&typeof value==='object'&&!Array.isArray(value)&&Object.hasOwn(value,key)
   ?(value as Record<string,unknown>)[key]:undefined;
 
+type TrustedFormulaSession={
+ user:{id:string;name:string;email:string;timeZone:string;locale:string;currencyIsoCode:string};
+ tenant:{id:string;name:string;logo:string};
+};
+/** Server formulas derive identity from the authenticated actor, never browser scope. */
+async function trustedFormulaSession(db:Sql,actor:Actor):Promise<TrustedFormulaSession>{
+ const [users,tenants,profiles]=await Promise.all([
+  db.query<{email:string;display_name:string;time_zone:string;locale:string;currency_iso_code:string|null}>(
+   'SELECT email,display_name,time_zone,locale,currency_iso_code FROM md_users WHERE tenant_id=$1 AND id=$2 AND enabled=true',
+   [actor.tenant_id,actor.user_id]),
+  db.query<{name:string}>('SELECT name FROM md_tenants WHERE id=$1',[actor.tenant_id]),
+  db.query<{properties:unknown}>("SELECT properties FROM md_tenant_settings WHERE tenant_id=$1 AND setting_key='company-profile'",[actor.tenant_id])
+ ]);
+ const user=users.rows[0];
+ if(!user||!tenants.rows[0])throw Error('Authenticated formula identity is unavailable');
+ const raw=profiles.rows[0]?.properties;
+ const company=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
+ const string=(value:unknown)=>typeof value==='string'?value.trim():'';
+ return {user:{id:actor.user_id,email:user.email,name:user.display_name,
+   timeZone:user.time_zone,locale:user.locale,currencyIsoCode:user.currency_iso_code??''},
+  tenant:{id:actor.tenant_id,name:string(company.tradingName)||string(company.legalName)||tenants.rows[0].name,
+   logo:string(company.logoUrl)}};
+}
 function evaluateDataNode(node:Expression,scope:Record<string,unknown>,
- _aliases?:readonly string[],state?:Readonly<Record<string,unknown>>):unknown{
+ _aliases?:readonly string[],state?:Readonly<Record<string,unknown>>,
+ authenticated?:TrustedFormulaSession):unknown{
  const resolve=(path:string):unknown=>{
   if(path==='$session')return scope.sessionId??'';
   if(path==='$session.id')return scope.sessionId??'';
+  if(path.startsWith('$session.')){
+   const key=path.slice('$session.'.length);
+   if(!/^(?:user\.(?:id|name|email|timeZone|locale|currencyIsoCode)|tenant\.(?:id|name|logo))$/.test(key))
+    throw Error('Unsupported session reference: '+path);
+   if(!authenticated)throw Error('Authenticated formula identity is unavailable');
+   const [root,property]=key.split('.') as ['user'|'tenant',string];
+   return own(authenticated[root],property)??'';
+  }
   if(path.startsWith('$state.')){
    const key=path.slice(7);
    return own(state,key)??own(scope.state,key);
@@ -109,12 +141,15 @@ export async function executeServerDataAction(
   pending=operation.then(()=>undefined,()=>undefined);
   return operation as Promise<T>;
  };
+ const authenticated=/\$session\.(?:user|tenant)\./.test(formula)
+  ?await trustedFormulaSession(db,actor):undefined;
  // A caught interpreter failure must not cause the outer transaction to roll
  // back its already confirmed actions. Each failing API operation uses a
  // savepoint; no external side effects or browser operations run in this scope.
  return db.transaction(async()=>{
   try{
-   const result=await executeActionPlan(formula,scope,evaluateDataNode,{
+   const result=await executeActionPlan(formula,scope,
+     (node,values,aliases,state)=>evaluateDataNode(node,values,aliases,state,authenticated),{
     request,planWindow:{start:0,end:dataSteps,includeVariables:true}
    });
    return {supported:true,...result};
