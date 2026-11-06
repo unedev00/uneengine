@@ -1,6 +1,6 @@
 import {beginOptimisticNumberChange} from '../PageRuntime/optimisticPageNumbers';
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
-import {shouldInvalidatePageComponent,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
+import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
 import {useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
@@ -208,11 +208,13 @@ export default function MetadataBoundPageComponent({
       pendingFlowOutputs.current.clear();
     };
   },[pageSessionKey]);
+  const readObjectApiNames=pageComponentReadObjectNames(objectApiName,properties,objects);
+  const readObjectKey=JSON.stringify(readObjectApiNames);
   // Only reload consumers of changed objects; session resets still affect all components.
   useEffect(() => {
     const sync = (event: Event) => {
       const detail = (event as CustomEvent<PageMutationDetail>).detail;
-      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,[objectApiName])) return;
+      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,readObjectApiNames)) return;
       if (detail.sessionId && detail.sessionId !== sessionId) {
         setSessionId(detail.sessionId);
         setSelectedCategories({});
@@ -234,7 +236,7 @@ export default function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
   }, [pageSessionKey, sessionId, objectApiName,recordOffset,recordsForRequest,
     recordRequestKey,recordTotal,records,relatedQuery,recordQuery,
-    properties.collectionFormula,properties.recordPresenterApiName]);
+    properties.collectionFormula,properties.recordPresenterApiName,readObjectKey]);
   useEffect(() => {
     let active = true;
     if(lastRequestKey.current!==recordRequestKey){
