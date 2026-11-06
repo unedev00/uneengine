@@ -1457,6 +1457,56 @@ function PageBuilder({
       applyPage({...page,components:next});
     }
   };
+  // Empty-stage marquee: the transient box is DOM-only and never enters page metadata.
+  const marqueePoint=(event:React.PointerEvent<HTMLDivElement>)=>{
+    const bounds=event.currentTarget.getBoundingClientRect();
+    return {
+      x:Math.max(0,Math.min(page.canvasWidth,
+        (event.clientX-bounds.left)*page.canvasWidth/Math.max(1,bounds.width))),
+      y:Math.max(0,Math.min(page.canvasHeight,
+        (event.clientY-bounds.top)*page.canvasHeight/Math.max(1,bounds.height)))
+    };
+  };
+  const startCanvasMarquee=(event:React.PointerEvent<HTMLDivElement>)=>{
+    if(previewMode||event.button!==0||event.target!==event.currentTarget
+      ||canvasMoveStart.current||canvasResizeStart.current)return;
+    const point=marqueePoint(event);
+    marqueeStartRef.current={pointerId:event.pointerId,x:point.x,y:point.y,
+      clientX:event.clientX,clientY:event.clientY,
+      additive:event.ctrlKey||event.metaKey||event.shiftKey,moved:false};
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if(marqueeOverlayRef.current){
+      Object.assign(marqueeOverlayRef.current.style,{
+        display:'none',left:point.x+'px',top:point.y+'px',width:'0px',height:'0px'
+      });
+    }
+  };
+  const moveCanvasMarquee=(event:React.PointerEvent<HTMLDivElement>)=>{
+    const start=marqueeStartRef.current;
+    if(!start||start.pointerId!==event.pointerId)return;
+    if(Math.hypot(event.clientX-start.clientX,event.clientY-start.clientY)>4)start.moved=true;
+    if(!start.moved||!marqueeOverlayRef.current)return;
+    const point=marqueePoint(event);
+    Object.assign(marqueeOverlayRef.current.style,{
+      display:'block',left:Math.min(point.x,start.x)+'px',top:Math.min(point.y,start.y)+'px',
+      width:Math.abs(point.x-start.x)+'px',height:Math.abs(point.y-start.y)+'px'
+    });
+  };
+  const endCanvasMarquee=(event:React.PointerEvent<HTMLDivElement>,cancelled=false)=>{
+    const start=marqueeStartRef.current;
+    if(!start||start.pointerId!==event.pointerId)return;
+    marqueeStartRef.current=null;
+    if(marqueeOverlayRef.current)marqueeOverlayRef.current.style.display='none';
+    if(cancelled||!start.moved)return;
+    const point=marqueePoint(event);
+    const box={x:Math.min(point.x,start.x),y:Math.min(point.y,start.y),
+      width:Math.abs(point.x-start.x),height:Math.abs(point.y-start.y)};
+    const next=marqueeCanvasIds(page.components,box,start.additive?selectionIds:[]);
+    setSelectionIds(next);setSelectedId(next[next.length-1]??'');
+    setGroupEditId('');setSelectedRegion(null);setPageSettingsOpen(false);
+    suppressCanvasClickRef.current=true;
+    window.requestAnimationFrame(()=>{suppressCanvasClickRef.current=false;});
+  };
   const reorderLayer = (id: string, direction: -1 | 1) => {
     const items = [...page.components];
     const index = items.findIndex(item => item.id === id);
@@ -3834,8 +3884,11 @@ function PageBuilder({
               }
             }}
             onClick={(event) => {
-            if (previewMode || (event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea')) return;
-            setSelectedId(''); setSelectionIds([]); setSelectedRegion(null); setRibbonTab('Add Block'); setPageSettingsOpen(false); setActivePanel(null);
+            if(suppressCanvasClickRef.current){suppressCanvasClickRef.current=false;return;}
+            if(previewMode||event.ctrlKey||event.metaKey||event.shiftKey
+              ||(event.target as HTMLElement).closest('.record-component,.canvas-drop-zone,button,input,select,textarea'))return;
+            setSelectedId('');setSelectionIds([]);setGroupEditId('');
+            setSelectedRegion(null);setRibbonTab('Add Block');setPageSettingsOpen(false);setActivePanel(null);
           }} onDragOver={previewMode ? undefined : (event) => event.preventDefault()}
              onDrop={previewMode ? undefined : (event) => handleDrop(event)}>
             {previewMode && page.pageType !== 'Record Page' ? <div className="page-builder-live-runtime" aria-label="Published runtime preview of current draft">
@@ -3867,8 +3920,13 @@ function PageBuilder({
                    transform: (fitCanvas || canvasZoom!==100) ? `scale(${fitCanvas?fitScale:canvasZoom/100})` : undefined,
                   transformOrigin: 'top left'
                 }}
+                onPointerDown={!previewMode?startCanvasMarquee:undefined}
+                onPointerMove={!previewMode?moveCanvasMarquee:undefined}
+                onPointerUp={!previewMode?event=>endCanvasMarquee(event):undefined}
+                onPointerCancel={!previewMode?event=>endCanvasMarquee(event,true):undefined}
               >
                 {childrenOf(page.components, null).map((component) => renderPageComponent(component, page.components.findIndex((item) => item.id === component.id)))}
+                {!previewMode&&<div ref={marqueeOverlayRef} className="canvas-selection-marquee" aria-hidden="true"/>}
                 {!previewMode && selectedGroupBounds && selected && <div className="canvas-group-outline"
                   role="group" aria-label="Move or resize selected group" style={{
                     left:selectedGroupBounds.x,top:selectedGroupBounds.y,
@@ -3878,6 +3936,7 @@ function PageBuilder({
                   onPointerUp={endCanvasGroupGesture}
                   onPointerCancel={event=>endCanvasGroupGesture(event,true)}
                   onClick={event=>event.stopPropagation()}>
+                  <span className="canvas-group-selection-count" aria-hidden="true">{selectedGroupMembers.length} selected</span>
                   <button type="button" className="canvas-group-move-handle"
                     aria-label="Move grouped components" title="Drag to move grouped components"
                     onPointerDown={event=>startCanvasGroupGesture(event,'move')}
