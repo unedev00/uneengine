@@ -63,10 +63,10 @@ for (const component of catalog.components) {
       writeFile(target+'.gz',packed.gzip),writeFile(target+'.br',packed.brotli)]);
   }
   const fingerprint=rendererFileName(component.apiName,asset);
-  const path=`dist/component-library/components/${fingerprint}`;
+  const assetTarget=`dist/component-library/components/${fingerprint}`;
   const {gzip,brotli}=compressRenderer(asset);
   await Promise.all([
-    writeFile(path,asset),writeFile(path+'.gz',gzip),writeFile(path+'.br',brotli),
+    writeFile(assetTarget,asset),writeFile(assetTarget+'.gz',gzip),writeFile(assetTarget+'.br',brotli),
     // Compatibility for older clients; never given immutable cache headers.
     writeFile(`dist/component-library/components/${component.apiName}.json`,asset)
   ]);
