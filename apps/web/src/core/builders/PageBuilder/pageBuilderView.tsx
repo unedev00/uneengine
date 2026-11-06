@@ -3630,12 +3630,17 @@ function PageBuilder({
             </select>
           </label>}
         </div>
-        <label className="page-manager-mobile-sort">Sort pages
-          <select className="form-control" value={pageListSort} onChange={event=>{setPageListSort(event.target.value as typeof pageListSort);setPageListSortDescending(event.target.value==='updatedAt');setPageListPage(1);}}>
+        <div className="page-manager-mobile-sort"><label htmlFor="page-manager-card-sort">Sort pages</label>
+          <select className="form-control" id="page-manager-card-sort" value={pageListSort} onChange={event=>{setPageListSort(event.target.value as typeof pageListSort);setPageListSortDescending(event.target.value==='updatedAt');setPageListPage(1);}}>
            <option value="updatedAt">Last modified</option><option value="label">Page name</option>
            <option value="apiName">API name</option><option value="status">Status</option>
           </select>
-        </label>
+          <button type="button" className="btn page-manager-sort-direction"
+           aria-label={'Sort '+(pageListSortDescending?'ascending':'descending')}
+           onClick={()=>{setPageListSortDescending(value=>!value);setPageListPage(1);}}>
+            {pageListSortDescending?'↓ Descending':'↑ Ascending'}
+          </button>
+        </div>
         <ResponsiveDataList rows={paginatedPages} includeTablet includeNarrowDesktop getId={item=>item.apiName}
           label="Page Manager pages" emptyText={pageListSearch||pageListObject||pageListDeviceTab!=="all"?"No pages match the selected filters.":"No pages of this type exist yet."}
           onOpen={item=>void openPageDesign(item.apiName)} openLabel="Open page designer"

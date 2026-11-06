@@ -526,7 +526,8 @@ html, body, #root { min-width:0; max-width:100%; }
 .lightning .page-manager-layout-metadata { display:block;font-size:11px;color:var(--md-muted,#596779);font-weight:400;line-height:1.4; }
 .lightning .page-manager-design-layout-trigger { box-sizing:border-box;min-width:32px;min-height:32px;width:32px;height:32px; }
 .page-manager-mobile-sort { display:none; }
-@media(max-width:1023px) {
+/* The page list switches to cards through 1199px, so sorting must remain visible there. */
+@media(max-width:1199px) {
  .lightning .page-manager-mobile-sort { display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0; }
  .lightning .page-manager-mobile-sort select { min-height:40px;max-width:100%;width:auto; }
 }
@@ -557,7 +558,7 @@ html, body, #root { min-width:0; max-width:100%; }
 }
 
 /* Audit UX-0024/25: bounded global search and labelled Home entry. */
-.lightning .header-searches { min-width:0;max-width:min(420px,40vw); }
+.lightning .header-searches { min-width:0;max-width:min(360px,40vw); }
 .lightning .header-searches .global-record-search { max-width:100%;min-width:0; }
 .lightning .header-searches .global-record-search>span { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .lightning .brand-home-label { display:inline-block;font-size:12px;font-weight:600;margin-left:5px; }
@@ -743,3 +744,34 @@ html, body, #root { min-width:0; max-width:100%; }
   color:var(--md-primary,#1d4ed8);
  }
 }
+
+/* UX-0029: refresh state is visible without adding layout shift; honor reduced motion. */
+.lightning .setup-home-refresh .setup-refresh-spinning {animation:md-setup-refresh-spin .85s linear infinite}
+@keyframes md-setup-refresh-spin {to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+ .lightning .setup-home-refresh .setup-refresh-spinning {animation:none}
+}
+.lightning .object-manager-mobile-sort .object-manager-sort-direction {
+ min-height:40px;white-space:nowrap;flex:0 0 auto;
+}
+@media(max-width:399px){
+ .lightning .object-manager-mobile-sort {flex-wrap:wrap}
+ .lightning .object-manager-mobile-sort select {flex:1 1 130px;min-width:0}
+}
+
+.lightning .page-manager-mobile-sort .page-manager-sort-direction {
+ min-height:40px;flex:0 0 auto;white-space:nowrap;
+}
+@media(max-width:399px){
+ .lightning .page-manager-mobile-sort .form-control{flex:1 1 125px;min-width:0}
+}
+
+/* UX-0021: hold both lines of card titles in one reserved row so descriptions
+   and title starting edges align even when Company Settings wraps at 1024px. */
+.lightning .home-content .shortcut-card {
+ grid-template-rows: minmax(36px,auto) minmax(0,1fr);
+ min-height:106px;
+ align-items:start;
+}
+.lightning .home-content .shortcut-card .shortcut-title {align-self:start}
+.lightning .home-content .shortcut-card .shortcut-description {align-self:start}

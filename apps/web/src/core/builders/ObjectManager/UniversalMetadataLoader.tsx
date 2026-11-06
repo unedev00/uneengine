@@ -23,6 +23,7 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
  const [execution,setExecution]=useState<Report|null>(null);
  const [exportMode,setExportMode]=useState<'current'|'all'>('current');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [exporting,setExporting]=useState(false);
  const [notice,setNotice]=useState('');
  const fileRef=useRef<HTMLInputElement>(null);
  const hasWorkbook=Boolean(workbook);
@@ -63,7 +64,7 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
  };
  const exportWorkbook=async()=>{
   if(exportMode==='current'&&!currentObject){setError('Choose an object before exporting');return;}
-  setBusy(true);setError('');
+  setBusy(true);setExporting(true);setError('');setNotice('');
   try{
    const result=await apiRequest<{workbook:string}>('/metadata/loader/export',{
     method:'POST',body:JSON.stringify({objects:exportMode==='current'?[currentObject]:[]})});
@@ -71,7 +72,7 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
    saveXlsx(result.workbook,downloadedName);
    setNotice('Downloaded '+downloadedName+'.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to export metadata');}
-  finally{setBusy(false);}
+  finally{setBusy(false);setExporting(false);}
  };
  return <div role={inline?'region':'dialog'} aria-modal={inline?undefined:true} aria-label="Object Metadata Loader"
   style={inline?{width:'100%'}:{position:'fixed',inset:0,zIndex:10020,
@@ -97,9 +98,11 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
      </select>}
      <label><input name="metadata-export-scope" type="radio" checked={exportMode==='all'} onChange={()=>setExportMode('all')}/> All permitted objects</label>
      <button className="btn" type="button" onClick={()=>void exportWorkbook()}
+      aria-busy={exporting} aria-describedby={exporting?'metadata-loader-export-status':undefined}
       disabled={busy||(exportMode==='current'&&!currentObject)}>
-      <FileSpreadsheet size={16}/> {busy?'Preparing Excel…':'Download Excel'}</button>
+      <FileSpreadsheet size={16}/> {exporting?'Preparing Excel…':'Download Excel'}</button>
     </fieldset>
+    {exporting&&<p id="metadata-loader-export-status" role="status">Preparing the Excel workbook for download…</p>}
     {notice&&<p role="status">{notice}</p>}
     <p className="properties-help">This object selection controls only the download. Upload an Objects/Fields workbook for any permitted object, regardless of the selected export object. The export includes API names and revisions; removing a row never deletes metadata.</p>
    </section>

@@ -2,6 +2,23 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { RefreshCw, ArrowRight, ChevronRight, ShieldCheck, AlertCircle, ExternalLink, CircleHelp, Command } from 'lucide-react';
 import { setupShortcuts, type WorkspaceId } from '../../metadata/Definitions/metadata';
 type HeadingProps = { eyebrow?: string; title: string; description?: string; actions?: ReactNode };
+function relativeSecurityTime(iso:string,now:number):string{
+  const offset=Date.parse(iso)-now;
+  if(!Number.isFinite(offset))return 'Date unavailable';
+  const amount=Math.abs(offset);
+  const seconds=amount/1000;
+  const [interval,unit]:[number,Intl.RelativeTimeFormatUnit]=seconds<60?[1_000,'second']:
+    seconds<3600?[60_000,'minute']:seconds<86_400?[3_600_000,'hour']:
+    seconds<604_800?[86_400_000,'day']:[604_800_000,'week'];
+  return new Intl.RelativeTimeFormat(undefined,{numeric:'auto'}).format(Math.round(offset/interval),unit);
+}
+function securityActivityType(action:string):string{
+  if(/login|sign.?in|session|auth/i.test(action))return 'Authentication activity';
+  if(/password|recovery|credential/i.test(action))return 'Account recovery';
+  if(/permission|role|access|policy/i.test(action))return 'Access control';
+  if(/failed|denied|blocked|rejected/i.test(action))return 'Security alert';
+  return 'Workspace security';
+}
 export function createSetupHome(Heading: (props: HeadingProps) => ReactNode) {
 function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: { onNavigate: (workspace: WorkspaceId) => void; request: <T>(path:string)=>Promise<T>; onShowShortcuts:()=>void; onOpenAuditTrail?:()=>void }) {
   type SecurityEvent = {id:string;at:string;action:string};
@@ -14,16 +31,16 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
     let active = true;
     setLoading(true);setError('');
     void request<{events:SecurityEvent[]}>('/auth/security-events?limit=3')
-      .then(result => {if(active)setEvents(result.events ?? []);})
-      .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);}})
-      .finally(() => {if(active){setLoading(false);setLastUpdated(Date.now());}});
+      .then(result => {if(active){setEvents(result.events ?? []);setLastUpdated(Date.now());}})
+      .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);setLastUpdated(null);}})
+      .finally(() => {if(active)setLoading(false);});
     return () => {active=false;};
   },[request]);
   useEffect(() => reload(), [reload]);
   return (
     <div className="home-content">
       <Heading title="Setup Home" description="Configure objects, pages, flows and access permissions for your organisation."
-        actions={<div className="setup-home-refresh"><button type="button" className="btn" onClick={reload} disabled={loading} aria-busy={loading}><RefreshCw size={14} />{loading?'Refreshing…':'Refresh'}</button>
+        actions={<div className="setup-home-refresh"><button type="button" className="btn" onClick={reload} disabled={loading} aria-busy={loading}><RefreshCw size={14} className={loading?'setup-refresh-spinning':undefined} aria-hidden="true" />{loading?'Refreshing…':'Refresh'}</button>
           {lastUpdated&&<small role="status">Updated {new Date(lastUpdated).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}</small>}</div>} />
       <div className="welcome-banner setup-home-summary">
         <div className="welcome-copy">
@@ -46,8 +63,8 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
               const failed=/(failed|denied|blocked|rejected)/i.test(event.action);
               return <div className="recent-row" key={event.id}>
                 <span className={'recent-icon '+(failed?'red':'green')}>{failed?<AlertCircle size={16}/>:<ShieldCheck size={16}/>}</span>
-                <div><strong>{event.action.replace(/([a-z])([A-Z])/g,'$1 $2')}</strong><small>Security event</small></div>
-                <time dateTime={event.at} title={new Date(event.at).toLocaleString()}>{new Date(event.at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}</time>
+                <div><strong>{event.action.replace(/([a-z])([A-Z])/g,'$1 $2')}</strong><small>{securityActivityType(event.action)}</small></div>
+                <time dateTime={event.at} title={new Date(event.at).toLocaleString()}>{relativeSecurityTime(event.at,Date.now())}</time>
               </div>;
             })}
           {onOpenAuditTrail && <button type="button" className="text-action" onClick={onOpenAuditTrail}>View full audit trail <ArrowRight size={14}/></button>}

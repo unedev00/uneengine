@@ -201,3 +201,61 @@ test('UX-0043 Setup sidebar shares one navigation registry and exposes current i
  assert.match(shell,/resolveSetupNavigation\(quickFind/);
  assert.match(navigation,/return setupNavigation/);
 });
+
+test('UX-0029 Setup Home refresh is visibly busy and only marks successful updates',()=>{
+ const home=source('src/core/settings/SetupHome/setupHomeView.tsx');
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(home,/setup-refresh-spinning/);
+ assert.match(home,/aria-busy=\{loading\}/);
+ assert.match(home,/setEvents\(result\.events \?\? \[\]\);setLastUpdated\(Date\.now\(\)\)/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+});
+test('UX-0046 Object Manager exposes sort direction for both desktop and cards',()=>{
+ const obj=source('src/core/builders/ObjectManager/objectManagerView.tsx');
+ assert.match(obj,/md-sort-indicator/);
+ assert.match(obj,/object-manager-sort-direction/);
+ assert.match(obj,/aria-sort=\{objectSortKey===/);
+ assert.match(obj,/setObjectSortDescending\(value=>!value\)/);
+});
+test('UX-0054 Excel export has its own announced pending state',()=>{
+ const loader=source('src/core/builders/ObjectManager/UniversalMetadataLoader.tsx');
+ assert.match(loader,/\[exporting,setExporting\]/);
+ assert.match(loader,/aria-busy=\{exporting\}/);
+ assert.match(loader,/Preparing the Excel workbook for download/);
+ assert.match(loader,/setNotice\('Downloaded '\+downloadedName/);
+});
+test('UX-0057 Page Builder card sort offers a direction control',()=>{
+ const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(page,/page-manager-sort-direction/);
+ assert.match(page,/page-manager-card-sort/);
+ assert.match(page,/setPageListSortDescending\(value=>!value\)/);
+});
+
+test('UX-0006 authentication colours are declared in one dedicated token file',()=>{
+ const css=source('src/core/authentication/Login/standaloneLogin.css');
+ const ramp=source('src/core/authentication/Login/authTokens.css');
+ assert.match(css,/@import '\.\/authTokens\.css'/);
+ assert.doesNotMatch(css,/#[0-9a-fA-F]{3,8}\b/);
+ assert.match(ramp,/--auth-color-primary:#0b57d0/);
+ assert.match(ramp,/--auth-color-hover:#0946a7/);
+ assert.match(ramp,/--auth-color-disabled:#698ac0/);
+});
+test('UX-0026 security event meta shows a category and relative time instead of generic copy',()=>{
+ const setup=source('src/core/settings/SetupHome/setupHomeView.tsx');
+ assert.match(setup,/function relativeSecurityTime/);
+ assert.match(setup,/function securityActivityType/);
+ assert.match(setup,/relativeSecurityTime\(event\.at,Date\.now\(\)\)/);
+ assert.match(setup,/dateTime=\{event\.at\}/);
+ assert.doesNotMatch(setup,/<small>Security event<\/small>/);
+});
+test('Page card sort controls exist through narrow-desktop card breakpoint',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(css,/page-manager-mobile-sort \{ display:none; \}[\s\S]*?@media\(max-width:1199px\)/);
+});
+
+test('UX-0021 title baselines stay aligned and UX-0024 search has a fixed width cap',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(css,/grid-template-rows: minmax\(36px,auto\) minmax\(0,1fr\)/);
+ assert.match(css,/home-content \.shortcut-card \.shortcut-title \{align-self:start\}/);
+ assert.match(css,/header-searches \{ min-width:0;max-width:min\(360px,40vw\); \}/);
+});
