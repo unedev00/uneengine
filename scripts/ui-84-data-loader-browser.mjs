@@ -20,7 +20,7 @@ try{
   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1});
   const page=await context.newPage();
   await page.goto(base+'/test/setup-ux-fixture.html?view=data-loader',{waitUntil:'domcontentloaded'});
-  await page.getByRole('heading',{name:'Universal Data Loader'}).waitFor();
+  await page.getByRole('heading',{name:'Universal Data Loader',exact:true}).waitFor();
   const tabs=page.getByRole('tablist',{name:'Data Loader categories'});
   assert.equal(await tabs.getByRole('tab').count(),3);
   await tabs.getByRole('tab',{name:'Records',exact:true}).click();
