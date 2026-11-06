@@ -20,7 +20,15 @@ export function uneProps(p,kind){
  const allowed=key=>typeof p.fieldAllowed==="function"?p.fieldAllowed(key,record):
    !p.dataFieldFilters||typeof p.dataFieldFilters!=="object"||
    !Object.prototype.hasOwnProperty.call(p.dataFieldFilters,key);
- const resolve=(key,raw)=>allowed(key)?evaluateFieldExpression(raw,record,context):"";
+ // Distinguish formulas from ordinary text such as an email address with "@".
+ const formula=value=>/^\s*=/.test(value)||
+   /^\s*@/.test(value)||/(?:^|[\s(,=+&*/])@[A-Za-z]/.test(value)||
+   /\$(?:component\.|state\.|session\b|tenant\.)/i.test(value)||
+   /^\s*"/.test(value)||
+   /^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(value)||
+   /^\s*[A-Za-z][A-Za-z0-9_]*\s*\(/.test(value);
+ const resolve=(key,raw)=>!allowed(key)?"":formula(raw)
+   ?evaluateFieldExpression(raw,record,context):raw;
  const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText",
    "emptyText","emptyTitle","loadingText","src","alt","imageSrc","imageAlt",
    "submitLabel","openLabel","confirmLabel","searchPlaceholder","searchLabel",
