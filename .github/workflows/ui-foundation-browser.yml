@@ -8,6 +8,7 @@ on:
       - 'scripts/setup-ux-browser-smoke.mjs'
       - 'scripts/ui-84-auth-responsive-browser.mjs'
       - 'scripts/ui-84-setup-home-browser.mjs'
+      - 'scripts/ui-84-app-manager-browser.mjs'
       - 'scripts/all-apps-ui-100pct-audit.mjs'
       - '.github/workflows/ui-foundation-browser.yml'
       - 'package.json'
@@ -72,6 +73,11 @@ jobs:
           UI_84_SETUP_SCREENSHOT_DIR: artifacts/ui-84-setup-home
           UI_84_SETUP_SCREENSHOTS: '1'
         run: node scripts/ui-84-setup-home-browser.mjs
+      - name: Check App Manager responsive registry, clone, and discard at 19 viewports
+        env:
+          UI_84_APPS_SCREENSHOT_DIR: artifacts/ui-84-app-manager
+          UI_84_APPS_SCREENSHOTS: '1'
+        run: node scripts/ui-84-app-manager-browser.mjs
       - name: Audit every available React fixture at native 100% browser zoom
         if: always()
         env:
@@ -84,6 +90,13 @@ jobs:
           name: all-apps-100pct-visual-audit
           path: artifacts/all-apps-ui/
           if-no-files-found: error
+      - name: Upload App Manager viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-app-manager-19-viewports
+          path: artifacts/ui-84-app-manager/
+          if-no-files-found: ignore
       - name: Upload Setup Home viewport evidence
         if: always()
         uses: actions/upload-artifact@v4
