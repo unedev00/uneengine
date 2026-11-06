@@ -123,3 +123,69 @@ test('record filters accept one-level lookup paths through the related record',(
  assert.throws(()=>compileRecordFilters([{field:'Product.Name',operator:'eq',value:'x'}],undefined,
   new Map([['Cart',{api_name:'Cart',data_type:'reference'}]]),4),/Invalid list field/);
 });
+
+
+test('memoization: identical cart lookups make one awaited GET',async()=>{
+ const paths:string[]=[];
+ const source='=ACTIONS(GETRECORD(Cart, SessionKey, "pos", AS(cartA)), GETRECORD(Cart, SessionKey, "pos", AS(cartB)), STATE(done, TRUE))';
+ await executeActionPlan(source,{},evaluator,{request:async(path,init)=>{
+  paths.push((init?.method??'GET')+' '+path);
+  return {records:[{Id:cartId}],total:1} as never;
+ }});
+ assert.equal(paths.length,1,'identical cart reads must be coalesced inside one plan');
+ console.info('Formula memo after: GETs=1 uniquePaths=1');
+});
+
+test('GET memoization invalidates only the object written, retaining unrelated cached reads',async()=>{
+ const calls:string[]=[];
+ const formula='=ACTIONS(GETRECORD(Cart, SessionKey, "s", AS(c1)), GETRECORD(Product, Name, "x", AS(p1)), '+
+ 'UPDATERECORD(Cart, @cartId, Total, 2), GETRECORD(Cart, SessionKey, "s", AS(c2)), '+
+ 'GETRECORD(Product, Name, "x", AS(p2)))';
+ await executeActionPlan(formula,{cartId},evaluator,{request:async(path,init)=>{
+  calls.push((init?.method??'GET')+' '+path.split('?')[0]);
+  return (!init?{records:[{Id:cartId}],total:1}:{record:{Id:cartId}}) as never;
+ }});
+ assert.deepEqual(calls,['GET /records/Cart','GET /records/Product','PUT /records/Cart/'+cartId,
+  'GET /records/Cart']);
+});
+
+test('independent aggregate field inputs begin their requests before either finishes',async()=>{
+ const calls:string[]=[];
+ const waiting:Array<(value:unknown)=>void>=[];
+ const formula='=CREATERECORD(Summary, Amount, SUMIFS(CartLine, LineTotal, Cart, @cartId), '+
+  'Lines, COUNTIFS(CartLine, Cart, @cartId))';
+ const run=executeActionPlan(formula,{cartId},evaluator,{request:async(path,init)=>{
+  if(init){calls.push('POST /records/Summary');return {record:{Id:lineId}} as never;}
+  calls.push('GET '+path.split('?')[0]+'?'+new URLSearchParams(path.split('?')[1]).get('limit'));
+  return await new Promise(resolve=>waiting.push(resolve as (value:unknown)=>void)) as never;
+ }});
+ for(let n=0;n<16&&waiting.length<2;n++)await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(waiting.length,2,'independent aggregate queries must start concurrently');
+ waiting[0]({records:[{LineTotal:5}],total:1});
+ waiting[1]({records:[{LineTotal:5}],total:1});
+ await run;
+ assert.equal(calls.length,3);
+ assert.deepEqual(calls.slice(0,2),['GET /records/CartLine?100','GET /records/CartLine?1']);
+ assert.equal(calls[2],'POST /records/Summary');
+});
+
+test('write response with all future alias fields avoids unnecessary GET',async()=>{
+ const calls:string[]=[];
+ await executeActionPlan('=ACTIONS(CREATERECORD(Item, Name, "New", AS(item)), '+
+  'UPDATERECORD(Item, item.Id, Name, item.Name))',{},evaluator,{request:async(path,init)=>{
+  calls.push((init?.method??'GET')+' '+path.split('?')[0]);
+  return {record:{Id:cartId,Name:'Final'}} as never;
+ }});
+ assert.deepEqual(calls,['POST /records/Item','PUT /records/Item/'+cartId]);
+});
+
+test('missing future alias field retains guarded GET fallback and permission errors',async()=>{
+ const calls:string[]=[];
+ await assert.rejects(executeActionPlan('=ACTIONS(CREATERECORD(Item, Name, "New", AS(item)), '+
+  'UPDATERECORD(Item, item.Id, Name, item.Name))',{},evaluator,{request:async(path,init)=>{
+  calls.push((init?.method??'GET')+' '+path.split('?')[0]);
+  if(!init)throw Error('Permission denied');
+  return {record:{Id:cartId}} as never;
+ }}),/CREATERECORD failed after 1 confirmed action\(s\). Permission denied/);
+ assert.deepEqual(calls,['POST /records/Item','GET /records/Item/'+cartId]);
+});

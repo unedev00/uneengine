@@ -281,7 +281,7 @@ test('Formula timing is off by default and cannot change request results or perm
 });
 
 
-test('mock transport: enabling tracing preserves three ordered requests and measures each mode',async()=>{
+test('mock transport: enabling tracing preserves two ordered requests after complete write projection',async()=>{
  const formula='=ACTIONS(CREATERECORD(Item, Name, "start", AS(item)), UPDATERECORD(Item, item.Id, Name, item.Name))';
  const id='11111111-1111-4111-8111-111111111111';
  const run=async(enabled:boolean)=>{
@@ -299,17 +299,16 @@ test('mock transport: enabling tracing preserves three ordered requests and meas
   return {calls,ms:performance.now()-start,samples};
  };
  const before=await run(false),after=await run(true);
- assert.deepEqual(before.calls,['POST /records/Item','GET /records/Item/'+id,
-  'PUT /records/Item/'+id]);
+ assert.deepEqual(before.calls,['POST /records/Item','PUT /records/Item/'+id]);
  assert.deepEqual(after.calls,before.calls);
  assert.equal(before.samples.length,0);
  assert.equal(after.samples.length,1);
- assert.equal(after.samples[0].requestCount,3);
- assert.deepEqual(after.samples[0].steps.map(step=>step.requestCount),[2,1]);
+ assert.equal(after.samples[0].requestCount,2);
+ assert.deepEqual(after.samples[0].steps.map(step=>step.requestCount),[1,1]);
  // These are mock transport timings (not production latency); noisy CI wall times
  // are reported but never used for a flaky speed threshold.
  console.info('formula mock comparison: requests='+before.calls.length+'->'+after.calls.length+
-  ' ordering=POST>GET>PUT'+' timingOffMs='+before.ms.toFixed(1)+
+  ' ordering=POST>PUT'+' timingOffMs='+before.ms.toFixed(1)+
   ' timingOnMs='+after.ms.toFixed(1));
 });
 
