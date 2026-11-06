@@ -1,5 +1,5 @@
 import {
- evaluateFieldExpressionDetailed,FieldExpressionEvaluationError,
+ evaluateFieldExpressionDetailed,FieldExpressionEvaluationError,setAuthenticatedFormulaSession,
  type FormulaBindingContext
 } from '../../../component-libraries/shared/FieldExpression.js';
 
@@ -7,12 +7,14 @@ let authenticatedFormulaBindingContext:FormulaBindingContext|null=null;
 export function setAuthenticatedFormulaBindingContext(user:unknown):void {
   if(!user||typeof user!=='object'||Array.isArray(user)){
     authenticatedFormulaBindingContext=null;
+    setAuthenticatedFormulaSession(null);
     return;
   }
   const session=user as Record<string,unknown>;
   if(typeof session.timeZone!=='string'||!session.timeZone
     ||typeof session.locale!=='string'||!session.locale){
     authenticatedFormulaBindingContext=null;
+    setAuthenticatedFormulaSession(null);
     return;
   }
   new Intl.DateTimeFormat('en',{timeZone:session.timeZone});
@@ -29,6 +31,7 @@ export function setAuthenticatedFormulaBindingContext(user:unknown):void {
     }),
     organization:Object.freeze({Id:session.tenantId,Name:session.tenantName})
   });
+  setAuthenticatedFormulaSession(authenticatedFormulaBindingContext);
 }
 export function getAuthenticatedFormulaBindingContext():FormulaBindingContext|null {
   return authenticatedFormulaBindingContext;
