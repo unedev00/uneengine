@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {shouldInvalidatePageComponent} from '../src/core/pages/PageRuntime/pageMutationScope';
+import {visibleSessionRelatedQuery} from '../src/core/pages/PageRuntime/usePageSessionRelatedQuery';
 
 const page='Sales:Checkout',session='session-1';
 
@@ -22,4 +23,12 @@ test('page isolation prevents cross-page refetches',()=>{
 });
 test('changing the cart session resets all components even for scoped writes',()=>{
  assert.equal(shouldInvalidatePageComponent({pageSessionKey:page,sessionId:'session-2',objectApiNames:['Cart']},page,session,['Product']),true);
+});
+
+test('same-session cart lookup remains visible while a revision is being refreshed',()=>{
+ const parent={blocked:false,filter:{field:'Cart',value:'current-cart',related:true}};
+ const cached={scopeKey:'session:A',query:parent};
+ assert.deepEqual(visibleSessionRelatedQuery(true,'session:A',cached),parent);
+ assert.deepEqual(visibleSessionRelatedQuery(true,'session:B',cached),{blocked:true});
+ assert.deepEqual(visibleSessionRelatedQuery(false,'session:A',cached),{blocked:true});
 });

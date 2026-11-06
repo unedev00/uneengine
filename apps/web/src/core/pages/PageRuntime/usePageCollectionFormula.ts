@@ -126,12 +126,15 @@ export function usePageCollectionFormula(
   .map(key=>String(properties[key]??'')).filter(Boolean);
  const referenced=[...new Set([...refs.map(ref=>ref.object),...(tableSourceObject?[tableSourceObject]:[])])];
  const secondary=referenced.filter(name=>name!==primaryObject);
- const key=JSON.stringify([source,selected,secondary,revision]);
+ // Keep resolved secondary-source rows during background refreshes for this same page session.
+ // Changing source, selection or session still hides rows until the new scope is authorised.
+ const sourceKey=JSON.stringify([source,selected,secondary,primaryObject,pageSessionKey,sessionId]);
+ const key=JSON.stringify([sourceKey,revision]);
  const [remote,setRemote]=useState<SourceResult|null>(null);
  useEffect(()=>{
   let active=true;
-  if(!secondary.length){setRemote({key,records:{}});return()=>{active=false;};}
-  setRemote(null);
+  if(!secondary.length){setRemote({key:sourceKey,records:{}});return()=>{active=false;};}
+  setRemote(previous=>previous?.key===sourceKey?previous:null);
   void Promise.all(secondary.map(async name=>{
    if(!selected.includes(name)||!objects.some(o=>o.apiName===name))
     throw Error('COLLECTION source Object is not selected: '+name);
@@ -139,8 +142,8 @@ export function usePageCollectionFormula(
    if(response.total>200||response.total>response.records.length)
     throw Error('COLLECTION source '+name+' has more records than can be safely loaded; narrow its filters');
    return [name,response.records] as const;
-  })).then(results=>{if(active)setRemote({key,records:Object.fromEntries(results)});})
-   .catch((error:unknown)=>{if(active)setRemote({key,records:{},
+  })).then(results=>{if(active)setRemote({key:sourceKey,records:Object.fromEntries(results)});})
+   .catch((error:unknown)=>{if(active)setRemote({key:sourceKey,records:{},
      error:error instanceof Error?error.message:'COLLECTION source failed'});});
   return()=>{active=false;};
  },[key]);
@@ -162,7 +165,7 @@ export function usePageCollectionFormula(
  if(missingField)return {collection:null,error:'COLLECTION field unavailable: '+missingField.object+'.'+missingField.field,loading:false};
  if(!isTableProjection&&referenced.includes(primaryObject)&&primaryTotal>primaryRecords.length)
   return {collection:null,error:'COLLECTION primary source has more records than are loaded; narrow its filters',loading:false};
- if(secondary.length&&remote?.key!==key)return {collection:null,error:null,loading:true};
+ if(secondary.length&&remote?.key!==sourceKey)return {collection:null,error:null,loading:true};
  if(remote?.error)return {collection:null,error:remote.error,loading:false};
  const sources:Record<string,Row[]>={...remote?.records};
  if(primaryObject&&referenced.includes(primaryObject))sources[primaryObject]=[...primaryRecords];
@@ -221,9 +224,9 @@ export function usePageCollectionFormula(
  // Scalar formulas such as SUM(COLLECTION(...)) use these very same already
  // authorised complete Object rows; no renderer or formula performs its own IO.
  const complete=(isTableProjection||!primaryObject||primaryTotal<=primaryRecords.length)
-  &&(!secondary.length||remote?.key===key)&&!remote?.error;
+  &&(!secondary.length||remote?.key===sourceKey)&&!remote?.error;
  const formulaSources:Record<string,readonly Row[]>=complete?{
-  ...(remote?.key===key?remote.records:{}),
+  ...(remote?.key===sourceKey?remote.records:{}),
   ...(primaryObject?{[primaryObject]:primaryRecords}:{})
  }:{};
  return {...(duplicate?{collection:null,error:duplicate,loading:false}:visible),
