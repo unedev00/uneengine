@@ -3,7 +3,7 @@ import {canvasGroupMembers} from './canvasLayerGroups';
 
 type Rect={x:number;y:number;width:number;height:number};
 type CanvasSize={width:number;height:number};
-type SelectionMode='replace'|'toggle'|'range';
+type SelectionMode='replace'|'toggle'|'range'|'add';
 const parentOf=(item:PageComponentMetadata)=>
   typeof item.properties.layoutParentId==='string'&&item.properties.layoutParentId
     ?item.properties.layoutParentId:item.parentId??null;
