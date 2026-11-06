@@ -463,7 +463,7 @@ export function renderSetupShell(ctx: any) {
             </PlatformWorkspaceSurface>
               )
           )}
-          {route.kind === 'setup' && workspace === 'page-builder' && !advancedMetadataLoaded && <section className="setup-card" role="status">Loading live page definitions…</section>}
+          {route.kind === 'setup' && workspace === 'page-builder' && !advancedMetadataLoaded && <SetupLoadingState label="Page Builder definitions" />}
           {route.kind === 'setup' && workspace === 'page-builder' && advancedMetadataLoaded && route.resourceApiName && !pages.some((item) => item.apiName === route.resourceApiName) && (
             <section className="setup-card" role="alert" style={{ padding: 24 }}>
               <h2>{metadataLoadError ? "Unable to load Lightning pages" : "Lightning page not found"}</h2>
