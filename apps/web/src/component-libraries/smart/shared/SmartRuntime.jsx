@@ -101,7 +101,7 @@ const selectedCard=(selection,record)=>{
 function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=false}){
  const image=boundImage(p,record);
  // Distinguish an unset tenant brand from an unbound image in Builder previews.
- const tenantLogoReference=/^=?\s*\$tenant\.logo$/i.test(String(p.imageSource??p.src??"").trim());
+ const tenantLogoReference=/^=?\s*(?:\$session\.tenant\.logo|\$tenant\.logo)$/i.test(String(p.imageSource??p.src??"").trim());
  const missingImageLabel=tenantLogoReference
   ?"Tenant logo unavailable — Company Settings › Branding":"Image Here";
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
