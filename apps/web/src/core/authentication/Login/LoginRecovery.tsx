@@ -35,7 +35,7 @@ export default function LoginRecovery({onClose}:{onClose:()=>void}){
   // Clear sensitive link tokens immediately; never keep them in browser history.
   const params=new URLSearchParams(window.location.search);
   if(params.has('resetToken')){
-   params.delete('resetToken');params.delete('resetEmail');
+   params.delete('resetToken');params.delete('resetEmail');params.set('recover','1');
    window.history.replaceState(null,'',window.location.pathname+
     (params.size?'?'+params.toString():'')+window.location.hash);
   }
