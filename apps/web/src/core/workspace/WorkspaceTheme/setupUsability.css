@@ -667,3 +667,42 @@ html, body, #root { min-width:0; max-width:100%; }
    max-width:100%;overflow-wrap:anywhere;
  }
 }
+
+/* Second pass: residual audit targets, without changing authored app layouts. */
+.lightning .md-sort-indicator {
+ display:inline-block;margin-left:5px;font-size:14px;font-weight:800;
+ vertical-align:middle;line-height:1;color:var(--md-text,#192230);
+}
+.lightning .app-manager-list-search input[type="search"] {
+ height:36px;min-height:36px;line-height:36px;box-sizing:border-box;
+}
+@media(max-width:600px){
+ .lightning .object-manager>.section-toolbar {display:flex;flex-wrap:wrap;gap:10px}
+ .lightning .object-manager>.section-toolbar>div:first-child {flex:1 1 100%;min-width:0}
+ .lightning .object-manager>.section-toolbar>.toolbar-actions {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%;min-width:0;gap:8px;
+ }
+ .lightning .object-manager>.section-toolbar>.toolbar-actions>.btn-brand {
+  grid-column:1/-1;grid-row:1;justify-content:center;
+ }
+ .lightning .object-manager>.section-toolbar>.toolbar-actions>.btn {
+  min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere;
+  padding-inline:8px;
+ }
+ .lightning .object-manager .field-list-actions .mini-search,
+ .lightning .object-manager .field-list-actions select {
+  min-width:0;max-width:100%;
+ }
+ .lightning .setup-layout :is(.page-heading h1,.page-manager-header h1,.object-manager .section-toolbar h1,.app-manager-top h1) {
+  font-size:20px;line-height:1.25;
+ }
+}
+@media(max-width:360px){
+ .lightning .setup-layout :is(.object-manager,.page-manager-view,.app-manager-workspace) {
+  min-width:0;max-width:100%;padding-inline:10px;
+ }
+ .lightning .setup-layout :is(.object-manager,.page-manager-view,.app-manager-workspace) :is(input,select,button) {
+  max-width:100%;box-sizing:border-box;
+ }
+}
