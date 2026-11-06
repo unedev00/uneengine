@@ -100,3 +100,30 @@ test('Cramped desktop admin widths render cards with every action still availabl
  assert.match(apps,/<ResponsiveDataList rows=\{filtered\} includeTablet includeNarrowDesktop/);
  assert.match(styles,/@media\(min-width:1024px\) and \(max-width:1199px\)/);
 });
+
+test('Second pass removes root width overflow across every setup page',()=>{
+ const shell=source('src/core/workspace/WorkspaceTheme/sections/01-workspace.css');
+ assert.match(shell,/html, body, #root \{ min-width: 0; width: 100%; max-width: 100%/);
+ assert.doesNotMatch(shell,/html, body, #root \{ min-width: 320px/);
+});
+
+test('Second pass sign in uses actual build version and configurable safe legal links',()=>{
+ const login=source('src/core/authentication/Login/loginView.tsx');
+ const css=source('src/core/authentication/Login/standaloneLogin.css');
+ assert.match(login,/__METADRIVE_WEB_RELEASE__/);
+ assert.match(login,/auth-signin-footer/);
+ assert.match(login,/VITE_PRIVACY_POLICY_URL/);
+ assert.match(login,/VITE_TERMS_URL/);
+ assert.match(login,/\.startsWith\('https:\/\/'\)/);
+ assert.match(css,/@media\(max-height:460px\) and \(orientation:landscape\)/);
+});
+
+test('Second pass shows sort direction and explicit utility checkbox associations',()=>{
+ const apps=source('src/core/applications/AppManagerList/AppManagerList.tsx');
+ const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const manager=source('src/core/applications/AppManager/AppManager.tsx');
+ assert.match(apps,/md-sort-indicator/);
+ assert.match(page,/md-sort-indicator/);
+ assert.match(manager,/htmlFor=\{'app-utility-'/);
+ assert.match(manager,/name="app-utility-items"/);
+});
