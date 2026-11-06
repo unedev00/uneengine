@@ -5,6 +5,7 @@ import type { LibraryComponentMetadata } from '../../metadata/Definitions/metada
 import ComponentSandbox from '../ComponentSandbox/ComponentSandbox';
 import {availableComponentSettings,type PropertyDevice,resolveComponentSettings,validateComponentDefinitions,validateComponentSettings} from '../Properties/componentSettingDefinitions';
 import {compileComponentModule} from './componentRuntimeModule';
+import {loadBundledRenderer} from './bundledAssetCache';
 import {applyRecordViewAdapter} from '../../records/RecordWorkspace/recordViewAdapterRegistry';
 import {registeredComponentAppearance, registeredComponentAppearanceClasses} from './registeredComponentAppearance';
 import './registeredComponentAppearance.css';
@@ -63,7 +64,7 @@ export default function RegisteredComponent({ definition, props, formulaInstance
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
   useEffect(() => {
     if (!definition.trustedBundled || definition.compiledJs) { setAsset(null); setAssetError(''); return; }
-    const controller = new AbortController();
+    let active=true;
     setAsset(null);
     setAssetError('');
     // Only release-indexed, content-hashed renderer paths qualify for immutable caching.
@@ -75,25 +76,32 @@ export default function RegisteredComponent({ definition, props, formulaInstance
     const trustedHashed=match?.[1]===assetApiName;
     const assetPath=trustedHashed?publishedPath:
       'component-library/components/'+encodeURIComponent(assetApiName)+'.json';
-    void fetch(`${import.meta.env.BASE_URL}${assetPath}`,
-      { signal:controller.signal, cache:trustedHashed?'force-cache':'no-cache' })
-      .then(async response => {
-        if (!response.ok) throw Error('Bundled renderer is unavailable');
+    // Shared trusted asset cache: one in-flight request even if 11 same-type
+    // components mount simultaneously. No one component may abort its siblings.
+    const cacheKey=assetPath+'@'+definition.version;
+    void loadBundledRenderer(cacheKey,()=>fetch(`${import.meta.env.BASE_URL}${assetPath}`,
+      {cache:trustedHashed?'force-cache':'no-cache' })
+      .then(async response=>{
+        if(!response.ok)throw Error('Bundled renderer is unavailable');
         return response.json();
-      })
-      .then((value:unknown) => {
+      }).then((value:unknown)=>{
         if (!value || typeof value!=='object') throw Error('Invalid bundled renderer');
         const entry=value as Record<string,unknown>;
         if (entry.apiName!==assetApiName || entry.version!==definition.version ||
           typeof entry.compiledJs!=='string'||!entry.compiledJs||
           typeof entry.scopedCss!=='string')
           throw Error('Bundled renderer revision mismatch');
-        if (entry.defaultProps!==undefined && (!entry.defaultProps||typeof entry.defaultProps!=='object'||Array.isArray(entry.defaultProps))) throw Error('Invalid application component defaults');
-        if (!controller.signal.aborted) setAsset(entry as {apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>});
-      }).catch((error:unknown)=>{
-        if (!controller.signal.aborted) setAssetError(error instanceof Error?error.message:'Renderer load failed');
+        if (entry.defaultProps!==undefined && (!entry.defaultProps||typeof entry.defaultProps!=='object'||Array.isArray(entry.defaultProps)))
+          throw Error('Invalid application component defaults');
+        return entry as {apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>};
+      }),trustedHashed)
+      .then(value=>{if(active)setAsset(value);})
+      .catch((error:unknown)=>{
+        if(active)setAssetError(error instanceof Error?error.message:'Renderer load failed');
       });
-    return () => controller.abort();
+    return () => {active=false;};/*
+      The legacy per-mount fetch path is replaced by the authenticated index
+      backed cache. */ 
   }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,
     definition.compiledJs,(definition as LibraryComponentMetadata & {assetPath?:string}).assetPath]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;

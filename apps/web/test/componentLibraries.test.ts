@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import {gzipSync,brotliCompressSync} from 'node:zlib';
 import {rendererFileName,compressRenderer} from '../component-delivery.mjs';
+import {loadBundledRenderer} from '../src/core/components/RegisteredComponent/bundledAssetCache';
 import type { LibraryComponentMetadata } from '../src/core/metadata/Definitions/metadata';
 import ComponentLibrary from '../src/core/components/ComponentLibrary/ComponentLibrary';
 import { libraryComponentLabel, oneComponentLabel, uniqueLibraryComponents } from '../src/core/components/Registry/componentLibraryDiscovery';
@@ -179,4 +180,40 @@ test('baseline: 22 component mounts independently request the same renderer URL'
  assert.equal(calls,22);
  assert.equal(new Set(kinds).size,9);
  console.info('component loader mock baseline: mounted=22 requests='+calls+' distinctTypes=9');
+});
+
+test('repeated page renderer types issue one request per type across mounts and rerenders',async()=>{
+ const components=[...Array(11).fill('smart_button'),...Array(4).fill('smart_text'),
+  ...Array.from({length:7},(_,index)=>'unique_'+index)];
+ const calls:string[]=[];
+ const loader=(name:string)=>loadBundledRenderer('hashed/'+name+'.'+('abc'.repeat(8)),async()=>{
+  calls.push(name);
+  await new Promise<void>(resolve=>setTimeout(resolve,2));
+  return {apiName:name};
+ });
+ const first=await Promise.all(components.map(loader));
+ assert.equal(first.length,22);
+ assert.equal(calls.length,9,'one HTTP request per distinct type on first page mount');
+ assert.equal(calls.filter(name=>name==='smart_button').length,1);
+ assert.equal(calls.filter(name=>name==='smart_text').length,1);
+ await Promise.all(components.map(loader));
+ assert.equal(calls.length,9,'cached hashed renderer never re-fetched on second mount');
+ console.info('component loader mock: mounted=22 requestsBefore=22 requestsAfter='+calls.length+
+  ' distinctTypes=9');
+});
+
+test('invalid renderer is not cached and rejected renderer attempts retry',async()=>{
+ let requests=0;
+ const key='mock/rejected-bundle';
+ await assert.rejects(loadBundledRenderer(key,async()=>{requests++;throw Error('Network denied');}));
+ const approved=await loadBundledRenderer(key,async()=>{requests++;return 'approved';});
+ assert.equal(approved,'approved');
+ assert.equal(requests,2);
+});
+
+test('unhashed legacy renderer only in-flight dedupes, then revalidates',async()=>{
+ let count=0;
+ const load=()=>loadBundledRenderer('legacy/non-hashed',async()=>{count++;return count;},false);
+ assert.deepEqual(await Promise.all([load(),load(),load()]),[1,1,1]);
+ assert.equal(await load(),2,'a newly published legacy renderer must be fetchable');
 });
