@@ -1,7 +1,7 @@
 import {beginOptimisticNumberChange} from '../PageRuntime/optimisticPageNumbers';
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
 import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
-import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan,isScreenAction,PartialActionError} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
 import {useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
@@ -600,6 +600,12 @@ export default function MetadataBoundPageComponent({
       setActionError('');
       return result;
     } catch(error) {
+      // A prior Record API write may have succeeded before this step failed.
+      // Refresh only the confirmed objects. Do not replay the authored action.
+      if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
+       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+        detail:{pageSessionKey,sessionId,objectApiNames:error.mutatedObjectApiNames}
+       }));
       setActionError(error instanceof Error?error.message:'Action failed');
       throw error;
     } finally {

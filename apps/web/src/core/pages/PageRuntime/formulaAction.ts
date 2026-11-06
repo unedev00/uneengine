@@ -1,4 +1,4 @@
-import {isActionPlan,splitServerDataActionPlan,type ActionPlanTiming} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan,splitServerDataActionPlan,PartialActionError,type ActionPlanTiming} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 import {executeActionFormula,evaluateFieldExpressionDetailed,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
 import {adjustNumberRecord,type AdjustNumberBinding} from './adjustNumberRecord';
@@ -84,10 +84,20 @@ export async function executePageFormulaAction(
      mutatedObjectApiNames:first.mutatedObjectApiNames??[],recordChanges:first.recordChanges??[]};
     if(split.dataSteps===split.totalSteps)return data;
     // Browser-only steps run after server transaction, in their authored order.
-    const rest=await executeActionFormula(formula,scope,context,{
-     ...services,planWindow:{start:split.dataSteps,end:split.totalSteps,
-      variables:first.variables??{},completedBefore:first.completedActionCount??0}
-    });
+    let rest:Awaited<ReturnType<typeof executeActionFormula>>;
+    try{
+     rest=await executeActionFormula(formula,scope,context,{
+      ...services,planWindow:{start:split.dataSteps,end:split.totalSteps,
+       variables:first.variables??{},completedBefore:first.completedActionCount??0}
+     });
+    }catch(error){
+     if(!data.recordChanged)throw error;
+     // The server prefix has already committed; even a failed UI suffix must
+     // reconcile those writes before the user retries the plan.
+     const later=error instanceof PartialActionError?error.mutatedObjectApiNames:[];
+     throw new PartialActionError(error instanceof Error?error.message:String(error),
+      [...data.mutatedObjectApiNames,...later],first.completedActionCount??0);
+    }
     return {changes:[...data.changes,...rest.changes],
      recordChanged:data.recordChanged||rest.recordChanged,
      mutatedObjectApiNames:[...new Set([...data.mutatedObjectApiNames,...rest.mutatedObjectApiNames])],

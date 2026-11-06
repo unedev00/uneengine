@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
-import {executeActionPlan,type ActionPlanTiming} from '../../server/src/expression-engine/ActionFormulas.js';
+import {executeActionPlan,PartialActionError,type ActionPlanTiming} from '../../server/src/expression-engine/ActionFormulas.js';
 import type {Expression} from '../../server/src/expression-engine/FormulaParser.js';
 
 const rowId='11111111-1111-4111-8111-111111111111';
@@ -427,6 +427,43 @@ test('optimistic state guard rejects concurrent provisional changes to avoid sta
  const later=beginOptimisticNumberChange('same','session','cartItems',{total:5},
   [{key:'total',value:7}],()=>{});
  later.commit();
+});
+
+test('partial plan failure exposes committed Object dependencies without retrying a create',async()=>{
+ const paths:string[]=[];
+ const task=executePageFormulaAction(async<T>(path,options)=>{
+  paths.push((options?.method??'GET')+' '+path);
+  if(options?.method==='PUT')throw Error('Permission denied');
+  return {record:{Id:rowId}} as T;
+ },{formula:'ACTIONS(CREATERECORD(Parent, Name, "created", AS(row)), UPDATERECORD(Parent, row.Id, Name, "denied"))'},
+ {},{},[],'');
+ await assert.rejects(task,error=>{
+  assert.ok(error instanceof PartialActionError);
+  assert.deepEqual(error.mutatedObjectApiNames,['Parent']);
+  assert.equal(error.completedActionCount,1);
+  assert.match(error.message,/partially completed/i);
+  assert.match(error.message,/Permission denied/);
+  return true;
+ });
+ assert.deepEqual(paths,['POST /records/Parent','PUT /records/Parent/'+rowId]);
+});
+test('confirmed creates survive later print or navigation failures as partial completion',async()=>{
+ for(const failure of ['PRINT','SCREEN']){
+  let writes=0;
+  const formula=failure==='PRINT'
+   ?'ACTIONS(CREATERECORD(Item, Name, "ok"), PRINT(Receipt, "11111111-1111-4111-8111-111111111111"))'
+   :'ACTIONS(CREATERECORD(Item, Name, "ok"), SCREEN(Home))';
+  const run=executePageFormulaAction(async<T>()=>{writes++;return {record:{Id:rowId}} as T;},
+   {formula},{},{},[],'','',
+   async()=>{throw Error('Print unavailable');},
+   async()=>{throw Error('Navigation unavailable');});
+  await assert.rejects(run,error=>{
+   assert.ok(error instanceof PartialActionError);
+   assert.deepEqual(error.mutatedObjectApiNames,['Item']);
+   return true;
+  });
+  assert.equal(writes,1);
+ }
 });
 
 test('lazy server expressions do not read unselected IF, CASE and short-circuit branches',async()=>{
