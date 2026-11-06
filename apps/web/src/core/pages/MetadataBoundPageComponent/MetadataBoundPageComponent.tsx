@@ -251,7 +251,7 @@ export default function MetadataBoundPageComponent({
       })
       .finally(() => { if (active) setDataLoading(false); });
     return () => { active = false; };
-  }, [objectApiName, recordQueryKey, recordOffset, revision]);
+  }, [objectApiName, recordQueryKey, recordOffset, sessionId, revision]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');

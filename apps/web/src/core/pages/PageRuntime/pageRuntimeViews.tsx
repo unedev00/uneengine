@@ -485,7 +485,7 @@ function MetadataBoundPageComponent({
         document.removeEventListener('visibilitychange', onVisible);
       }
     };
-  }, [objectApiName, recordQueryKey, recordOffset, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions,printRows]);
+  }, [objectApiName, recordQueryKey, recordOffset, sessionId, revision, properties.recordPresenterApiName, properties.liveRefreshEnabled, disableActions,printRows]);
   useEffect(() => {
     setChannelAccess({userId:'',viewAll:false,grants:[],eligibleAssignees:[]});
     const accessPath=String(properties.channelAccessPath??'');
