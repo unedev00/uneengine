@@ -1,23 +1,19 @@
-/**
- * Context-oriented formula taxonomy. No independent parser or evaluator is
- * created: all three categories use the existing FormulaTokenizer/Parser.
- */
-export const actionFormulaFunctions=Object.freeze([
- 'ACTIONS','FLOW','SCREEN','CREATERECORD','UPDATERECORD','DELETERECORD',
- 'EMAIL','WHATSAPP','SMS','PRINT','CREATEPDF','WAIT','AS'
-] as const);
-export const dataFormulaFunctions=Object.freeze([
- 'TABLE','COLLECTION','COLLECTIONCOUNT','COLLECTIONSUM','VLOOKUP'
-] as const);
-const actions=new Set<string>(actionFormulaFunctions);
-const data=new Set<string>(dataFormulaFunctions);
+/** One Formula Engine with context-aware categories, not duplicate evaluators. */
+import {ACTION_FORMULA_FUNCTIONS} from './FormulaActions.js';
+import {DATA_FORMULA_FUNCTIONS} from './FormulaData.js';
+import {UNIVERSAL_FORMULA_FUNCTIONS} from './FormulaUniversal.js';
+export const actionFormulaFunctions=Object.freeze([...ACTION_FORMULA_FUNCTIONS]);
+export const dataFormulaFunctions=Object.freeze([...DATA_FORMULA_FUNCTIONS]);
+export const universalFormulaFunctions=UNIVERSAL_FORMULA_FUNCTIONS;
 export type FormulaCategory='action'|'data'|'universal';
-export function formulaCategory(name:string):FormulaCategory {
+export function formulaCategory(name:string):FormulaCategory{
  const upper=name.toUpperCase();
- return actions.has(upper)?'action':data.has(upper)?'data':'universal';
+ if(ACTION_FORMULA_FUNCTIONS.has(upper))return 'action';
+ if(DATA_FORMULA_FUNCTIONS.has(upper))return 'data';
+ return 'universal';
 }
-/** Actions are forbidden in component bindings, record formulas and filters. */
-export function formulaAllowedInContext(name:string,context:'action'|'data'|'universal'):boolean {
- const category=formulaCategory(name);
- return context==='action'||category!=='action'&&(context==='data'||category==='universal');
+/** Data binding never performs side effects; action triggers can use all 3 groups. */
+export function formulaAllowedInContext(name:string,context:'action'|'data'|'universal'):boolean{
+ const type=formulaCategory(name);
+ return context==='action'||type!=='action'&&(context==='data'||type==='universal');
 }
