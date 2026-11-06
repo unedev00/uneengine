@@ -583,8 +583,8 @@ html, body, #root { min-width:0; max-width:100%; }
 /* UX-0019/0035/0048: the same Setup tree remains available on phones as an overlay. */
 @media(max-width:600px) {
  .lightning .setup-layout { position:relative;display:block;min-width:0; }
- .lightning .setup-layout>.setup-sidebar.setup-sidebar-collapsed { display:none!important; }
- .lightning .setup-layout>.setup-sidebar:not(.setup-sidebar-collapsed) {
+ .lightning .setup-layout>#md-setup-sidebar.setup-sidebar-collapsed { display:none!important; }
+ .lightning .setup-layout>#md-setup-sidebar:not(.setup-sidebar-collapsed) {
   display:flex!important;flex-direction:column;
   position:fixed!important;top:44px;bottom:0;left:0;
   width:min(310px,calc(100vw - 40px))!important;min-width:0!important;
@@ -593,7 +593,7 @@ html, body, #root { min-width:0; max-width:100%; }
   z-index:120!important;background:var(--md-surface,#fff);
   box-shadow:8px 0 28px rgb(15 23 42 / 22%);
  }
- .lightning .setup-layout>.setup-sidebar:not(.setup-sidebar-collapsed) .setup-tree { overflow-y:auto;flex:1 1 auto;min-height:0; }
+ .lightning .setup-layout>#md-setup-sidebar:not(.setup-sidebar-collapsed) .setup-tree { overflow-y:auto;flex:1 1 auto;min-height:0; }
  .lightning .setup-layout>.workspace { width:100%;min-width:0; }
  .lightning .mobile-settings-back-bar { min-width:0; }
 }
