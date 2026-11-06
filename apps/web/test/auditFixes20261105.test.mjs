@@ -127,3 +127,11 @@ test('Second pass shows sort direction and explicit utility checkbox association
  assert.match(manager,/htmlFor=\{'app-utility-'/);
  assert.match(manager,/name="app-utility-items"/);
 });
+
+test('Object Manager phone toolbar retains three named, compact actions',()=>{
+ const manager=source('src/core/builders/ObjectManager/objectManagerView.tsx');
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(manager,/className="object-action-short"/);
+ assert.match(manager,/aria-label="Universal Data Loader"/);
+ assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+});
