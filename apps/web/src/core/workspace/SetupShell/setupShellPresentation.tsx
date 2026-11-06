@@ -239,7 +239,8 @@ export function renderSetupShell(ctx: any) {
             </div>
             <nav id="md-setup-navigation" className="setup-tree" aria-label="Setup sections">
               {filteredSetupGroups.map((group) => (
-                <div className="setup-tree-group" key={group.group}>
+                <div className="setup-tree-group" key={group.group} role="group" aria-label={group.group}
+                  data-group-short={group.group.split(/\s+/).map((word:string)=>word[0]).join('').slice(0,3).toUpperCase()} title={group.group}>
                   <div className="tree-group-label">{group.group}</div>
                   {group.items.map((item) => (
                     <React.Fragment key={item}>
