@@ -13,7 +13,7 @@ test('page-level handlers remain intact in topbar and Design while Smart Insert 
  for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
   assert.ok(page.includes(name),name);
  assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderRibbonData|ribbonTab==='Parity'/);
- assert.match(body,/ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group"/, 'Preview selector is a first-class ribbon group');
+ assert.match(body,/\(ribbonTab==='Preview'\|\|ribbonTab==='Arrange'\) && <div className="office-ribbon-group canvas-preview-selector-group"/, 'component navigator remains a ribbon group in Preview and Arrange');
  assert.match(body,/ribbonTab==='Add Block' && insertRibbon/);
  assert.match(page,/const insertRibbon = \(<SmartInsertRibbon/);
  assert.match(page,/onInsert=\{addPaletteComponent\}/);
