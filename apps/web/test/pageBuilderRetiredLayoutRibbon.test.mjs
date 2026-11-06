@@ -29,13 +29,15 @@ test('Appearance selector edits only existing count and calendar metadata',()=>{
  assert.match(design,/\[property!\.valueKeys\?\.\[api\]\?\?key\]:next/);
  assert.match(css,/smart-design2-count/);
  assert.match(css,/position:relative;grid-column:7;grid-row:1/);
- assert.match(design,/row===1&&\(\(\)=>\{/);
- assert.match(design,/row===1\?' 110px':row===2\?' 76px'/);
+ assert.match(design,/area==='Extras'&&<>/);
+ assert.match(design,/className="smart-design2-extras-fixed"/);
+ assert.match(design,/gridTemplateColumns:design2GridColumns\(row\)/);
+ assert.doesNotMatch(design,/row===1&&\(\(\)=>\{/);
  assert.match(design,/className="smart-design2-count-choice"/);
  assert.match(design,/className="smart-design2-count-field"/);
  assert.match(design,/className="smart-office-number" step=\{1\}/);
  assert.match(design,/sourceBound=api==='smart_tabs'&&key==='tabCount'/);
- assert.match(design,/area==='Body'&&supported&&!sourceBound/);
+ assert.match(design,/const enabled=supported&&!sourceBound/);
  assert.match(design,/className="smart-design2-days-trigger"/);
  assert.match(design,/className="smart-design2-padding"/);
 });
