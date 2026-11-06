@@ -1,3 +1,4 @@
+import {runSerializedPageAction,planReadWriteObjects} from '../src/core/pages/PageRuntime/pageActionCoordinator';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
@@ -498,4 +499,41 @@ test('IFERROR handles rejected selected server aggregate and evaluates fallback'
  {},{},[],'');
  assert.deepEqual(result.changes,[{key:'result',value:11}]);
  assert.equal(calls.length,1);
+});
+
+test('ten intentional same-Object increments run sequentially without dropped actions',async()=>{
+ let value=0;
+ let active=0;
+ const visits:number[]=[];
+ const requests=Array.from({length:10},()=>runSerializedPageAction('page:one',['Counter'],async()=>{
+  active++;
+  assert.equal(active,1,'no overlapping read/modify/write');
+  const prior=value;
+  await Promise.resolve();
+  value=prior+1;
+  visits.push(value);
+  active--;
+ }));
+ await Promise.all(requests);
+ assert.equal(value,10);
+ assert.deepEqual(visits,[1,2,3,4,5,6,7,8,9,10]);
+});
+test('unrelated Object actions run independently; failed actions release logical locks',async()=>{
+ const seen:string[]=[];
+ let releaseA!:()=>void;
+ const gate=new Promise<void>(resolve=>{releaseA=resolve;});
+ const a=runSerializedPageAction('one',['A'],async()=>{seen.push('A started');await gate;});
+ const b=runSerializedPageAction('one',['B'],async()=>{seen.push('B finished');});
+ await b;
+ assert.deepEqual(seen,['A started','B finished']);
+ releaseA();await a;
+ await assert.rejects(runSerializedPageAction('one',['A'],async()=>{throw Error('Denied');}),/Denied/);
+ assert.equal(await runSerializedPageAction('one',['A'],async()=>42),42);
+});
+test('multi-Object Formula reads and writes reserve both Objects once per action',()=>{
+ const formula={actionType:'Formula',formula:
+  '=ACTIONS(GETRECORD(Order, Id, "id", AS(parent)), CREATERECORD(Line, Parent, parent.Id), UPDATERECORD(Order, parent.Id, Total, 1))'};
+ assert.deepEqual(planReadWriteObjects(formula,'Order'),['Order','Line']);
+ assert.deepEqual(planReadWriteObjects({actionType:'AdjustNumber'},'Counter'),['Counter']);
+ assert.deepEqual(planReadWriteObjects({actionType:'PageState',stateKey:'count'},'Counter'),[]);
 });
