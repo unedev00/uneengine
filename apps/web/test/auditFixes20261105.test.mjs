@@ -191,3 +191,13 @@ test('UX-0004 and UX-0006 define auth action states and desktop rhythm',()=>{
  assert.match(css,/#login-email \{margin-bottom:18px\}/);
  assert.match(css,/\.auth-submit \{margin-top:24px\}/);
 });
+
+test('UX-0043 Setup sidebar shares one navigation registry and exposes current item',()=>{
+ const presentation=source('src/core/workspace/SetupShell/setupShellPresentation.tsx');
+ const navigation=source('src/core/platform/Workspace/platformSetupNavigation.ts');
+ const shell=source('src/core/workspace/SetupShell/setupAppShell.tsx');
+ assert.match(presentation,/aria-current=\{isSelected \? 'page' : undefined\}/);
+ assert.match(presentation,/const isSelected =/);
+ assert.match(shell,/resolveSetupNavigation\(quickFind/);
+ assert.match(navigation,/return setupNavigation/);
+});
