@@ -34,6 +34,13 @@ try{
   await page.goto(base+'/login',{waitUntil:'domcontentloaded',timeout:30000});
   const signIn=page.getByRole('button',{name:'Sign in',exact:true});
   await signIn.waitFor({state:'visible',timeout:20000});
+  // UX-0010: all three footer destinations must exist without optional env config.
+  const footer=page.getByRole('navigation',{name:'Sign-in help and legal'});
+  await footer.getByRole('link',{name:'Contact support'}).waitFor();
+  await footer.getByRole('link',{name:'Privacy Policy'}).waitFor();
+  const terms=footer.getByRole('link',{name:'Terms',exact:true});
+  await terms.waitFor();
+  assert.match(await terms.getAttribute('href'),/(^|\/)terms\/?$|^https:\/\//);
   const metrics=await page.evaluate(()=>{
     const html=document.documentElement;
     const button=[...document.querySelectorAll('button')].find(x=>x.textContent?.trim()==='Sign in');
@@ -50,6 +57,15 @@ try{
   if((width===320&&height===568)||(height<=390&&width>=568)){
     assert.ok(metrics.buttonBottom<=height+2,
       `Sign in below first viewport at ${width}x${height}: bottom ${metrics.buttonBottom}`);
+  }
+  if((width===320&&height===568)||(width===1440&&height===900)){
+    const legal=await context.newPage();
+    await legal.goto(base+'/terms',{waitUntil:'domcontentloaded'});
+    await legal.getByRole('heading',{name:'Service Terms',exact:true}).waitFor();
+    await legal.getByRole('link',{name:'support@unesolutions.co.uk'}).waitFor();
+    assert.equal(await legal.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false,
+      'Public terms information must not scroll horizontally');
+    await legal.close();
   }
   if(width===320||width===390||width===1024){
     await page.getByRole('button',{name:'Forgot password?'}).click();
