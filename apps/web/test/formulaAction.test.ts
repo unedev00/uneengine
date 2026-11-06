@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
+import {executeActionPlan,type ActionPlanTiming} from '../../server/src/expression-engine/ActionFormulas.js';
+import type {Expression} from '../../server/src/expression-engine/FormulaParser.js';
 
 const rowId='11111111-1111-4111-8111-111111111111';
 const sessionId='22222222-2222-4222-8222-222222222222';
@@ -204,4 +206,76 @@ test('baseline: a dependent cart-style plan keeps four ordered mock requests',as
   ' order='+calls.map(s=>s.split(' ')[0]).join('>')+
   ' requestMs='+durations.map(ms=>ms.toFixed(1)).join(',')+
   ' planMs='+elapsed.toFixed(1));
+});
+
+const timingEvaluator=(node:Expression,scope:Record<string,unknown>):unknown=>{
+ if(node.kind==='literal')return node.value;
+ if(node.kind==='reference')return node.value.split('.').reduce<unknown>((value,key)=>
+  value&&typeof value==='object'?(value as Record<string,unknown>)[key]:undefined,scope);
+ throw Error('Unexpected timing test expression');
+};
+
+test('opt-in Formula timings report exact request counts, step order and no sensitive values',async()=>{
+ const traces:ActionPlanTiming[]=[];
+ const events:string[]=[];
+ const id='11111111-1111-4111-8111-111111111111';
+ const formula='=ACTIONS(CREATERECORD(Item, Email, "private@example.com", AS(saved)), UPDATERECORD(Item, saved.Id, Quantity, 2))';
+ const result=await executeActionPlan(formula,{},timingEvaluator,{
+  formulaName:'POS.AddItem',
+  onTiming:timing=>traces.push(timing),
+  request:async(path,init)=>{
+   events.push((init?.method??'GET')+' '+path);
+   return {record:{Id:id}} as never;
+  }
+ });
+ assert.equal(result.recordChanged,true);
+ assert.deepEqual(events,['POST /records/Item','PUT /records/Item/'+id]);
+ assert.equal(traces.length,1);
+ const sample=traces[0];
+ assert.equal(sample.formulaName,'POS.AddItem');
+ assert.equal(sample.status,'completed');
+ assert.equal(sample.stepCount,2);
+ assert.equal(sample.executedStepCount,2);
+ assert.equal(sample.completedActionCount,2);
+ assert.equal(sample.requestCount,2);
+ assert.deepEqual(sample.steps.map(s=>s.name),['CREATERECORD','UPDATERECORD']);
+ assert.deepEqual(sample.steps.map(s=>s.requestCount),[1,1]);
+ assert.ok(sample.durationMs>=0&&sample.steps.every(s=>s.durationMs>=0));
+ const printable=JSON.stringify(sample);
+ assert.ok(!printable.includes('private@example.com'));
+ assert.ok(!printable.includes(id));
+ assert.ok(!printable.includes('/records/'));
+ assert.ok(!printable.includes(formula));
+});
+
+test('Formula timing is off by default and cannot change request results or permission errors',async()=>{
+ const calls:string[]=[];
+ const id='11111111-1111-4111-8111-111111111111';
+ const formula='=ACTIONS(CREATERECORD(Item, Amount, 1), DELETERECORD(Item, "'+id+'"))';
+ const request=async<T>(path:string,init?:{method:string}):Promise<T>=>{
+  calls.push((init?.method??'GET')+' '+path);
+  if(init?.method==='DELETE')throw Error('Permission denied');
+  return {record:{Id:id}} as T;
+ };
+ await assert.rejects(executeActionPlan(formula,{},timingEvaluator,{request}),
+  /DELETERECORD failed after 1 confirmed action\(s\). Permission denied/);
+ assert.deepEqual(calls,['POST /records/Item','DELETE /records/Item/'+id]);
+ calls.length=0;
+ const traces:ActionPlanTiming[]=[];
+ await assert.rejects(executeActionPlan(formula,{},timingEvaluator,{
+  request,onTiming:sample=>{traces.push(sample);},formulaName:'Unsafe name with secrets'
+ }),/DELETERECORD failed after 1 confirmed action\(s\). Permission denied/);
+ assert.deepEqual(calls,['POST /records/Item','DELETE /records/Item/'+id]);
+ assert.equal(traces.length,1);
+ assert.equal(traces[0].status,'failed');
+ assert.equal(traces[0].formulaName,'unnamed');
+ assert.equal(traces[0].completedActionCount,1);
+ assert.equal(traces[0].requestCount,2);
+ assert.deepEqual(traces[0].steps.map(step=>step.status),['completed','failed']);
+ // A broken telemetry sink is never allowed to break a successful action.
+ const ok=await executeActionPlan('=CREATERECORD(Item, Amount, 1)',{},timingEvaluator,{
+  request:async()=>({record:{Id:id}}) as never,
+  onTiming:()=>{throw Error('monitor unavailable');},formulaName:'POS.Add'
+ });
+ assert.equal(ok.recordChanged,true);
 });
