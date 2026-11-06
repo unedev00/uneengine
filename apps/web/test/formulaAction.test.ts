@@ -167,3 +167,41 @@ test('print templates fetch all bounded pages and reject a shifting dataset',asy
  },()=>true)).records.length,2);
  await assert.rejects(printRecordPages(first,async()=>first,()=>true),/changed/);
 });
+
+
+test('baseline: a dependent cart-style plan keeps four ordered mock requests',async()=>{
+ const calls:string[]=[];
+ const durations:number[]=[];
+ const started=performance.now();
+ const id='11111111-1111-4111-8111-111111111111';
+ const line='22222222-2222-4222-8222-222222222222';
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  const requestStart=performance.now();
+  const method=options?.method??'GET';
+  calls.push(method+' '+path.split('?')[0]);
+  // Fixed mock transport cost; no production data or HTTP.
+  await new Promise<void>(resolve=>setTimeout(resolve,3));
+  durations.push(performance.now()-requestStart);
+  if(method==='GET'&&path.startsWith('/records/Cart?'))
+   return {records:[{Id:id}],total:1} as T;
+  if(method==='GET'&&path==='/records/CartLine/'+line)
+   return {record:{Id:line,Name:'Generated'}} as T;
+  return {record:{Id:line}} as T;
+ };
+ const result=await executePageFormulaAction(request,{actionType:'Formula',
+  formula:'=ACTIONS(GETRECORD(Cart, SessionKey, @sessionKey, AS(cart)), CREATERECORD(CartLine, Cart, cart.Id, AS(line)), UPDATERECORD(CartLine, line.Id, Name, line.Name), STATE(done, TRUE))'
+ },{sessionKey:'test-session'},{},[], 'CartLine');
+ const elapsed=performance.now()-started;
+ assert.equal(result.recordChanged,true);
+ assert.deepEqual(result.changes,[{key:'done',value:true}]);
+ assert.deepEqual(calls,['GET /records/Cart','POST /records/CartLine',
+  'GET /records/CartLine/'+line,'PUT /records/CartLine/'+line]);
+ assert.equal(durations.length,4);
+ assert.ok(durations.every(ms=>Number.isFinite(ms)&&ms>=0));
+ assert.ok(elapsed>=Math.max(...durations));
+ // This is a mock baseline, not the production HAR measurement.
+ console.info('formula mock baseline: requests='+calls.length+
+  ' order='+calls.map(s=>s.split(' ')[0]).join('>')+
+  ' requestMs='+durations.map(ms=>ms.toFixed(1)).join(',')+
+  ' planMs='+elapsed.toFixed(1));
+});
