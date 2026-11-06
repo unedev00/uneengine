@@ -1,5 +1,5 @@
 import {generateMetadataApiName} from '../../metadata/Definitions/metadataApiNames';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ArrowDown, ArrowLeft, ArrowUp, Plus, Save, Trash2 } from 'lucide-react';
 import AppManagerList from '../AppManagerList/AppManagerList';
 import { cloneAppConfiguration } from './appCloneConfiguration';
@@ -80,6 +80,18 @@ export default function AppManager({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDiscard,setConfirmDiscard]=useState(false);
+  const deleteTrigger=useRef<HTMLButtonElement>(null);
+  const confirmDialog=useRef<HTMLElement>(null);
+  const dismissDialog=()=>{setConfirmDelete(false);setConfirmDiscard(false);requestAnimationFrame(()=>deleteTrigger.current?.focus());};
+  const dialogKeyboard=(event:ReactKeyboardEvent<HTMLElement>)=>{
+    if(event.key==='Escape'){event.preventDefault();dismissDialog();return;}
+    if(event.key!=='Tab')return;
+    const focusables=Array.from(confirmDialog.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]);
+    if(!focusables.length)return;
+    if(event.shiftKey&&document.activeElement===focusables[0]){event.preventDefault();focusables[focusables.length-1].focus();}
+    else if(!event.shiftKey&&document.activeElement===focusables[focusables.length-1]){event.preventDefault();focusables[0].focus();}
+  };
   const assignedPages = pages.filter((page) => page.status === 'Active'
     && (page.activationAssignments ?? []).some((assignment) => assignment.appId === selectedApiName));
 
@@ -217,8 +229,7 @@ export default function AppManager({
   };
   const startNewApp = () => {
     const original = apps.find(app => app.apiName === selectedApiName);
-    if (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft)
-      && !window.confirm('Discard unsaved app changes?')) return;
+    if (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft)) {setConfirmDiscard(true);return;}
     setCreating(true); setView('form'); setSelectedApiName(''); setDraft(emptyApp());setActiveStep('app-basics');
     setError(''); setNotice('');
   };
@@ -235,7 +246,7 @@ export default function AppManager({
       ? Boolean(draft.label || draft.apiName || draft.description ||
           draft.navigationItems.length || draft.navigationPageApiNames.length)
       : Boolean(original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft));
-    if (changed && !window.confirm('Discard unsaved app changes and return to the app list?')) return;
+    if (changed) {setConfirmDiscard(true);return;}
     cancel();
   };
   const cloneApp = (source: AppDraft) => {
@@ -267,7 +278,7 @@ export default function AppManager({
   const openSetupWorkspace = (destination: SetupDestination) => {
     const original = apps.find(app => app.apiName === selectedApiName);
     const unsaved = creating || (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft));
-    if (unsaved && !window.confirm('You have unsaved app changes. Leave App Manager without saving them?')) return;
+    if (unsaved) {setError('Save or Cancel your changes before leaving App Manager.');return;}
     onOpenWorkspace?.(destination);
   };
   const steps = [
@@ -278,15 +289,17 @@ export default function AppManager({
   ];
 
   return <div className="home-content app-manager-workspace">
-    {confirmDelete && <div className="app-manager-confirm-overlay" role="presentation">
-      <section className="app-manager-confirm-dialog" role="alertdialog" aria-modal="true"
+    {(confirmDelete||confirmDiscard) && <div className="app-manager-confirm-overlay" role="presentation">
+      <section ref={confirmDialog} className="app-manager-confirm-dialog" role="alertdialog" aria-modal="true"
         aria-labelledby="app-manager-confirm-title" aria-describedby="app-manager-confirm-description"
-        onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setConfirmDelete(false);}}}>
-        <h2 id="app-manager-confirm-title">Delete {draft.label}?</h2>
-        <p id="app-manager-confirm-description">This will delete the selected app configuration. This action cannot be undone.</p>
+        onKeyDown={dialogKeyboard}>
+        <h2 id="app-manager-confirm-title">{confirmDiscard?'Discard unsaved changes?':`Delete ${draft.label}?`}</h2>
+        <p id="app-manager-confirm-description">{confirmDiscard?'Your edits have not been saved. Discarding will return to the app list without changing the stored app.':'This will delete the selected app configuration. This action cannot be undone.'}</p>
         <div className="app-manager-confirm-actions">
-          <button className="btn" type="button" autoFocus onClick={()=>setConfirmDelete(false)}>Cancel</button>
-          <button className="btn btn-danger" type="button" onClick={()=>void remove()} disabled={busy}>Delete App</button>
+          <button className="btn" type="button" autoFocus onClick={dismissDialog}>Keep editing</button>
+          {confirmDiscard
+            ?<button className="btn btn-danger" type="button" onClick={()=>{setConfirmDiscard(false);cancel();}}>Discard changes</button>
+            :<button className="btn btn-danger" type="button" onClick={()=>void remove()} disabled={busy}>Delete App</button>}
         </div>
       </section>
     </div>}
@@ -330,8 +343,7 @@ export default function AppManager({
           <select className="form-control" aria-label="Select app to edit" value={selectedApiName}
             onChange={event => {
               const original = apps.find(app => app.apiName === selectedApiName);
-              if (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft)
-                && !window.confirm('Discard unsaved app changes?')) return;
+              if (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft)) {setConfirmDiscard(true);return;}
               setSelectedApiName(event.target.value); setError(''); setNotice('');
             }}>
             {apps.map(app => <option key={app.apiName} value={app.apiName}>{app.label}</option>)}
@@ -455,7 +467,7 @@ export default function AppManager({
           <PlatformPageSlot slotKey="actions"><div className="app-manager-actions">
             {!embedded && <button className="btn" type="button" disabled={busy} onClick={returnToList}>Cancel</button>}
             {!creating && <button className="btn" type="button" disabled={busy || apps.length <= 1}
-              onClick={() => setConfirmDelete(true)}><Trash2 size={14}/>Delete App</button>}
+              ref={deleteTrigger} onClick={() => setConfirmDelete(true)}><Trash2 size={14}/>Delete App</button>}
             <button className="btn btn-brand" type="submit"
               disabled={busy || (!draft.navigationItems.length && !draft.navigationPageApiNames.length)}>
               {busy ? 'Saving…' : creating ? 'Create App' : 'Save Changes'}
