@@ -562,3 +562,8 @@ html, body, #root { min-width:0; max-width:100%; }
  .lightning .header-searches .global-record-search>span,.lightning .header-searches .global-record-search kbd { display:none; }
  .lightning .brand-home-label { display:none; }
 }
+
+/* Keep the sticky identity column aligned with the actual 200px action column. */
+@media(min-width:1024px){
+ .lightning .page-manager-table th:nth-child(2),.lightning .page-manager-table td:nth-child(2){left:200px;}
+}
