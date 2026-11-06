@@ -168,3 +168,19 @@ test('Nginx component delivery has immutable renderer caching and catalog revali
  assert.match(script,/no-cache/);
  assert.match(script,/nginx -t/);
 });
+
+test('PR10 baseline: multiple Smart renderer types repackage the same runtime independently',async()=>{
+ const {loadComponentCatalog,buildBundledComponent}=await import('../../../scripts/component-catalog.mjs');
+ const catalog=await loadComponentCatalog();
+ const names=['smart_button','smart_text','smart_card_grid','smart_icon'];
+ const picked=names.map(name=>catalog.components.find((entry:{apiName:string})=>entry.apiName===name));
+ assert.equal(picked.filter(Boolean).length,names.length);
+ const outputs=await Promise.all(picked.map(component=>buildBundledComponent(component!)));
+ const bytes=outputs.map(output=>Buffer.byteLength(output.compiledJs));
+ assert.ok(bytes.every(size=>size>10000));
+ const standaloneBytes=bytes.reduce((a,b)=>a+b,0);
+ const repeatedPageBytes=bytes[0]*11+bytes[1]*4+bytes[2]*3+bytes[3]*2;
+ assert.ok(repeatedPageBytes>standaloneBytes);
+ console.info('smart-runtime mock baseline types=4 rendererBytes='+bytes.join(',')+
+  ' independentBytes='+standaloneBytes+' repeated20Bytes='+repeatedPageBytes);
+});
