@@ -94,6 +94,20 @@ SELECT 'smart_numpad',k.property_key,true FROM numpad_keys k
 JOIN md_builder_shared_properties p ON p.property_key=k.property_key
 ON CONFLICT(component_api,property_key) DO UPDATE SET enabled=true;
 
+-- Button 2–4 historically exposed only selected slots. Fill in missing
+-- positions using the exact Body scaffold, preserving all existing controls.
+INSERT INTO md_builder_design2_slots
+ (area,area_order,slot_key,row_no,order_no,width_px,height_px,property_key,fallback_key)
+SELECT areas.area,areas.area_order,base.slot_key,base.row_no,base.order_no,
+ base.width_px,base.height_px,base.property_key,base.fallback_key
+FROM (SELECT area,MIN(area_order) AS area_order FROM md_builder_design2_slots
+      WHERE area IN ('Button 2','Button 3','Button 4') GROUP BY area) areas
+CROSS JOIN md_builder_design2_slots base
+WHERE base.area='Body' AND base.slot_key IN
+ ('fill','border','shape','radius','shadow','height','width',
+  'text','alignment','size','bold')
+ON CONFLICT DO NOTHING;
+
 -- Fixed Design cell mappings. Button means the twelve standard keys.
 -- Button 2/3/4 mean the three independent custom buttons.
 WITH design(area,slot_key,property_key) AS (VALUES
