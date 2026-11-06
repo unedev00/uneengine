@@ -28,18 +28,22 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
   const [helpOpen,setHelpOpen] = useState(false);
   const [lastUpdated,setLastUpdated]=useState<number|null>(null);
   const refreshInFlight=useRef(false);
+  const refreshGeneration=useRef(0);
   const reload = useCallback(() => {
     // A double click must not start overlapping SQL requests or overwrite newer data.
     if(refreshInFlight.current)return () => {};
     refreshInFlight.current=true;
+    const generation=++refreshGeneration.current;
     let active = true;
     setLoading(true);setError('');
     // Load enough events to show three distinct activities even when raw rows repeat.
     void request<{events:SecurityEvent[]}>('/auth/security-events?limit=15')
       .then(result => {if(active){setEvents(result.events ?? []);setLastUpdated(Date.now());}})
       .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);setLastUpdated(null);}})
-      .finally(() => {refreshInFlight.current=false;if(active)setLoading(false);});
-    return () => {active=false;};
+      .finally(() => {if(refreshGeneration.current===generation){refreshInFlight.current=false;if(active)setLoading(false);}});
+    // React StrictMode replays effects. Invalidate the previous call so a new
+    // effect can refresh rather than inheriting a permanently busy state.
+    return () => {active=false;if(refreshGeneration.current===generation){refreshGeneration.current++;refreshInFlight.current=false;}};
   },[request]);
   useEffect(() => reload(), [reload]);
   return (
