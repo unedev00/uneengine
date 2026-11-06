@@ -355,6 +355,7 @@ test('Smart Tabs, Input Box, Lookup and Toggle edit visible control styles',asyn
  assert.match(tabs,/height:48px/);
  const input=await renderSmart('smart_text',{
    label:'Description',textSource:'@Title',record:{Title:'Hello'},
+   actionFlows:{change:{actionType:'PageState',stateKey:'description'}},
    backgroundColor:'#abc123',labelAlignment:'right',defaultValueColor:'#123abc'
  });
  assert.match(input,/Description/);
