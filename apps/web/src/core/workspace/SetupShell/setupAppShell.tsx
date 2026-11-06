@@ -143,6 +143,13 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
   const [setupSidebarCollapsed, setSetupSidebarCollapsed] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
   );
+  useEffect(() => {
+    const compact = window.matchMedia('(max-width: 1024px)');
+    // Closing the compact drawer must not leave an icon rail when resizing back.
+    const respond = (event: MediaQueryListEvent) => setSetupSidebarCollapsed(event.matches);
+    compact.addEventListener('change', respond);
+    return () => compact.removeEventListener('change', respond);
+  }, []);
   const [shortcutHelpOpen,setShortcutHelpOpen] = useState(false);
   useEffect(()=>{
     const onWorkspaceKey=(event:KeyboardEvent)=>{
