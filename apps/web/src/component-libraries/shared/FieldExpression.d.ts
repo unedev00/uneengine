@@ -45,4 +45,4 @@ export function evaluateParsedExpression(
 ):unknown;
 export function executeActionFormula(formula:string,record:Record<string,unknown>,context:FormulaBindingContext,
  services:import('../../../../server/src/expression-engine/ActionFormulas.js').ActionServices
-):Promise<{changes:never[];recordChanged:boolean}>;
+):Promise<{changes:Array<{key:string;value:unknown}>;recordChanged:boolean}>;

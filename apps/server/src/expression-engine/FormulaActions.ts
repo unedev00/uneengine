@@ -12,6 +12,8 @@ export const ACTION_FORMULA_DECLARATIONS=[
  {name:'PRINT',parameters:['TemplateApiName','RecordId']},
  {name:'CREATEPDF',parameters:['TemplateApiName','RecordId','AS(variable)']},
  {name:'WAIT',parameters:['Minutes','Seconds']},
+ {name:'GETRECORD',parameters:['Object','Field1','Value1','AS(variable)']},
+ {name:'STATE',parameters:['Key','Value']},
  {name:'AS',parameters:['variable']}
 ] as const;
 export const ACTION_FORMULA_FUNCTIONS:ReadonlySet<string>=
