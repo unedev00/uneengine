@@ -1156,36 +1156,36 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await buttons.nth(13).click();
  assert.equal(await page.getByRole('tab',{name:'Advanced',exact:true}).getAttribute('aria-selected'),'true',
   'Component nesting must open the existing Advanced nesting editor');
- // Vertical Design dock uses a real seventh grid column, not a fixed
- // top-ribbon pixel offset. Its controls must fit the dock without x-scroll.
+ // Verify the approximately 30% narrower dock stays free of horizontal
+ // overflow in every Design area, with identical fixed icon positions.
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await dock.waitFor({state:'visible'});
- // Property areas are collapsible buttons; the previous dropdown is removed.
- const dockHand=dock.locator('.smart-design2-count-field');
- const dockCount=dock.locator('.smart-design2-count');
- const dockOrientation=dock.locator('[data-design-row="1"] [data-design-slot="orientation"]');
+ const dockWidth=await dock.evaluate(node=>node.getBoundingClientRect().width);
+ assert.ok(Math.abs(dockWidth-308)<=2,
+  'The inspector must be 308 CSS px (30% narrower than 440), found '+dockWidth);
  const assertDockGeometry=async(section)=>{
-  const h=await dockHand.boundingBox(),hv=await dockOrientation.boundingBox();
-  assert.ok(h&&hv,'Hand and H/V must be visible in '+section);
-  assert.ok(Math.abs(h.x-(hv.x+hv.width+4))<=3,
-   'Hand must sit directly beside H/V in '+section+
-   ', received '+JSON.stringify({hand:h,hv}));
-  assert.ok(Math.abs(h.y-hv.y)<=2,'Hand must share the H/V row in '+section);
   const extent=await dock.evaluate(node=>({
    scrollWidth:node.scrollWidth,clientWidth:node.clientWidth,
    overflowX:getComputedStyle(node).overflowX
   }));
   assert.ok(extent.scrollWidth<=extent.clientWidth+2,
-   'Vertical Design dock must have no horizontally overflowing controls in '+
-    section+': '+JSON.stringify(extent));
-  assert.equal(extent.overflowX,'hidden','Vertical dock must not display x-scroll');
+   'Design dock horizontally overflows in '+section+': '+JSON.stringify(extent));
+  assert.equal(extent.overflowX,'hidden','The dock must not display x-scroll');
+  if(section!=='Extras'){
+   assert.deepEqual(await design2GridFingerprint(),template,
+    'Fixed icon locations changed in '+section);
+  }
  };
  for(const section of ['Body','Header','Image','Badge']){
   await chooseArea(section);
-  assert.equal(await dockCount.count(),1,'Hand disappeared in vertical '+section);
+  assert.equal(await dock.locator('.smart-design2-count').count(),0,
+   'Count must not reappear in the '+section+' icon grid');
   await assertDockGeometry(section);
  }
- console.info('Design 2 R0 C7–C21 browser: dock layout, Body-only enablement and all 15 commands verified');
-
+ await chooseArea('Extras');
+ assert.equal(await dock.locator('.smart-design2-count').count(),1);
+ assert.equal(await dock.locator('.smart-design2-padding').count(),1);
+ await assertDockGeometry('Extras');
+ console.info('Compact Design dock: 16 fixed controls, Extras positions, no horizontal overflow');
  console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
 }
