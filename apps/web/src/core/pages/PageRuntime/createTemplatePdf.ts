@@ -4,6 +4,26 @@
  */
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
 const afterPaint=()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+/** Do not save a PDF while record bindings or Smart Components are still
+ * rendering. Wait for a short mutation-free interval, with a hard timeout. */
+async function waitForReadyPrint(dialog:HTMLDialogElement){
+ await afterPaint();
+ const started=Date.now();let lastChange=Date.now();
+ const observer=new MutationObserver(()=>{lastChange=Date.now();});
+ observer.observe(dialog,{subtree:true,childList:true,characterData:true,attributes:true,
+  attributeFilter:['aria-busy','src','style','class']});
+ try{
+  while(true){
+   const loading=[...dialog.querySelectorAll('[aria-busy="true"],[role="status"]')]
+    .some(node=>/loading|fetching|please wait/i.test(node.textContent??''));
+   if(!loading&&Date.now()-started>=600&&Date.now()-lastChange>=250)break;
+   if(Date.now()-started>12000)throw Error('Print Template data did not finish loading');
+   await new Promise<void>(resolve=>setTimeout(resolve,100));
+  }
+  await afterPaint();
+ }finally{observer.disconnect();}
+}
+
 const waitImage=(img:HTMLImageElement)=>img.complete?Promise.resolve():
  new Promise<void>((resolve,reject)=>{
   img.addEventListener('load',()=>resolve(),{once:true});
@@ -114,6 +134,7 @@ export async function createTemplatePdf(template:string,id:string,request:Reques
  if(!dialog||dialog.getAttribute('aria-label')!==template)
   throw Error('Print Template did not render');
  try{
+ await waitForReadyPrint(dialog);
  const root=dialog.querySelector('.free-canvas-runtime')??dialog.querySelector('main')??dialog;
  const clone=root.cloneNode(true) as HTMLElement;
  copyStyles(root,clone);
