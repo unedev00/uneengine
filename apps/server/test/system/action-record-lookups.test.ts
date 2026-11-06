@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {compileActionPlan,executeActionPlan,isActionPlan,usesRecordCount} from '../../src/expression-engine/ActionFormulas.js';
+import {compileActionPlan,executeActionPlan,isActionPlan,usesRecordCount,splitServerDataActionPlan} from '../../src/expression-engine/ActionFormulas.js';
 import {compileRecordFilters,parseRecordFilters} from '../../src/object-engine/QueryBuilder.js';
 import {validateFormulaFunctions} from '../../src/expression-engine/FormulaFunctionRegistry.js';
 import {Parser,type Expression} from '../../src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../src/expression-engine/FormulaTokenizer.js';
+import {executeServerDataAction,tenantServerFormulaEnabled} from '../../src/system-support/formula-data-action-runtime.js';
+import type {RecordEngine} from '../../src/system-files/record-engine.js';
+import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 
 const cartId='11111111-1111-4111-8111-111111111111';
 const lineId='22222222-2222-4222-8222-222222222222';
@@ -135,4 +138,92 @@ test('baseline: two data steps run as two distinct browser-network requests',asy
   }});
  assert.deepEqual(calls,['GET /records/Cart','PUT /records/Cart/'+cartId]);
  console.info('server-plan baseline: data step API requests=2, serialized GET>PUT');
+});
+
+test('server-only prefix is conservative and browser-only suffix preserves order',()=>{
+ const split=splitServerDataActionPlan('=ACTIONS(GETRECORD(Cart, SessionKey, "s", AS(cart)), '+
+  'UPDATERECORD(Cart, cart.Id, Total, 3), STATE(done, TRUE))');
+ assert.deepEqual(split,{dataSteps:2,totalSteps:3});
+ assert.equal(splitServerDataActionPlan('=ACTIONS(PRINT(Receipt, @cartId), UPDATERECORD(Cart, @cartId, Total, 1))'),null);
+ assert.equal(splitServerDataActionPlan('=ACTIONS(CREATERECORD(Item, Name, "x"), '+
+  'STATE(done, TRUE), UPDATERECORD(Cart, @cartId, Total, 1))'),null);
+ assert.equal(splitServerDataActionPlan('=ACTIONS(STATE(done, TRUE), UPDATERECORD(Cart, @cartId, Total, 1))'),null);
+ assert.equal(splitServerDataActionPlan('=ACTIONS(CREATERECORD(Item, Name, $component.Input.value), STATE(done, TRUE))'),null);
+});
+
+test('server transactional data prefix takes one browser call and retains alias values for ordered suffix',async()=>{
+ const calls:string[]=[];
+ const db={transaction:async<T>(run:()=>Promise<T>)=>run()} as unknown as Pick<SqlPersistence,'transaction'|'query'>;
+ const records={
+  list:async(_tenant:string,_user:string,object:string)=>{
+   calls.push('GET '+object);
+   return {records:[{Id:cartId}],total:1};
+  },
+  get:async(_tenant:string,_user:string,object:string,id:string)=>{
+   calls.push('GETBYID '+object+' '+id);
+   return {Id:id,Total:3};
+  },
+  update:async(_tenant:string,_user:string,object:string,id:string)=>{
+   calls.push('PUT '+object+' '+id);
+  },
+  create:async()=>cartId,remove:async()=>undefined
+ } as unknown as Pick<RecordEngine,'list'|'get'|'create'|'update'|'remove'>;
+ const formula='=ACTIONS(GETRECORD(Cart, SessionKey, "s", AS(cart)), '+
+  'UPDATERECORD(Cart, cart.Id, Total, 3), STATE(done, TRUE))';
+ const actor={tenant_id:'tenant-a',user_id:'user-a'};
+ let browserRequests=0;
+ browserRequests++;
+ const server=await executeServerDataAction(db,records,actor,formula,{},2);
+ assert.equal(server.supported,true);
+ assert.equal(server.error,undefined);
+ assert.equal(server.completedActionCount,2);
+ assert.deepEqual(server.mutatedObjectApiNames,['Cart']);
+ assert.deepEqual(calls,['GET Cart','PUT Cart '+cartId]);
+ const suffix=await executeActionPlan(formula,{},evaluator,{
+  request:async()=>{throw Error('Browser suffix must not issue Record API calls');},
+  planWindow:{start:2,end:3,variables:server.variables,completedBefore:server.completedActionCount}
+ });
+ assert.deepEqual(suffix.changes,[{key:'done',value:true}]);
+ assert.equal(browserRequests,1);
+});
+
+test('server execution denies missing actor record permission without a second write',async()=>{
+ const calls:string[]=[];
+ const db={transaction:async<T>(run:()=>Promise<T>)=>run()} as unknown as Pick<SqlPersistence,'transaction'|'query'>;
+ const records={
+  list:async()=>({records:[],total:0}),
+  get:async()=>({Id:cartId}),
+  create:async(_t:string,_u:string,o:string)=>{calls.push('CREATE '+o);return cartId;},
+  update:async(_t:string,_u:string,o:string)=>{calls.push('DENIED UPDATE '+o);throw Error('Permission denied');},
+  remove:async()=>undefined
+ } as unknown as Pick<RecordEngine,'list'|'get'|'create'|'update'|'remove'>;
+ const formula='=ACTIONS(CREATERECORD(Item, Name, "x", AS(row)),UPDATERECORD(Item, row.Id, Name, "y"))';
+ const output=await executeServerDataAction(db,records,{tenant_id:'t1',user_id:'u-without-update'},formula,{},2);
+ assert.match(output.error??'',/UPDATERECORD failed after 1 confirmed action\(s\). Permission denied/);
+ assert.deepEqual(calls,['CREATE Item','DENIED UPDATE Item']);
+});
+
+test('tenant server executor is default-off and tenant-isolated',async()=>{
+ const tenants:string[]=[];
+ const db={query:async(_sql:string,args:unknown[])=>{
+  tenants.push(String(args[0]));
+  return {rows:args[0]==='enabled-tenant'?[{enabled:true}]:[]};
+ }} as unknown as Pick<SqlPersistence,'query'>;
+ assert.equal(await tenantServerFormulaEnabled(db,'enabled-tenant'),true);
+ assert.equal(await tenantServerFormulaEnabled(db,'disabled-tenant'),false);
+ assert.deepEqual(tenants,['enabled-tenant','disabled-tenant']);
+});
+
+test('server data executor rejects unsupported split before any RecordEngine operation',async()=>{
+ let operations=0;
+ const db={transaction:async<T>(run:()=>Promise<T>)=>run()} as unknown as Pick<SqlPersistence,'transaction'|'query'>;
+ const records={list:async()=>{operations++;return {records:[],total:0};},
+  create:async()=>{operations++;return cartId;},
+  get:async()=>{operations++;return {Id:cartId};},
+  update:async()=>{operations++;},remove:async()=>{operations++;}
+ } as unknown as Pick<RecordEngine,'list'|'get'|'create'|'update'|'remove'>;
+ await assert.rejects(executeServerDataAction(db,records,{tenant_id:'t1',user_id:'u1'},
+  '=ACTIONS(PRINT(Receipt, @cartId),UPDATERECORD(Cart, @cartId, Total, 1))',
+  {cartId},1),/Invalid Formula data segment/);
+ assert.equal(operations,0);
 });
