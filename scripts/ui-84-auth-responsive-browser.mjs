@@ -45,9 +45,12 @@ try{
     const html=document.documentElement;
     const button=[...document.querySelectorAll('button')].find(x=>x.textContent?.trim()==='Sign in');
     const bounds=button?.getBoundingClientRect();
+    const footerBounds=document.querySelector('.auth-signin-footer')?.getBoundingClientRect();
     return {overflow:Math.max(0,html.scrollWidth-html.clientWidth),
       zoom:window.visualViewport?.scale??1,
       buttonBottom:bounds?.bottom??Infinity,
+      footerBottom:footerBounds?.bottom??Infinity,
+      footerHeight:footerBounds?.height??0,
       buttonHeight:bounds?.height??0,
       visibleWidth:html.clientWidth};
   });
@@ -66,6 +69,12 @@ try{
     assert.equal(await legal.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false,
       'Public terms information must not scroll horizontally');
     await legal.close();
+  }
+  if((width===320&&height===568)||(width===768&&height===1024)||(width===1440&&height===900)){
+    assert.ok(metrics.footerHeight>0,'Legal footer must be rendered at '+width+'x'+height);
+    assert.ok(metrics.footerBottom<=height+2,
+      'Sign-in legal footer must fit first viewport at '+width+'x'+height+
+      ', bottom '+metrics.footerBottom);
   }
   if(width===320||width===390||width===1024){
     await page.getByRole('button',{name:'Forgot password?'}).click();
