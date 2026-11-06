@@ -41,8 +41,10 @@ test('published Print Template can be populated and saved as PDF without documen
  assert(pdf.toString('ascii',pdf.length-10).includes('%%EOF'));
 });
 test('backend print output rejects hidden data and unsafe remote images',async()=>{
- await assert.rejects(buildPrintDocument(sample,{Name:'Visible',Id:uuid,Total:1},
-  async()=>{throw Error('Must not fetch');}),/Print field is unavailable|another object/).catch(()=>{});
+ const missing={...sample,components:[{...sample.components[1],
+  properties:{textSource:'@Sale.SecretField'}}]};
+ await assert.rejects(buildPrintDocument(missing,{Name:'Visible',Id:uuid,Total:1}),
+  /Print field is unavailable/);
  const image={...sample,components:[{id:'image',type:'smart_image',label:'Logo',visible:true,
   position:{x:0,y:0,width:200,height:200},
   properties:{imageSource:'https://private.example/secret'}}]};
