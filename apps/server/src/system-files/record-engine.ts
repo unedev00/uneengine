@@ -33,6 +33,7 @@ import {evaluateFlowFormula,flowFormulaReferences,isFormulaImageResult,validateF
 import {decryptFieldValue,encryptFieldValue,maskEncryptedFieldValue} from './encrypted-field.js';
 import {sanitizeRichText} from './rich-text.js';
 import {compileRecordFilters,type QueryField,type RecordCursor,type RecordFilter} from '../object-engine/QueryBuilder.js';
+import {computeFilteredNumericAggregate} from '../object-engine/FilteredNumericAggregate.js';
 type FieldDefinition={api_name:string;data_type:string;related_object:string|null;relationship_type:string|null;allow_reparenting:boolean;required:boolean;max_length:number|null;precision:number|null;scale:number|null;is_unique:boolean;external_id:boolean;case_sensitive:boolean;default_value:string|null;auto_number_format:string|null;rollup_child_object?:string|null;rollup_relationship_field?:string|null;rollup_operation?:string|null;rollup_source_field?:string|null;rollup_source_data_type?:string|null;formula_expression?:string|null;formula_return_type?:string|null;picklist_restricted?:boolean;controller_field_api_name?:string|null;global_value_set_api?:string|null};
 type EncryptedValueVault={
   encryptOpaque(value:string):{ciphertext:Buffer;keyId:string};
@@ -1362,6 +1363,15 @@ export class RecordEngine {
         AND md_record_access($1,$4,r.id,'read')`,
       [tenantId,objectApi,fieldApi,userId]);
     return rows[0]??{count:'0',sum:null,min:null,max:null,avg:null};
+  }
+
+  /** SQL aggregate shares the same query-builder field, row and lookup access checks as list. */
+  async aggregateFiltered(tenantId:string,userId:string,objectApi:string,fieldApi:string,
+    filters:RecordFilter[],filterLogic?:string){
+    const fields=await this.fields(tenantId,objectApi);
+    return computeFilteredNumericAggregate(this.db,this.rbac,
+      async name=>name===objectApi?fields:this.fields(tenantId,name),
+      tenantId,userId,objectApi,fieldApi,filters,filterLogic);
   }
 
   /** Single-record read uses the same tenant and field-level grants as list, without pagination. */

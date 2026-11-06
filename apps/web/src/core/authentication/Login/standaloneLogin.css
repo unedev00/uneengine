@@ -355,3 +355,34 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  .auth-screen:not(.auth-screen--standalone) .auth-card .form-label {margin:0 0 1px}
  .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {margin-top:0}
 }
+
+/* UX-0010 + UX-0002: the public help/legal links must remain on screen at
+   320×568 alongside the complete form and original 120px-wide UNE logo.
+   Reclaim space only from redundant introductory copy and card gutters;
+   keep the 44px credential fields and primary action untouched. */
+@media(max-width:360px) and (min-height:461px) and (orientation:portrait) {
+ .auth-screen:not(.auth-screen--standalone) .auth-card {padding-block:4px}
+ .auth-screen:not(.auth-screen--standalone) .auth-card > p,
+ .auth-screen:not(.auth-screen--standalone) .auth-card > .eyebrow {display:none}
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-signin-footer {
+  margin-top:2px;padding-top:0;gap:0 8px;
+ }
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-signin-footer a {min-height:32px}
+}
+
+@media(max-width:360px) and (min-height:461px) and (orientation:portrait) {
+ .auth-screen--standalone {padding:6px 12px}
+ .auth-screen--standalone .auth-card {padding:10px 16px}
+ .auth-screen--standalone .auth-product-identity {margin-bottom:8px}
+ .auth-screen--standalone .auth-product-subline,
+ .auth-screen--standalone .auth-product-powered {display:none}
+ .auth-screen--standalone .auth-card > p {margin:3px 0 6px}
+ .auth-screen--standalone .auth-card .form-label {margin:4px 0 2px}
+ .auth-screen--standalone .auth-card .auth-signin-footer {margin-top:2px;padding-top:0;gap:0 8px}
+ .auth-screen--standalone .auth-card .auth-signin-footer a {min-height:32px}
+}
+
+@media(max-width:360px) and (min-height:461px) and (orientation:portrait) {
+ .auth-screen--standalone .auth-card > .auth-product-heading,
+ .auth-screen--standalone .auth-card > p {display:none}
+}

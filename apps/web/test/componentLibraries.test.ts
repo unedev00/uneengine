@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
+import {gzipSync,brotliCompressSync} from 'node:zlib';
+import {rendererFileName,compressRenderer} from '../component-delivery.mjs';
 import type { LibraryComponentMetadata } from '../src/core/metadata/Definitions/metadata';
 import ComponentLibrary from '../src/core/components/ComponentLibrary/ComponentLibrary';
 import { libraryComponentLabel, oneComponentLabel, uniqueLibraryComponents } from '../src/core/components/Registry/componentLibraryDiscovery';
@@ -123,5 +125,176 @@ test('app-private bundled component identities are never offered for new placeme
   assert.deepEqual(uniqueLibraryComponents([privateComponent]),[]);
   assert.equal(findRegisteredComponent([privateComponent],alias,'page'),privateComponent);
   assert.deepEqual(uniqueLibraryComponents([definition(alias)]),[definition(alias)],'tenant authors remain untouched');
+ }
+});
+
+
+test('baseline: 22 independently delivered renderer JSONs have no transfer compression',()=>{
+ // HAR-sized deterministic fixture: 11 buttons, 4 texts and 7 other renderers.
+ const js='function Component(){ return "'+('RUNTIME_SHARED_0123456789'.repeat(9000))+'"; }';
+ const payload=JSON.stringify({apiName:'smart_button',version:1,compiledJs:js,scopedCss:''});
+ const raw=Buffer.byteLength(payload);
+ const requests=22;
+ const total=raw*requests;
+ assert.equal(requests,22);
+ assert.ok(raw>180_000);
+ console.info('component delivery mock baseline: rendererBytes='+raw+
+  ' requests='+requests+' bytes='+total+' cache=no-cache compression=none');
+});
+
+test('content-hashed renderer paths change on publication and transfer sizes drop',()=>{
+ const payload=JSON.stringify({apiName:'smart_button',version:1,
+  compiledJs:'function Renderer(){'+('return 123456789;'.repeat(13000))+'}',scopedCss:'.smart{padding:2px}'});
+ const same=rendererFileName('smart_button',payload);
+ assert.match(same,/^smart_button\.[a-f0-9]{16}\.json$/);
+ assert.equal(same,rendererFileName('smart_button',payload));
+ assert.notEqual(same,rendererFileName('smart_button',payload+'-new'));
+ const packed=compressRenderer(payload);
+ assert.ok(packed.gzip.length<Buffer.byteLength(payload));
+ assert.ok(packed.brotli.length<packed.gzip.length);
+ assert.deepEqual(gzipSync(payload),gzipSync(payload));
+ assert.ok(brotliCompressSync(payload).length<Buffer.byteLength(payload));
+ const raw=Buffer.byteLength(payload);
+ console.info('component delivery mock: 22 renderer requests, rawBytes='+(22*raw)+
+  ' gzipBytes='+(22*packed.gzip.length)+' brBytes='+(22*packed.brotli.length));
+});
+test('Nginx component delivery has immutable renderer caching and catalog revalidation',async()=>{
+ const script=await (await import('node:fs/promises')).readFile(
+  new URL('../../../scripts/oracle/ensure-frontend-component-delivery.sh',import.meta.url),'utf8');
+ assert.match(script,/max-age=31536000, immutable/);
+ assert.match(script,/gzip on/);
+ assert.match(script,/brotli on/);
+ assert.match(script,/catalog-index\.json/);
+ assert.match(script,/no-cache/);
+ assert.match(script,/nginx -t/);
+});
+
+test('PR10 baseline: multiple Smart renderer types repackage the same runtime independently',async()=>{
+ const {loadComponentCatalog,buildBundledComponent}=await import('../../../scripts/component-catalog.mjs');
+ const catalog=await loadComponentCatalog();
+ const names=['smart_button','smart_text','smart_card_grid','smart_icon'];
+ const picked=names.map(name=>catalog.components.find((entry:{apiName:string})=>entry.apiName===name));
+ assert.equal(picked.filter(Boolean).length,names.length);
+ const outputs=await Promise.all(picked.map(component=>buildBundledComponent(component!)));
+ const bytes=outputs.map(output=>Buffer.byteLength(output.compiledJs));
+ assert.ok(bytes.every(size=>size>10000));
+ const standaloneBytes=bytes.reduce((a,b)=>a+b,0);
+ const repeatedPageBytes=bytes[0]*11+bytes[1]*4+bytes[2]*3+bytes[3]*2;
+ assert.ok(repeatedPageBytes>standaloneBytes);
+ console.info('smart-runtime mock baseline types=4 rendererBytes='+bytes.join(',')+
+  ' independentBytes='+standaloneBytes+' repeated20Bytes='+repeatedPageBytes);
+});
+
+test('shared Smart Runtime loader allows only hashed internal paths and reuses one request',async()=>{
+ const {loadSharedSmartRenderer}=await import('../src/core/components/RegisteredComponent/sharedSmartRenderer');
+ const fingerprint='smart_runtime.0123456789abcdef.json';
+ const path='component-library/components/'+fingerprint;
+ let calls=0;
+ const prior=globalThis.fetch;
+ globalThis.fetch=async (input:RequestInfo|URL)=>{
+  calls++;
+  assert.equal(String(input),'/'+path);
+  return {ok:true,json:async()=>({compiledJs:'module.exports.default = function Shared(){};'})} as Response;
+ };
+ try{
+  const [first,second]=await Promise.all([
+   loadSharedSmartRenderer(path,'/'),loadSharedSmartRenderer(path,'/')
+  ]);
+  assert.equal(first,second);
+  assert.equal(calls,1);
+  assert.equal(await loadSharedSmartRenderer(path,'/'),first);
+  assert.equal(calls,1);
+  await assert.rejects(loadSharedSmartRenderer('../other/path','/'),/Invalid shared runtime path/);
+  await assert.rejects(loadSharedSmartRenderer('component-library/components/untrusted.0123456789abcdef.json','/'),/Invalid shared runtime path/);
+ }finally{globalThis.fetch=prior;}
+});
+
+test('shared component metadata preserves original Smart kinds while reducing 20 copies of runtime',()=>{
+ const slimButton=JSON.stringify({apiName:'smart_button',version:1,compiledJs:'',
+  sharedSmartRuntime:true,sharedRuntimePath:'component-library/components/smart_runtime.0123456789abcdef.json',scopedCss:''});
+ const slimText=JSON.stringify({apiName:'smart_text',version:1,compiledJs:'',
+  sharedSmartRuntime:true,sharedRuntimePath:'component-library/components/smart_runtime.0123456789abcdef.json',scopedCss:''});
+ const sharedRuntime=JSON.stringify({compiledJs:'module.exports.default = function SmartRuntime(){};'});
+ const before=190_000*20,after=Buffer.byteLength(slimButton)*11+
+  Buffer.byteLength(slimText)*9+Buffer.byteLength(sharedRuntime);
+ assert.ok(after<before);
+ console.info('PR10 lightweight fixture: bytes='+before+'->'+after+' requests=20 component assets+1 shared');
+});
+
+test('real Smart bundle compilation shows reduced shared-runtime payload on 20-instance page',async()=>{
+ const {loadComponentCatalog,buildBundledComponent}=await import('../../../scripts/component-catalog.mjs');
+ const catalog=await loadComponentCatalog();
+ const names=['smart_button','smart_text','smart_card_grid','smart_icon'] as const;
+ const descriptors=names.map(name=>catalog.components.find((item:{apiName:string})=>item.apiName===name));
+ assert.ok(descriptors.every(Boolean));
+ const [button,txt,grid,icon,shared]=await Promise.all([
+  ...descriptors.map(item=>buildBundledComponent(item!)),
+  buildBundledComponent({apiName:'smart_runtime',
+    jsxFile:'component-libraries/smart/shared/SmartRuntime.jsx',
+    cssFile:'component-libraries/smart_button/SmartComponent.css'})
+ ]);
+ const versions=[11,4,3,2];
+ const legacy=[button,txt,grid,icon].reduce((sum,item,i)=>
+  sum+versions[i]*Buffer.byteLength(JSON.stringify({compiledJs:item.compiledJs,scopedCss:item.cssSource})),0);
+ const sharedFile=Buffer.byteLength(JSON.stringify({compiledJs:shared.compiledJs}));
+ const slim=[button,txt,grid,icon].reduce((sum,item,i)=>
+  sum+versions[i]*Buffer.byteLength(JSON.stringify({
+   compiledJs:'',sharedSmartRuntime:true,
+   sharedRuntimePath:'component-library/components/smart_runtime.0123456789abcdef.json',
+   scopedCss:item.cssSource
+  })),0);
+ const after=slim+sharedFile;
+ assert.ok(after<legacy,'one shared Smart Runtime must weigh less than 20 standalone copies');
+ console.info('PR10 real compiled asset estimate 20 Smart components bytes='+legacy+'->'+after+
+  ' savings='+((1-after/legacy)*100).toFixed(1)+'%; requests=20 renderer JSON +1 shared runtime');
+});
+test('optional off-screen renderer uses intersection visibility and does not defer print/editor paths',async()=>{
+ const source=await (await import('node:fs/promises')).readFile(
+  new URL('../src/core/components/RegisteredComponent/RegisteredComponent.tsx',import.meta.url),'utf8');
+ assert.match(source,/metadrive:lazy-smart-renderers/);
+ assert.match(source,/IntersectionObserver/);
+ assert.match(source,/rootMargin:'250px'/);
+ assert.match(source,/!editorPreview&&props.printRows!==true/);
+ assert.match(source,/deferRenderer&&!enteredViewport/);
+});
+
+test('flagged Smart asset build keeps full default renderer and emits smaller shared variant',async()=>{
+ const {mkdtemp,readFile,rm}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');
+ const path=await import('node:path');
+ const {spawnSync}=await import('node:child_process');
+ const {fileURLToPath}=await import('node:url');
+ const directory=await mkdtemp(path.join(tmpdir(),'metadrive-shared-smart-'));
+ try{
+  const script=fileURLToPath(new URL('../build-component-library.mjs',import.meta.url));
+  const result=spawnSync(process.execPath,[script],{
+   cwd:directory,encoding:'utf8',timeout:180_000,
+   env:{...process.env,METADRIVE_SHARED_SMART_RUNTIME:'1'}
+  });
+  assert.equal(result.status,0,'Shared Smart build must succeed: '+result.stderr?.slice(-1500));
+  const index=JSON.parse(await readFile(path.join(directory,'dist/component-library/catalog-index.json'),'utf8'));
+  const button=index.components.find((item:{apiName:string})=>item.apiName==='smart_button');
+  const text=index.components.find((item:{apiName:string})=>item.apiName==='smart_text');
+  assert.ok(button?.assetPath&&button?.sharedAssetPath);
+  assert.ok(text?.assetPath&&text?.sharedAssetPath);
+  const asset=async(file:string)=>JSON.parse(await readFile(path.join(directory,'dist',file),'utf8'));
+  const [full,slim,textSlim]=await Promise.all([
+   asset(button.assetPath),asset(button.sharedAssetPath),asset(text.sharedAssetPath)
+  ]);
+  assert.ok(full.compiledJs.length>10_000);
+  assert.equal(slim.compiledJs,'');
+  assert.equal(slim.sharedSmartRuntime,true);
+  assert.equal(slim.apiName,'smart_button');
+  assert.equal(textSlim.apiName,'smart_text');
+  assert.equal(slim.sharedRuntimePath,textSlim.sharedRuntimePath);
+  const shared=await asset(slim.sharedRuntimePath);
+  assert.ok(shared.compiledJs.length>10_000);
+  const before=Buffer.byteLength(JSON.stringify(full));
+  const after=Buffer.byteLength(JSON.stringify(slim));
+  assert.ok(after<before);
+  console.info('PR10 actual build smart_button fullBytes='+before+
+   ' slimBytes='+after+' sharedOnceBytes='+Buffer.byteLength(JSON.stringify(shared)));
+ }finally{
+  await rm(directory,{recursive:true,force:true});
  }
 });

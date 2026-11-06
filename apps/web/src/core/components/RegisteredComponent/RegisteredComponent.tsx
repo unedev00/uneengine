@@ -12,6 +12,7 @@ import {pagePropertyIssues} from '../Properties/pagePropertyContract';
 import {resolveRegisteredTextProperties} from './fieldExpressionRuntime';
 import {FieldExpressionEvaluationError} from '../../../component-libraries/shared/FieldExpression.js';
 import {validatePrimitiveMetadata, primitiveAccessibilityProps} from './sharedPrimitiveMetadata';
+import {loadSharedSmartRenderer} from './sharedSmartRenderer';
 
 type ComponentBoundaryState = { error?: string };
 
@@ -51,42 +52,99 @@ function RegisteredComponentBody({ definition, props, appearanceProps, layoutTra
   return <div className={`registered-component metadrive-component-${definition.apiName.toLowerCase()} ${appearanceClass}`}
     style={layoutTransparent?{...appearanceStyle,display:'contents'}:appearanceStyle}>
     {definition.scopedCss && <style>{definition.scopedCss}</style>}
-    <Component {...props} />
+    <Component {...props} {...((definition as LibraryComponentMetadata & {sharedSmartRuntime?:boolean}).sharedSmartRuntime===true
+      ?{kind:definition.apiName}:{})} />
   </div>;
 }
 
 export default function RegisteredComponent({ definition, props, formulaInstanceId, layoutTransparent=false, editorPreview=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; layoutTransparent?:boolean; editorPreview?:boolean;formulaInstanceId?:string }) {
   const [rendered,setRendered]=useState<Readonly<Record<string,string>>>({});
   const formulaScope=usePageFormulaScope();
-  const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>}|null>(null);
+  const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string}|null>(null);
   const [assetError, setAssetError] = useState('');
+  // Optional off-screen lazy hydration. Printing, editor previews and ordinary
+  // pages keep their pre-existing eager behavior unless explicitly opted in.
+  let lazyOptIn=false;
+  if(typeof window!=='undefined'){
+   try{lazyOptIn=window.sessionStorage.getItem('metadrive:lazy-smart-renderers')==='1';}
+   catch{/* Protected browser storage: preserve eager loading. */}
+  }
+  const deferRenderer=lazyOptIn&&definition.trustedBundled===true
+    &&!editorPreview&&props.printRows!==true&&props.builderPreview!==true
+    &&props.previewOnly!==true;
+  const [enteredViewport,setEnteredViewport]=useState(false);
+  const placeholderRef=React.useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+   if(!deferRenderer||enteredViewport)return;
+   if(typeof IntersectionObserver==='undefined'){setEnteredViewport(true);return;}
+   const target=placeholderRef.current;
+   if(!target){setEnteredViewport(true);return;}
+   const observer=new IntersectionObserver(entries=>{
+    if(entries.some(entry=>entry.isIntersecting)){
+     setEnteredViewport(true);
+     observer.disconnect();
+    }
+   },{rootMargin:'250px'});
+   observer.observe(target);
+   return()=>observer.disconnect();
+  },[deferRenderer,enteredViewport]);
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
+  // Session storage is origin/tenant-domain scoped. Shared runtime pilots are
+  // explicitly OFF until the tenant operator opts in on that tenant origin.
+  let sharedOptIn=false;
+  if(typeof window!=='undefined'){
+   try{sharedOptIn=window.sessionStorage.getItem('metadrive:shared-smart-runtime')==='1';}
+   catch{/* Storage can be blocked; use the existing renderer. */}
+  }
+  const sharedPath=(definition as LibraryComponentMetadata & {sharedAssetPath?:unknown}).sharedAssetPath;
+  const selectedPath=sharedOptIn&&typeof sharedPath==='string'&&assetApiName.startsWith('smart_')
+    ?sharedPath:(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
   useEffect(() => {
-    if (!definition.trustedBundled || definition.compiledJs) { setAsset(null); setAssetError(''); return; }
+    if (!definition.trustedBundled || definition.compiledJs || deferRenderer&&!enteredViewport) {
+      setAsset(null); setAssetError(''); return;
+    }
     const controller = new AbortController();
     setAsset(null);
     setAssetError('');
-    void fetch(`${import.meta.env.BASE_URL}component-library/components/${encodeURIComponent(assetApiName)}.json`,
-      { signal:controller.signal, cache:'no-cache' })
+    // Only release-indexed, content-hashed renderer paths qualify for immutable caching.
+    // Older catalogs retain the original no-cache path for backward compatibility.
+    const publishedPath=selectedPath;
+    const match=typeof publishedPath==='string'
+      ?/^component-library\/components\/([A-Za-z][A-Za-z0-9_]*)\.([0-9a-f]{16})\.json$/.exec(publishedPath)
+      :null;
+    const trustedHashed=match?.[1]===assetApiName;
+    const assetPath=trustedHashed?publishedPath:
+      'component-library/components/'+encodeURIComponent(assetApiName)+'.json';
+    void fetch(`${import.meta.env.BASE_URL}${assetPath}`,
+      { signal:controller.signal, cache:trustedHashed?'force-cache':'no-cache' })
       .then(async response => {
         if (!response.ok) throw Error('Bundled renderer is unavailable');
         return response.json();
       })
-      .then((value:unknown) => {
+      .then(async (value:unknown) => {
         if (!value || typeof value!=='object') throw Error('Invalid bundled renderer');
         const entry=value as Record<string,unknown>;
         if (entry.apiName!==assetApiName || entry.version!==definition.version ||
-          typeof entry.compiledJs!=='string'||!entry.compiledJs||
-          typeof entry.scopedCss!=='string')
+          typeof entry.compiledJs!=='string'||typeof entry.scopedCss!=='string')
           throw Error('Bundled renderer revision mismatch');
+        if(entry.sharedSmartRuntime===true){
+          if(!assetApiName.startsWith('smart_')||entry.compiledJs!=='')
+            throw Error('Invalid shared Smart renderer');
+          entry.compiledJs=await loadSharedSmartRenderer(entry.sharedRuntimePath,
+            import.meta.env.BASE_URL);
+        }else if(!entry.compiledJs)throw Error('Bundled renderer revision mismatch');
         if (entry.defaultProps!==undefined && (!entry.defaultProps||typeof entry.defaultProps!=='object'||Array.isArray(entry.defaultProps))) throw Error('Invalid application component defaults');
-        if (!controller.signal.aborted) setAsset(entry as {apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>});
+        if (!controller.signal.aborted) setAsset(entry as {apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string});
       }).catch((error:unknown)=>{
         if (!controller.signal.aborted) setAssetError(error instanceof Error?error.message:'Renderer load failed');
       });
     return () => controller.abort();
-  }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,definition.compiledJs]);
+  }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,
+    definition.compiledJs,selectedPath,deferRenderer,enteredViewport]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;
+  if(deferRenderer&&!enteredViewport)return <div ref={placeholderRef}
+    className="registered-component-lazy-placeholder"
+    style={{width:'100%',height:'100%',minHeight:32}} aria-hidden="true"/>;
   if (definition.trustedBundled && !definition.compiledJs && assetError)
     return <div role="alert" className="registered-component-error">{assetError}</div>;
   if (definition.trustedBundled && !definition.compiledJs && (!asset || asset.apiName!==assetApiName || asset.version!==definition.version))
@@ -121,7 +179,8 @@ export default function RegisteredComponent({ definition, props, formulaInstance
     {published}<ComponentSandbox definition={definition} props={effectiveProps} />
   </div>;
   const hydratedDefinition = definition.compiledJs ? definition : asset
-    ? {...definition,compiledJs:asset.compiledJs,scopedCss:asset.scopedCss}
+    ? {...definition,compiledJs:asset.compiledJs,scopedCss:asset.scopedCss,
+      ...((asset.sharedSmartRuntime===true)?{sharedSmartRuntime:true}:{})}
     : null;
   if(!hydratedDefinition)return <div role="alert" className="registered-component-error">Bundled renderer is unavailable.</div>;
   return <div {...accessibility} style={layoutTransparent?{display:'contents'}:undefined}>{published}<ComponentRenderBoundary key={`${definition.apiName}-${definition.version}`}>

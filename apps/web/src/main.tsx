@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import './core/workspace/WorkspaceTheme/design-system.css';
-import MarketingSite, { PrivacyPolicyPage } from './core/public/MarketingSite/MarketingSite';
+import MarketingSite, { PrivacyPolicyPage, TermsAccessPage } from './core/public/MarketingSite/MarketingSite';
 import { UneBrandLogo } from './core/branding/UneBrandLogo';
 import './core/workspace/WorkspaceTheme/bootSplash.css';
 import { registerUniversalShell } from './core/workspace/Bootstrap/universalShell';
@@ -140,6 +140,7 @@ if (pathname.toLowerCase().startsWith('/une/apps/acetill/')
 }
 const isMarketingHome = !workspaceDevelopmentRoot && (pathname === '/' || pathname === '/index.html' || (Boolean(basePath) && window.location.pathname === basePath));
 const isPrivacyRoute = pathname === '/privacy' || pathname === '/privacy/' || pathname === '/privacy-policy' || pathname === '/privacy-policy/';
+const isTermsRoute = pathname === '/terms' || pathname === '/terms/' || pathname === '/terms-of-service' || pathname === '/terms-of-service/';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -147,6 +148,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       ? <Suspense fallback={<WorkspaceLoadingFallback />}><MailWebmail /></Suspense>
       : isPrivacyRoute
         ? <PrivacyPolicyPage />
+        : isTermsRoute
+        ? <TermsAccessPage />
         : isMarketingHome
         ? <MarketingSite />
         : <WorkspaceFailureBoundary><Suspense fallback={<WorkspaceLoadingFallback />}><Workspace /></Suspense></WorkspaceFailureBoundary>}

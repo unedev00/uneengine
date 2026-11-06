@@ -74,6 +74,7 @@ import {OAuthAuthorizationService} from './oauth-authorization-service.js';
 import {GlobalValueSetService} from './global-value-set-service.js';
 import {SystemDefinitionService,definitionKinds,type DefinitionKind} from '../system-files/system-definition-service.js';
 import { RecordEngine } from '../system-files/record-engine.js';
+import {authorizedSavedRecordProjection} from './record-write-projection.js';
 import {ExternalIdUpsert} from '../system-files/external-id-upsert.js';
 import {DuplicateMatchError} from '../system-files/record-matching.js';
 import {registerMatchingRoutes} from './matching-rule-routes.js';
@@ -2599,6 +2600,20 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Cache-Control','private, no-store');
     res.json({editLightningPage,recordPermissions:{Create:true,Edit:canEdit,Delete:canDelete}});
   }));
+  // Content-free numeric SQL aggregates. Always reapply actor, tenant, field,
+  // record and lookup rights; never run under a service/system principal.
+  app.get('/api/records/:objectApi/aggregate',route(async(req,res)=>{
+    const actor=req.actor!;
+    const field=req.query.field,rawFilters=req.query.filters,filterLogic=req.query.filterLogic;
+    if(typeof field!=='string'||!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(field)||
+      (rawFilters!==undefined&&(typeof rawFilters!=='string'||rawFilters.length>12000))||
+      (filterLogic!==undefined&&(typeof filterLogic!=='string'||filterLogic.length>256)))
+      throw Error('Invalid aggregate request');
+    const filters=parseRecordFilters(rawFilters as string|undefined);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json(await records.aggregateFiltered(actor.tenant_id,actor.user_id,req.params.objectApi,
+      field,filters,filterLogic as string|undefined));
+  }));
   app.get('/api/records/:objectApi/:id',route(async(req,res)=>{
     const actor=req.actor!;
     const record=await records.get(actor.tenant_id,actor.user_id,req.params.objectApi,req.params.id);
@@ -2691,7 +2706,9 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)) throw new Error('Invalid record values');
     const id=await records.create(actor.tenant_id,actor.user_id,req.params.objectApi,req.body);
-    res.status(201).json({id,record:{Id:id}});
+    const record=await authorizedSavedRecordProjection(records,actor.tenant_id,actor.user_id,
+      req.params.objectApi,id);
+    res.status(201).json({id,record});
   }));
   app.get('/api/records/:objectApi/:id/actions',route(async(req,res)=>{
     res.setHeader('Cache-Control','private, no-store');
@@ -2764,7 +2781,9 @@ export function createSystemServer(db:SqlPersistence) {
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body))throw new Error('Invalid record values');
     await records.update(actor.tenant_id,actor.user_id,req.params.objectApi,req.params.id,
       req.body,req.get('if-unmodified-since'));
-    res.json({record:{Id:req.params.id}});
+    const record=await authorizedSavedRecordProjection(records,actor.tenant_id,actor.user_id,
+      req.params.objectApi,req.params.id);
+    res.json({record});
   });
   app.patch('/api/records/:objectApi/:id',updateRecord);
   app.put('/api/records/:objectApi/:id',updateRecord);

@@ -55,7 +55,8 @@ export async function adjustNumberRecord(
  request:Request, config:AdjustNumberBinding,
  event:Record<string,unknown>,state:Readonly<Record<string,unknown>>,
  objects:ReadonlyArray<{apiName:string;fields:ReadonlyArray<FieldMetadata>}>,
- fallbackObject:string
+ fallbackObject:string,
+ onOptimistic?:(changes:ReadonlyArray<{key:string;value:unknown}>)=>{commit:()=>void;rollback:()=>void}
 ):Promise<Array<{key:string;value:unknown}>>{
  const apiName=config.objectApiName||fallbackObject;
  const recordId=event.recordId;
@@ -136,11 +137,6 @@ export async function adjustNumberRecord(
    for(const item of projected)valueNumber(item[config.totalFieldApiName!]);
   }
  }
- if(next===0&&config.deleteOnZero)
-  await request(url,{method:'DELETE',headers:{'If-Unmodified-Since':modifiedAt}});
- else await request(url,{method:'PATCH',headers,body:JSON.stringify({
-  [field]:next,...(hasTotal?{[config.totalFieldApiName!]:total}:{})
- })});
  const changes:Array<{key:string;value:unknown}>=[];
  if(projected&&config.stateCollectionKey){
   changes.push({key:config.stateCollectionKey,value:projected});
@@ -149,6 +145,20 @@ export async function adjustNumberRecord(
    if(config.totalStateKey)changes.push({key:config.totalStateKey,value:sum});
    if(config.subtotalStateKey)changes.push({key:config.subtotalStateKey,value:sum});
   }
+ }
+ // Only already-authorized/validated numeric changes are provisional. The
+ // guarded write remains the sole authoritative mutation and is never skipped.
+ const provisional=onOptimistic&&changes.length?onOptimistic(changes):undefined;
+ try{
+  if(next===0&&config.deleteOnZero)
+   await request(url,{method:'DELETE',headers:{'If-Unmodified-Since':modifiedAt}});
+  else await request(url,{method:'PATCH',headers,body:JSON.stringify({
+   [field]:next,...(hasTotal?{[config.totalFieldApiName!]:total}:{})
+  })});
+  provisional?.commit();
+ }catch(error){
+  try{provisional?.rollback();}catch{/* Preserve the original permission/validation error. */}
+  throw error;
  }
  return changes;
 }

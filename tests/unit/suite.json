@@ -142,6 +142,7 @@
     "apps/server/test/system/record-related-list.test.ts",
     "apps/server/test/system/record-retention.test.ts",
     "apps/server/test/system/record-trigger-dependencies.test.ts",
+    "apps/server/test/system/record-write-projection.test.ts",
     "apps/server/test/system/related-list-settings.test.ts",
     "apps/server/test/system/relationship-field-parity.test.ts",
     "apps/server/test/system/relationship-graph-phase2c.test.ts",

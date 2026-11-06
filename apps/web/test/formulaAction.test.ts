@@ -281,7 +281,7 @@ test('Formula timing is off by default and cannot change request results or perm
 });
 
 
-test('mock transport: enabling tracing preserves three ordered requests and measures each mode',async()=>{
+test('mock transport: enabling tracing preserves two ordered requests after complete write projection',async()=>{
  const formula='=ACTIONS(CREATERECORD(Item, Name, "start", AS(item)), UPDATERECORD(Item, item.Id, Name, item.Name))';
  const id='11111111-1111-4111-8111-111111111111';
  const run=async(enabled:boolean)=>{
@@ -299,17 +299,16 @@ test('mock transport: enabling tracing preserves three ordered requests and meas
   return {calls,ms:performance.now()-start,samples};
  };
  const before=await run(false),after=await run(true);
- assert.deepEqual(before.calls,['POST /records/Item','GET /records/Item/'+id,
-  'PUT /records/Item/'+id]);
+ assert.deepEqual(before.calls,['POST /records/Item','PUT /records/Item/'+id]);
  assert.deepEqual(after.calls,before.calls);
  assert.equal(before.samples.length,0);
  assert.equal(after.samples.length,1);
- assert.equal(after.samples[0].requestCount,3);
- assert.deepEqual(after.samples[0].steps.map(step=>step.requestCount),[2,1]);
+ assert.equal(after.samples[0].requestCount,2);
+ assert.deepEqual(after.samples[0].steps.map(step=>step.requestCount),[1,1]);
  // These are mock transport timings (not production latency); noisy CI wall times
  // are reported but never used for a flaky speed threshold.
  console.info('formula mock comparison: requests='+before.calls.length+'->'+after.calls.length+
-  ' ordering=POST>GET>PUT'+' timingOffMs='+before.ms.toFixed(1)+
+  ' ordering=POST>PUT'+' timingOffMs='+before.ms.toFixed(1)+
   ' timingOnMs='+after.ms.toFixed(1));
 });
 
@@ -335,4 +334,97 @@ test('per-step telemetry accounts for sequential FOREACH iteration without count
  assert.equal(timings[0].requestCount,3);
  assert.deepEqual(timings[0].steps.map(step=>step.name),['FOREACH','DELETERECORD','DELETERECORD']);
  assert.deepEqual(timings[0].steps.map(step=>step.requestCount),[1,1,1]);
+});
+
+test('baseline: guarded numeric cart adjustment performs GET then PATCH before publishing changes',async()=>{
+ const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
+ const events:string[]=[];
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  events.push((options?.method??'GET')+' '+path);
+  return {record:row} as T;
+ };
+ const start=performance.now();
+ const changes=await adjustNumberRecord(request,{
+  actionType:'AdjustNumber',fieldApiName:'Quantity',deltaSource:'$event.delta',
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
+  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
+ },{recordId:rowId,delta:1},{cartSessionId:sessionId,cartItems:[row]},objects,'CartLine');
+ assert.deepEqual(events,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
+ assert.deepEqual(changes.find(change=>change.key==='total')?.value,3.75);
+ console.info('optimistic numeric baseline: requests=2 order=GET>PATCH elapsedMockMs='+
+  (performance.now()-start).toFixed(2));
+});
+
+test('opt-in guarded numeric update publishes before write, then commits without extra requests',async()=>{
+ const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
+ const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
+ const calls:string[]=[];const updates:Array<{key:string;value:unknown}>=[];
+ let release!:()=>void;
+ const writePending=new Promise<void>(resolve=>{release=resolve;});
+ const state={cartSessionId:sessionId,cartItems:[row],total:2.5};
+ const binding={
+  actionType:'AdjustNumber' as const,fieldApiName:'Quantity',deltaSource:'$event.delta' as const,
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
+  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
+ };
+ const task=adjustNumberRecord(async<T>(path,init)=>{
+  calls.push((init?.method??'GET')+' '+path);
+  if(init?.method==='PATCH')await writePending;
+  return {record:row} as T;
+ },binding,{recordId:rowId,delta:1},state,objects,'CartLine',
+  changes=>beginOptimisticNumberChange('page-opt','session-opt','cartItems',state,changes,
+   (key,value)=>updates.push({key,value})));
+ await new Promise<void>(resolve=>setTimeout(resolve,0));
+ assert.deepEqual(calls,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
+ assert.equal(updates.find(item=>item.key==='total')?.value,3.75);
+ release();
+ const result=await task;
+ assert.deepEqual(result.map(x=>x.key),['cartItems','total']);
+ assert.equal(updates.length,2);
+});
+
+test('opt-in numeric adjustment rolls back rejected write and preserves security error and ordering',async()=>{
+ const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
+ const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
+ const state={cartSessionId:sessionId,cartItems:[row],total:2.5};
+ const calls:string[]=[];const updates:Array<{key:string;value:unknown}>=[];
+ const config={
+  actionType:'AdjustNumber' as const,fieldApiName:'Quantity',deltaSource:'$event.delta' as const,
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
+  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
+ };
+ const req=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  calls.push((init?.method??'GET')+' '+path);
+  if(init?.method==='PATCH')throw Error('Permission denied');
+  return {record:row} as T;
+ };
+ const callback=(changes:ReadonlyArray<{key:string;value:unknown}>)=>
+  beginOptimisticNumberChange('page-rollback','session-rollback','cartItems',state,changes,
+    (key,value)=>updates.push({key,value}));
+ await assert.rejects(adjustNumberRecord(req,config,{recordId:rowId,delta:1},state,objects,'CartLine',callback),
+  /Permission denied/);
+ assert.deepEqual(calls,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
+ assert.equal(updates.length,4);
+ assert.equal(updates[1].value,3.75);
+ assert.equal(updates[3].value,2.5);
+ assert.deepEqual(updates[2].value,state.cartItems);
+ // Lock is released after rollback.
+ const ok=await adjustNumberRecord(async<T>()=>({record:row}) as T,
+  config,{recordId:rowId,delta:1},state,objects,'CartLine',callback);
+ assert.equal(ok.length,2);
+});
+
+test('optimistic state guard rejects concurrent provisional changes to avoid stale rollback',async()=>{
+ const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
+ const first=beginOptimisticNumberChange('same','session','cartItems',{total:5},
+  [{key:'total',value:6}],()=>{});
+ assert.throws(()=>beginOptimisticNumberChange('same','session','cartItems',{total:5},
+  [{key:'total',value:7}],()=>{}),/still pending/);
+ first.rollback();
+ const later=beginOptimisticNumberChange('same','session','cartItems',{total:5},
+  [{key:'total',value:7}],()=>{});
+ later.commit();
 });

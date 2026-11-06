@@ -43,15 +43,19 @@ export async function executePageFormulaAction(
  createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>,
  /** Page data the action may read: TABLE()/COLLECTION() sources and $component values. */
  formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'> & {timingName?:string}={}
-):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[]}>{
+):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[];
+ recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
   // Production diagnostics are disabled by default and scoped to this browser session.
   // Enable in DevTools: sessionStorage.setItem('metadrive:formula-timings','1')
-  let timingEnabled=false;
+  let timingEnabled=false,aggregateEnabled=false;
   if(typeof window!=='undefined'){
-   try{timingEnabled=window.sessionStorage.getItem('metadrive:formula-timings')==='1';}
-   catch{/* Session storage may be disabled by the browser. */}
+   try{
+    timingEnabled=window.sessionStorage.getItem('metadrive:formula-timings')==='1';
+    // Opt-in is origin/tenant browser session scoped; default OFF for all.
+    aggregateEnabled=window.sessionStorage.getItem('metadrive:sql-aggregates')==='1';
+   }catch{/* Session storage may be disabled by the browser. */}
   }
   const timing=timingEnabled?{
    formulaName:formulaContext.timingName,
@@ -59,7 +63,7 @@ export async function executePageFormulaAction(
   }:{};
   const scope={...payload,state:pageState,event:payload,sessionId};
   const context={...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()};
-  const services={request,print,runPageAction,createPdf,...timing};
+  const services={request,print,runPageAction,createPdf,...timing,useSqlAggregates:aggregateEnabled};
   let enabled=false;
   if(typeof window!=='undefined'){
    try{enabled=window.sessionStorage.getItem('metadrive:formula-server-data')==='1';}
@@ -69,27 +73,29 @@ export async function executePageFormulaAction(
   if(split){
    const first=await request<{
     supported:boolean;error?:string;changes?:Change[];recordChanged?:boolean;
-    mutatedObjectApiNames?:string[];variables?:Record<string,unknown>;completedActionCount?:number
+    mutatedObjectApiNames?:string[];variables?:Record<string,unknown>;completedActionCount?:number;
+    recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>
    }>('/action-formulas/execute-data',{
     method:'POST',body:JSON.stringify({formula,scope,dataSteps:split.dataSteps})
    });
    if(first.supported===true){
     if(first.error)throw Error(first.error);
     const data={changes:first.changes??[],recordChanged:first.recordChanged===true,
-     mutatedObjectApiNames:first.mutatedObjectApiNames??[]};
+     mutatedObjectApiNames:first.mutatedObjectApiNames??[],recordChanges:first.recordChanges??[]};
     if(split.dataSteps===split.totalSteps)return data;
-    // Browser-only suffix resumes after commit, with captured FLS-projected values.
+    // Browser-only steps run after server transaction, in their authored order.
     const rest=await executeActionFormula(formula,scope,context,{
      ...services,planWindow:{start:split.dataSteps,end:split.totalSteps,
       variables:first.variables??{},completedBefore:first.completedActionCount??0}
     });
     return {changes:[...data.changes,...rest.changes],
      recordChanged:data.recordChanged||rest.recordChanged,
-     mutatedObjectApiNames:[...new Set([...data.mutatedObjectApiNames,...rest.mutatedObjectApiNames])]};
+     mutatedObjectApiNames:[...new Set([...data.mutatedObjectApiNames,...rest.mutatedObjectApiNames])],
+     recordChanges:[...data.recordChanges,...(rest.recordChanges??[])]};
    }
   }
-  // Both feature gates OFF or an unsafe plan: unchanged existing interpreter.
-  return executeActionFormula(formula,scope,context,services);
+  // Existing interpreter and SQL-aggregate flag remain unchanged by default.
+  return executeActionFormula(formula,{...payload,state:pageState,event:payload},context,services);
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');

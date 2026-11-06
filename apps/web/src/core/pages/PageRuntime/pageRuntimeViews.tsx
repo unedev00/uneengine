@@ -1,5 +1,6 @@
+import {beginOptimisticNumberChange} from './optimisticPageNumbers';
 import {printRecordPages} from './printRecordPages';
-import {shouldInvalidatePageComponent,type PageMutationDetail} from './pageMutationScope';
+import {shouldInvalidatePageComponent,applyCompleteRecordMutation,type PageMutationDetail} from './pageMutationScope';
 
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
@@ -388,20 +389,6 @@ function MetadataBoundPageComponent({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
   });
   const initializedSessions = useRef<Set<string>>(new Set());
-  // Only data consumers of the written objects reload; unknown Flow writes remain broad.
-  useEffect(() => {
-    const sync = (event: Event) => {
-      const detail = (event as CustomEvent<PageMutationDetail>).detail;
-      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,[objectApiName])) return;
-      if (detail.sessionId && detail.sessionId !== sessionId) {
-        setSessionId(detail.sessionId);
-        setPageState({});
-      }
-      setRevision(value => value + 1);
-    };
-    window.addEventListener('metadrive:page-flow-mutated', sync);
-    return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
-  }, [pageSessionKey, sessionId, objectApiName]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const selectedRecordFilters=activePageRecordFilters(properties);
  const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
@@ -415,6 +402,33 @@ function MetadataBoundPageComponent({
     loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
   const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
+  // Only data consumers of the written objects reload; unknown Flow writes remain broad.
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<PageMutationDetail>).detail;
+      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,[objectApiName])) return;
+      if (detail.sessionId && detail.sessionId !== sessionId) {
+        setSessionId(detail.sessionId);
+        setPageState({});
+      }
+      let fastPath=false;
+      try{fastPath=window.sessionStorage.getItem('metadrive:mutation-record-fastpath')==='1';}
+      catch{/* Disabled private session. */}
+      if(fastPath&&detail?.sessionId===sessionId&&recordOffset===0&&
+        recordsForQueryKey===recordDataKey&&recordTotal===records.length&&
+        !printRows&&!properties.liveRefreshEnabled&&
+        !properties.collectionFormula&&!properties.recordPresenterApiName&&
+        !relatedQuery.filter&&!recordQuery.filter&&!recordQuery.filters?.length){
+        const updated=applyCompleteRecordMutation(records,objectApiName,detail);
+        if(updated){setRecords(updated);return;}
+      }
+      setRevision(value => value + 1);
+    };
+    window.addEventListener('metadrive:page-flow-mutated', sync);
+    return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
+  }, [pageSessionKey, sessionId, objectApiName,recordOffset,recordsForQueryKey,
+    recordDataKey,recordTotal,records,printRows,relatedQuery,recordQuery,
+    properties.liveRefreshEnabled,properties.collectionFormula,properties.recordPresenterApiName]);
   const lastRecordDataKey=useRef('');
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
@@ -735,7 +749,8 @@ function MetadataBoundPageComponent({
         }));
       if(result.recordChanged){
         window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames}
+          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames,
+            recordChanges:result.recordChanges}
         }));
       }
       return {updated:true};
@@ -743,8 +758,14 @@ function MetadataBoundPageComponent({
     if (binding.actionType === 'AdjustNumber') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
         ?action.value as Record<string,unknown>:{value:action.value};
+      const optimistic=binding.optimisticUiEnabled===true
+        ?(changes:ReadonlyArray<{key:string;value:unknown}>)=>beginOptimisticNumberChange(
+           pageSessionKey,sessionId,String(binding.stateCollectionKey??''),pageState,changes,
+           (key,value)=>window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
+            detail:{pageSessionKey,key,value}})))
+        :undefined;
       const changes=await adjustNumberRecord(apiRequest,binding as unknown as AdjustNumberBinding,
-        payload,pageState,objects,objectApiName);
+        payload,pageState,objects,objectApiName,optimistic);
       for(const change of changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}

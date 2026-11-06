@@ -296,16 +296,15 @@ export type ActionServices={
  onTiming?:(timing:ActionPlanTiming)=>void;
  /** Stable metadata identifier, not the authored formula text or a field value. */
  formulaName?:string;
- /** Private internal option for verified contiguous data-prefix execution. */
- planWindow?:{
-  start:number;end:number;variables?:Record<string,unknown>;
-  completedBefore?:number;includeVariables?:boolean
- };
+ /** Explicit opt-in while SQL aggregate parity is validated per tenant. */
+ useSqlAggregates?:boolean;
+ /** Internal, validated server data execution segment. */
+ planWindow?:{start:number;end:number;variables?:Record<string,unknown>;completedBefore?:number;includeVariables?:boolean};
 };
 type EvaluateValue=(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[],
  state?:Readonly<Record<string,unknown>>)=>unknown;
 export async function executeActionPlan(formula:string,record:Record<string,unknown>,
- evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName,planWindow}:ActionServices){
+ evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName,useSqlAggregates,planWindow}:ActionServices){
   const trace=typeof onTiming==='function';
   const started=trace?performance.now():0;
   const steps=compileActionPlan(formula);
@@ -320,14 +319,37 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   const traceSteps:ActionPlanStepTiming[]=[];
   let requestCount=0;
   let activeStep:ActionPlanStepTiming|undefined;
-  // Keep the original request function entirely unchanged when tracing is disabled.
-  const tracedRequest:typeof request=trace
+  const trackedNetwork:typeof request=trace
    ?<T>(path:string,init?:{method:string;body?:string}):Promise<T>=>{
      requestCount++;
      if(activeStep)activeStep.requestCount++;
      return request<T>(path,init);
     }
    :request;
+  // Request cache lives only for this plan, never across tenant or browser actions.
+  const recordReads=new Map<string,Promise<unknown>>();
+  const tracedRequest:typeof request=<T>(path:string,init?:{method:string;body?:string}):Promise<T>=>{
+   const method=init?.method??'GET';
+   if(method==='GET'&&path.startsWith('/records/')){
+    const cached=recordReads.get(path);
+    if(cached)return cached as Promise<T>;
+    const pending=trackedNetwork<T>(path,init).catch(error=>{
+     if(recordReads.get(path)===pending)recordReads.delete(path);
+     throw error;
+    });
+    recordReads.set(path,pending);
+    return pending;
+   }
+   return trackedNetwork<T>(path,init).then(response=>{
+    if(['POST','PUT','PATCH','DELETE'].includes(method)&&path.startsWith('/records/')){
+     const objectPath=path.split('?')[0].split('/').slice(0,3).join('/');
+     for(const key of recordReads.keys())
+      if(key===objectPath||key.startsWith(objectPath+'/')||key.startsWith(objectPath+'?'))
+       recordReads.delete(key);
+    }
+    return response;
+   });
+  };
   // STATE results apply to the page when the plan finishes and are visible to later steps.
   const stateChanges:Record<string,unknown>=Object.create(null);
   const changes:Array<{key:string;value:unknown}>=[];
@@ -335,6 +357,8 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   let completed=planWindow?.completedBefore??0;
   let recordChanged=false;
   const mutatedObjectApiNames=new Set<string>();
+  const recordChanges:Array<{objectApiName:string;operation:'create'|'update'|'delete';
+   record:Record<string,unknown>}> = [];
   let iterations=0;
 
   /** Runs one list of steps. Each IF condition is decided once, when its first step runs,
@@ -360,12 +384,28 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       if(node.kind==='unary')return {...node,value:substitute(node.value)};
       return node;
      };
+     // PIN verification and action steps remain strictly ordered. Only independent,
+     // side-effect-free aggregate trees may resolve concurrently.
+     const parallelSafe=(node:Expression|undefined):boolean=>{
+      if(!node)return true;
+      if(node.kind==='binary')return parallelSafe(node.left)&&parallelSafe(node.right);
+      if(node.kind==='unary')return parallelSafe(node.value);
+      if(node.kind==='call')return node.name!=='VERIFYPIN'&&node.args.every(parallelSafe);
+      return true;
+     };
      const resolveServer=async(node:Expression|undefined):Promise<void>=>{
       if(!node)return;
-      if(node.kind==='binary'){await resolveServer(node.left);await resolveServer(node.right);return;}
+      if(node.kind==='binary'){
+       if(parallelSafe(node.left)&&parallelSafe(node.right))
+        await Promise.all([resolveServer(node.left),resolveServer(node.right)]);
+       else{await resolveServer(node.left);await resolveServer(node.right);}
+       return;
+      }
       if(node.kind==='unary'){await resolveServer(node.value);return;}
       if(node.kind!=='call')return;
-      for(const arg of node.args)await resolveServer(arg);
+      if(node.args.length>1&&node.args.every(parallelSafe))
+       await Promise.all(node.args.map(resolveServer));
+      else for(const arg of node.args)await resolveServer(arg);
       if(!serverFormulaFunctions.has(node.name)||resolved.has(node))return;
       if(node.name==='VERIFYPIN'){
        if(node.args.length<1||node.args.length>2)throw Error('VERIFYPIN requires a PIN, or a user ID and a PIN');
@@ -391,6 +431,29 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       }
       const field=nameOf(rest.shift(),node.name+' value field');
       const filters=rest.length?criteriaFilters(recordCriteria(rest,node.name),value=>evaluateNow(substitute(value))):[];
+      if(useSqlAggregates===true){
+       const route='/records/'+encodeURIComponent(object)+'/aggregate?field='+encodeURIComponent(field)+
+        '&filters='+encodeURIComponent(JSON.stringify(filters));
+       const aggregate=await tracedRequest<{
+        eligible?:boolean;total?:number;numericCount?:number;sum?:number;min?:number;max?:number
+       }>(route);
+       if(aggregate.eligible===true){
+        if(typeof aggregate.total!=='number'||!Number.isFinite(aggregate.total))
+         throw Error(node.name+' count unavailable');
+        if(aggregate.total>maxAggregateRecords)
+         throw Error(node.name+' matches more than '+maxAggregateRecords+' records; narrow the criteria');
+        const numeric=Number(aggregate.numericCount??0);
+        const sum=Number(aggregate.sum??0);
+        const value=!numeric?0:node.name==='SUMIFS'?Math.round(sum*1e9)/1e9:
+         node.name==='AVERAGEIFS'?sum/numeric:node.name==='MINIFS'?Number(aggregate.min??0):
+          Number(aggregate.max??0);
+        if(!Number.isFinite(value))throw Error(node.name+' result unavailable');
+        resolved.set(node,value);
+        return;
+       }
+       // Unsupported numeric representations, formula fields or unreadable output:
+       // preserve the old authorized row-fetch result exactly.
+      }
       const rows=await listMatching(tracedRequest,object,filters,maxAggregateRecords,node.name);
       const numbers=rows.map(row=>aggregateNumber(row[field])).filter((value):value is number=>value!==null);
       const total=numbers.reduce((sum,value)=>sum+value,0);
@@ -407,7 +470,9 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       if(decided.get(guard.condition)!==guard.expected){skip=true;break;}
      }
      if(skip){if(stepTiming)stepTiming.status='skipped';continue;}
-     for(const node of stepNodes(step))await resolveServer(node);
+     const nodes=stepNodes(step);
+     if(nodes.length>1&&nodes.every(parallelSafe))await Promise.all(nodes.map(resolveServer));
+     else for(const node of nodes)await resolveServer(node);
      if(step.name==='STATE'){
       const value=evaluate(step.values![0]);
       if(!['string','number','boolean'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))
@@ -510,16 +575,42 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      completed++;
      recordChanged=true;
      mutatedObjectApiNames.add(step.object);
+     const savedChange={objectApiName:step.object,
+      operation:method==='POST'?'create' as const:method==='PUT'?'update' as const:'delete' as const,
+      record:response.record??{}};
+     recordChanges.push(savedChange);
      if(step.alias){
       const alias=step.alias;
       const later=(next:ActionStep):boolean=>[...stepNodes(next),...(next.guards??[]).map(g=>g.condition)]
        .some(node=>readsResultField(node,alias))||(next.body??[]).some(later);
+      const requiredFields=new Set<string>();
+      const collect=(node:Expression):void=>{
+       if(node.kind==='reference'&&node.value.startsWith(alias+'.')&&node.value!==alias+'.Id')
+        requiredFields.add(node.value.slice(alias.length+1));
+       else if(node.kind==='unary')collect(node.value);
+       else if(node.kind==='binary'){collect(node.left);collect(node.right);}
+       else if(node.kind==='call')node.args.forEach(collect);
+      };
+      const scan=(next:ActionStep):void=>{
+       [...stepNodes(next),...(next.guards??[]).map(g=>g.condition)].forEach(collect);
+       next.body?.forEach(scan);
+      };
+      list.slice(index+1).forEach(scan);
       variables[alias]=response.record;
-      if(list.slice(index+1).some(later)){
+      const hasField=(name:string):boolean=>{
+       let current:unknown=response.record;
+       for(const part of name.split('.')){
+        if(!current||typeof current!=='object'||!Object.hasOwn(current,part))return false;
+        current=(current as Record<string,unknown>)[part];
+       }
+       return true;
+      };
+      if(list.slice(index+1).some(later)&&![...requiredFields].every(hasField)){
        const id=response.record.Id;
        if(typeof id!=='string'||!recordIdPattern.test(id))throw Error('Missing saved record ID');
        const read=await tracedRequest<{record:Record<string,unknown>}>('/records/'+step.object+'/'+encodeURIComponent(id));
        variables[alias]=read.record;
+       savedChange.record=read.record;
       }
      }
     }catch(error){
@@ -538,7 +629,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
    const variables=Object.assign(Object.create(null) as Record<string,unknown>,planWindow?.variables??{});
    await run(selectedSteps,variables,true);
    return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames],
-    ...(planWindow?.includeVariables?{variables,completedActionCount:completed}:{})};
+    recordChanges,...(planWindow?.includeVariables?{variables,completedActionCount:completed}:{})};
   }catch(error){
    status='failed';
    throw error;
