@@ -343,7 +343,7 @@ export function pageComponentRecordQuery(
 ):{blocked:boolean;filter?:PageQueryFilter;filters?:PageServerRecordFilter[];filterLogic?:string;serverFilterable:boolean;error?:string}{
  const base=pageComponentRecordQueryBase(definitions,fields,context,logic);
  if(formula===undefined||formula===null||formula==='')return base;
- const extra=compileRecordFilterFormula(formula,fields,context.pageState??{});
+ const extra=compileRecordFilterFormula(formula,fields,context.pageState??{},context.sessionId??'');
  if(extra.blocked)return {blocked:true,serverFilterable:false,error:extra.error};
  if(!extra.filters.length)return base;
  if(base.blocked||!base.serverFilterable||(Array.isArray(definitions)
