@@ -1498,7 +1498,7 @@ test('All installed component definitions are independent of displayMode metadat
  const catalog=await loadComponentCatalog();
  assert.ok(catalog.components.length>=50,'test must cover the full bundled component catalog');
  for(const component of catalog.components){
-  assert.ok(!component.propertyDefinitions.some(p=>p.propertyKey==='displayMode'),
+  assert.ok(!(component.propertyDefinitions??[]).some(p=>p.propertyKey==='displayMode'),
    component.apiName+' must not require displayMode');
  }
  const sql=read('../../server/src/system-support/migrations/20271119-smart-formula-display-runtime.sql');
