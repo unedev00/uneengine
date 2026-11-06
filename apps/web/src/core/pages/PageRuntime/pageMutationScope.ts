@@ -1,3 +1,5 @@
+import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
+import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 /** Object-scoped page invalidation. Unscoped events remain compatible with existing Flows. */
 export type SavedRecordMutation={
  objectApiName:string;operation:'create'|'update'|'delete';record:Readonly<Record<string,unknown>>;
@@ -11,11 +13,56 @@ export type PageMutationDetail={
  recordChanges?:readonly SavedRecordMutation[];
 };
 
+
+/** Inspect metadata formulas (not selector lists) for actual Object reads.
+ * Unparseable expressions return null: a conservative invalidate-all fallback.
+ */
+export function pageComponentReadObjectNames(
+ primaryObject:string,properties:Readonly<Record<string,unknown>>,
+ knownObjects:readonly {apiName:string;fields?:readonly {apiName:string;dataType?:string}[]}[]
+):string[]|null{
+ const known=new Set(knownObjects.map(object=>object.apiName));
+ const selected=new Set(Object.entries(properties).filter(([key])=>
+  /^objectApiName(?:[2-9]|[1-9][0-9]+)?$/.test(key))
+  .map(([,value])=>String(value??'')).filter(name=>known.has(name)));
+ const reads=new Set<string>();
+ if(primaryObject)reads.add(primaryObject);
+ for(const [property,value] of Object.entries(properties)){
+  if(typeof value!=='string'||/^objectApiName/.test(property))continue;
+  const expression=value.trim();
+  if(!expression||(!expression.startsWith('=')&&!expression.startsWith('@')
+    &&!/(?:TABLE|COLLECTION)\s*\(/i.test(expression)))continue;
+  let node:Expression;
+  try{node=new Parser(tokenize(expression.replace(/^=\s*/,''))).parse();}
+  catch{return null;}
+  const visit=(ast:Expression):void=>{
+   if(ast.kind==='reference'){
+    const parts=ast.value.replace(/^@/,'').split('.');
+    const first=parts[0];
+    if(known.has(first)&&(first===primaryObject||selected.has(first)))reads.add(first);
+    const field=knownObjects.find(object=>object.apiName===primaryObject)
+     ?.fields?.find(item=>item.apiName===first);
+    const lookup=field?.dataType?.match(/^Lookup\(([^)]+)\)$/i)?.[1];
+    if(parts.length>1&&lookup&&known.has(lookup))reads.add(lookup);
+   }else if(ast.kind==='call'){
+    if((ast.name==='TABLE'||ast.name==='COLLECTION')&&ast.args[0]?.kind==='reference'){
+     const name=ast.args[0].value.replace(/^@/,'').split('.')[0];
+     if(known.has(name)&&selected.has(name))reads.add(name);
+    }
+    ast.args.forEach(visit);
+   }else if(ast.kind==='unary')visit(ast.value);
+   else if(ast.kind==='binary'){visit(ast.left);visit(ast.right);}
+  };
+  visit(node);
+ }
+ return [...reads];
+}
+
 export function shouldInvalidatePageComponent(detail:PageMutationDetail|undefined,
- pageSessionKey:string,sessionId:string,readObjectApiNames:readonly string[]):boolean{
+ pageSessionKey:string,sessionId:string,readObjectApiNames:readonly string[]|null):boolean{
  if(detail?.pageSessionKey!==pageSessionKey)return false;
  if(detail.sessionId&&detail.sessionId!==sessionId)return true;
- if(!Array.isArray(detail.objectApiNames)||detail.objectApiNames.length===0)return true;
+ if(!Array.isArray(detail.objectApiNames)||detail.objectApiNames.length===0||readObjectApiNames===null)return true;
  return readObjectApiNames.some(name=>Boolean(name)&&detail.objectApiNames!.includes(name));
 }
 
