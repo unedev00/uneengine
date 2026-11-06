@@ -32,7 +32,7 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
       </label>
     </div>
     <label className="app-manager-mobile-sort">Sort applications <select value={sort} onChange={event=>{setSort(event.target.value as typeof sort);setDescending(false);}}><option value="label">App name</option><option value="apiName">Developer name</option><option value="navigation">Navigation items</option><option value="pages">App pages</option></select></label>
-    <ResponsiveDataList rows={filtered} includeTablet getId={app=>app.apiName} label="Applications"
+    <ResponsiveDataList rows={filtered} includeTablet includeNarrowDesktop getId={app=>app.apiName} label="Applications"
       onOpen={app=>onEdit(app)} openLabel="Edit application"
       columns={[
         {apiName:'name',label:'Application',phoneRole:'title',render:app=>app.label},
