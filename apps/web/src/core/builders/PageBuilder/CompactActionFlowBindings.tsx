@@ -91,6 +91,12 @@ export default function CompactActionFlowBindings({
            <option value="">Choose field…</option>
            {fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
          </select>:
+         kind==='Session'?<select aria-label="Flow input session field"
+           disabled={!enabled||!chosenInput}
+           value={selected.kind==='Session'?selected.detail||'id':'id'}
+           onChange={event=>write('Session',event.target.value)}>
+           {sessionInputFields.map(item=><option value={item.key} key={item.key}>{item.label}</option>)}
+         </select>:
          <input aria-label="Flow input value" type="text" disabled={!enabled||!chosenInput||
            ['Unmapped','Session','Event','Legacy'].includes(kind)}
            placeholder={kind==='Event Field'?'item.id':kind==='Page State'?'cartId':
