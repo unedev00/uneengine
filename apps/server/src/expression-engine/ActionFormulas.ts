@@ -241,17 +241,46 @@ function readsResultField(node:Expression,alias:string):boolean{
 const stepNodes=(step:ActionStep):Expression[]=>[...(step.id?[step.id]:[]),...step.fields.values(),
  ...(step.values??[]),...(step.source?[step.source]:[])];
 
+/** Value-only diagnostics: never include formula source, record values, URLs or errors. */
+export type ActionPlanStepTiming={
+ name:string;durationMs:number;requestCount:number;status:'completed'|'skipped'|'failed';
+};
+export type ActionPlanTiming={
+ formulaName:string;durationMs:number;stepCount:number;executedStepCount:number;
+ completedActionCount:number;requestCount:number;status:'completed'|'failed';
+ steps:ActionPlanStepTiming[];
+};
 export type ActionServices={
  request:<T>(path:string,init?:{method:string;body?:string})=>Promise<T>;
  print?:(template:string,id:string)=>Promise<void>;
  createPdf?:(template:string,id:string)=>Promise<{FileId:string}>;
  runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>;
+ /** Optional opt-in observer. Its errors must never affect action execution. */
+ onTiming?:(timing:ActionPlanTiming)=>void;
+ /** Stable metadata identifier, not the authored formula text or a field value. */
+ formulaName?:string;
 };
 type EvaluateValue=(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[],
  state?:Readonly<Record<string,unknown>>)=>unknown;
 export async function executeActionPlan(formula:string,record:Record<string,unknown>,
- evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction}:ActionServices){
+ evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName}:ActionServices){
+  const trace=typeof onTiming==='function';
+  const started=trace?performance.now():0;
   const steps=compileActionPlan(formula);
+  const countSteps=(list:readonly ActionStep[]):number=>list.reduce(
+   (total,step)=>total+1+(step.body?countSteps(step.body):0),0);
+  const stepCount=trace?countSteps(steps):0;
+  const traceSteps:ActionPlanStepTiming[]=[];
+  let requestCount=0;
+  let activeStep:ActionPlanStepTiming|undefined;
+  // Keep the original request function entirely unchanged when tracing is disabled.
+  const tracedRequest:typeof request=trace
+   ?<T>(path:string,init?:{method:string;body?:string}):Promise<T>=>{
+     requestCount++;
+     if(activeStep)activeStep.requestCount++;
+     return request<T>(path,init);
+    }
+   :request;
   // STATE results apply to the page when the plan finishes and are visible to later steps.
   const stateChanges:Record<string,unknown>=Object.create(null);
   const changes:Array<{key:string;value:unknown}>=[];
@@ -266,6 +295,11 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   async function run(list:ActionStep[],variables:Record<string,unknown>,top:boolean):Promise<boolean>{
    const decided=new Map<Expression,boolean>();
    for(const [index,step] of list.entries()){
+    const previousStep=activeStep;
+    const stepTiming:ActionPlanStepTiming|undefined=trace
+     ?{name:step.name,durationMs:0,requestCount:0,status:'completed'}:undefined;
+    const stepStarted=stepTiming?performance.now():0;
+    if(stepTiming){traceSteps.push(stepTiming);activeStep=stepTiming;}
     try{
      const scope={...record,...variables};
      const evaluateNow=(node:Expression):unknown=>evaluateValue(node,scope,Object.keys(variables),stateChanges);
@@ -292,7 +326,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
        const [userId,pin]=values.length===2?values:['',values[0]];
        const key=String(userId)+'\u0000'+String(pin);
        if(!pins.has(key)){
-        const result=await request<{valid?:boolean}>('/action-formulas/verify-pin',{method:'POST',
+        const result=await tracedRequest<{valid?:boolean}>('/action-formulas/verify-pin',{method:'POST',
          body:JSON.stringify({userId:userId===''||userId==null?undefined:String(userId),pin:pin==null?'':String(pin)})});
         pins.set(key,result.valid===true);
        }
@@ -303,14 +337,14 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       const object=nameOf(objectNode,node.name+' object API name');
       if(node.name==='COUNTIFS'){
        const filters=criteriaFilters(recordCriteria(rest,'COUNTIFS'),value=>evaluateNow(substitute(value)));
-       const result=await request<{total?:number}>(recordQueryPath(object,filters));
+       const result=await tracedRequest<{total?:number}>(recordQueryPath(object,filters));
        if(typeof result.total!=='number'||!Number.isFinite(result.total))throw Error('COUNTIFS count unavailable');
        resolved.set(node,result.total);
        return;
       }
       const field=nameOf(rest.shift(),node.name+' value field');
       const filters=rest.length?criteriaFilters(recordCriteria(rest,node.name),value=>evaluateNow(substitute(value))):[];
-      const rows=await listMatching(request,object,filters,maxAggregateRecords,node.name);
+      const rows=await listMatching(tracedRequest,object,filters,maxAggregateRecords,node.name);
       const numbers=rows.map(row=>aggregateNumber(row[field])).filter((value):value is number=>value!==null);
       const total=numbers.reduce((sum,value)=>sum+value,0);
       resolved.set(node,!numbers.length?0:node.name==='SUMIFS'?Math.round(total*1e9)/1e9:
@@ -325,7 +359,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       }
       if(decided.get(guard.condition)!==guard.expected){skip=true;break;}
      }
-     if(skip)continue;
+     if(skip){if(stepTiming)stepTiming.status='skipped';continue;}
      for(const node of stepNodes(step))await resolveServer(node);
      if(step.name==='STATE'){
       const value=evaluate(step.values![0]);
@@ -338,7 +372,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      }
      if(step.name==='GETRECORD'){
       const filters=criteriaFilters(step.fields,evaluate);
-      const result=await request<{records?:Record<string,unknown>[]}>(recordQueryPath(step.object,filters));
+      const result=await tracedRequest<{records?:Record<string,unknown>[]}>(recordQueryPath(step.object,filters));
       // No match leaves an empty result so ISBLANK(alias.Id) selects the create branch.
       variables[step.alias!]=result.records?.[0]??{};
       completed++;
@@ -353,7 +387,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
        if(!list)throw Error('FOREACH requires a TABLE() or COLLECTION() source');
        items=list.map(item=>item&&typeof item==='object'&&!Array.isArray(item)
         ?item as Record<string,unknown>:{Id:item,Value:item});
-      }else items=await listMatching(request,step.object,criteriaFilters(step.fields,evaluate),maxLoopIterations,'FOREACH');
+      }else items=await listMatching(tracedRequest,step.object,criteriaFilters(step.fields,evaluate),maxLoopIterations,'FOREACH');
       if(items.length>maxLoopIterations)throw Error('FOREACH is limited to '+maxLoopIterations+' items');
       // Snapshot first, then act: deleting or updating rows cannot change the items visited.
       for(const item of items){
@@ -378,7 +412,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
          minutes*60+seconds<1)throw Error('WAIT requires a positive duration (minutes, seconds)');
       if(index===list.length-1){completed++;continue;}
       if(!top)throw Error('WAIT cannot run inside FOREACH');
-      await request('/action-formulas/schedule',{method:'POST',body:JSON.stringify({
+      await tracedRequest('/action-formulas/schedule',{method:'POST',body:JSON.stringify({
        formula,nextStep:index+1,seconds:minutes*60+seconds,
        scope:record,variables,sessionId:typeof record.sessionId==='string'?record.sessionId:null
       })});
@@ -394,7 +428,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      }
      if(step.values){
       const values=step.values.map(evaluate);
-      await request('/action-formulas/communication',{method:'POST',body:JSON.stringify({
+      await tracedRequest('/action-formulas/communication',{method:'POST',body:JSON.stringify({
        channel:step.name,credential:step.object,values
       })});
       completed++;
@@ -423,7 +457,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      }
      const method=step.name==='CREATERECORD'?'POST':step.name==='UPDATERECORD'?'PUT':'DELETE';
      const values=Object.fromEntries([...step.fields].map(([field,node])=>[field,evaluate(node)]));
-     const response=await request<{record:Record<string,unknown>}>(path,{
+     const response=await tracedRequest<{record:Record<string,unknown>}>(path,{
       method,...(method==='DELETE'?{}:{body:JSON.stringify(values)})
      });
      completed++;
@@ -437,17 +471,40 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       if(list.slice(index+1).some(later)){
        const id=response.record.Id;
        if(typeof id!=='string'||!recordIdPattern.test(id))throw Error('Missing saved record ID');
-       const read=await request<{record:Record<string,unknown>}>('/records/'+step.object+'/'+encodeURIComponent(id));
+       const read=await tracedRequest<{record:Record<string,unknown>}>('/records/'+step.object+'/'+encodeURIComponent(id));
        variables[alias]=read.record;
       }
      }
     }catch(error){
+     if(stepTiming)stepTiming.status='failed';
      if(error instanceof Error&&error.message.includes(' confirmed action(s). '))throw error;
      throw Error(step.name+' failed after '+completed+' confirmed action(s). '+(error instanceof Error?error.message:String(error)));
+    }finally{
+     if(stepTiming)stepTiming.durationMs=Math.max(0,performance.now()-stepStarted);
+     activeStep=previousStep;
     }
    }
    return true;
   }
-  await run(steps,Object.create(null),true);
-  return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames]};
+  let status:'completed'|'failed'='completed';
+  try{
+   await run(steps,Object.create(null),true);
+   return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames]};
+  }catch(error){
+   status='failed';
+   throw error;
+  }finally{
+   if(trace){
+    // The identifier is a trusted format, not a formula string or tenant-supplied prose.
+    const safeName=typeof formulaName==='string'&&/^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/.test(formulaName)
+     ?formulaName:'unnamed';
+    const timing:ActionPlanTiming={
+     formulaName:safeName,durationMs:Math.max(0,performance.now()-started),
+     stepCount,executedStepCount:traceSteps.filter(step=>step.status!=='skipped').length,
+     completedActionCount:completed,requestCount,status,
+     steps:traceSteps
+    };
+    try{onTiming!(timing);}catch{/* Diagnostics must not change successful or failed action behavior. */}
+   }
+  }
 }

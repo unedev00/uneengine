@@ -473,7 +473,8 @@ export default function MetadataBoundPageComponent({
             objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
           },onNavigate,pageSessionKey,sessionId,String(payload.recordId??pageState.recordId??recordId??''));
           return runSequenceFlow(target,availableFlows,apiRequest,onLaunchFlow);
-        },undefined,{namedCollections:namedSource.namedCollections,collectionSources:namedSource.formulaSources as never});
+        },undefined,{namedCollections:namedSource.namedCollections,collectionSources:namedSource.formulaSources as never,
+          timingName:'formula.'+component.id+'.'+action.event});
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}

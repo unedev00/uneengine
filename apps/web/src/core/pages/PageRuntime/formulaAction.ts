@@ -1,4 +1,4 @@
-import {isActionPlan} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan,type ActionPlanTiming} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 import {executeActionFormula,evaluateFieldExpressionDetailed,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
 import {adjustNumberRecord,type AdjustNumberBinding} from './adjustNumberRecord';
@@ -42,12 +42,24 @@ export async function executePageFormulaAction(
  runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>,
  createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>,
  /** Page data the action may read: TABLE()/COLLECTION() sources and $component values. */
- formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'>={}
+ formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'> & {timingName?:string}={}
 ):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[]}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
+  // Production diagnostics are disabled by default and scoped to this browser session.
+  // Enable in DevTools: sessionStorage.setItem('metadrive:formula-timings','1')
+  let timingEnabled=false;
+  if(typeof window!=='undefined'){
+   try{timingEnabled=window.sessionStorage.getItem('metadrive:formula-timings')==='1';}
+   catch{/* Session storage may be disabled by the browser. */}
+  }
+  const timing=timingEnabled?{
+   formulaName:formulaContext.timingName,
+   onTiming:(sample:ActionPlanTiming)=>console.info('[FormulaTiming]',sample)
+  }:{};
   return executeActionFormula(formula,{...payload,state:pageState,event:payload},
-   {...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()},{request,print,runPageAction,createPdf});
+   {...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()},
+   {request,print,runPageAction,createPdf,...timing});
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');

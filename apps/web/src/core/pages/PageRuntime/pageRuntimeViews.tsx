@@ -727,7 +727,8 @@ function MetadataBoundPageComponent({
           return apiRequest<{FileId:string;AssetRef:string}>('/action-formulas/create-pdf',{
             method:'POST',body:JSON.stringify({template,recordId:id})
           });
-        },{namedCollections:namedSource.namedCollections,collectionSources:namedSource.formulaSources as never});
+        },{namedCollections:namedSource.namedCollections,collectionSources:namedSource.formulaSources as never,
+          timingName:'formula.'+component.id+'.'+action.event});
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
