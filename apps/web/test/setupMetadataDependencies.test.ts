@@ -34,7 +34,7 @@ test('RBAC requests start before bulk metadata resolves and cannot display place
 
 test('Setup Home never presents made-up audit entries as tenant events', () => {
   const home = readFileSync(new URL('../src/core/settings/SetupHome/setupHomeView.tsx', import.meta.url), 'utf8');
-  assert.ok(home.includes("/auth/security-events?limit=3"));
+  assert.ok(home.includes("/auth/security-events?limit=15"));
   assert.ok(!home.includes('Renewal Risk Evaluation'));
   assert.ok(!home.includes('Alexandra Curtis'));
 });

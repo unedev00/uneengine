@@ -3612,7 +3612,7 @@ function PageBuilder({
             <button ref={createPageTriggerRef} className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
             <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
             <select className="form-control" aria-label="Inventory CSV device layout" title="Layout used by page inventory downloads"
-              style={{width:172}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant|'Auto')}>
+              style={{width:'min(172px, 100%)',minWidth:0,maxWidth:'100%',boxSizing:'border-box'}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant|'Auto')}>
               <option value="Auto">CSV: Page’s layout</option>
               {(['Desktop','Tablet','Mobile','Custom'] as const).map(device=><option key={device} value={device}>CSV: {device}</option>)}
             </select>

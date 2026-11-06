@@ -330,3 +330,23 @@ test('UX-0073 Escape in a dirty App Manager edit offers an accessible discard de
   assert.match(manager,/Discard unsaved changes\?/);
   assert.match(manager,/if\(event\.key==='Escape'\)/);
 });
+
+test('UX-0026 and UX-0029 security panel shows up to three distinct rows and ignores double refresh',()=>{
+ const home=source('src/core/settings/SetupHome/setupHomeView.tsx');
+ assert.match(home,/\/auth\/security-events\?limit=15/);
+ assert.match(home,/findIndex\(candidate=>candidate\.action===event\.action&&candidate\.at===event\.at\)===index\)\.slice\(0,3\)/);
+ assert.match(home,/if\(refreshInFlight\.current\)return \(\) => \{\};/);
+ assert.match(home,/refreshInFlight\.current=false/);
+});
+
+test('UX-0067 Page Builder CSV filter shrinks within the available header width',()=>{
+ const builder=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ assert.match(builder,/Inventory CSV device layout/);
+ assert.match(builder,/width:'min\(172px, 100%\)',minWidth:0,maxWidth:'100%'/);
+ assert.doesNotMatch(builder,/style=\{\{width:172\}\} value=\{inventoryExportVariant\}/);
+});
+test('UX-0053 Data Loader navigation aligns with the inset configuration panel',()=>{
+ const loader=source('src/core/workspace/SetupShell/UniversalDataLoaderWorkspace.tsx');
+ assert.match(loader,/maxWidth:1052,marginLeft:24/);
+ assert.match(loader,/maxWidth:1100,minWidth:0/);
+});
