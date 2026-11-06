@@ -282,8 +282,29 @@ const evaluateCall=(name,args,context)=>{
  }
 };
 export const componentReaderKey=Symbol.for('metadrive.pageFormulaComponentReader');
-function parse(source,record,formulaContext){
+// Cache only syntax trees, never tenant data, record values, or evaluated results.
+// Bound memory and preserve NOW()/state/permission semantics on every evaluation.
+const parseCache=new Map();
+const timeZoneCache=new Set();
+let cacheMisses=0;
+export function formulaSyntaxCacheStats(){return {parses:cacheMisses,size:parseCache.size};}
+function parsedSyntax(source){
+ const cached=parseCache.get(source);
+ if(cached){parseCache.delete(source);parseCache.set(source,cached);return cached;}
  const parsed=new Parser(tokenize(source)).parse();
+ cacheMisses++;
+ if(parseCache.size>=256)parseCache.delete(parseCache.keys().next().value);
+ parseCache.set(source,parsed);
+ return parsed;
+}
+function validateFormulaTimeZone(timeZone){
+ if(timeZoneCache.has(timeZone))return;
+ new Intl.DateTimeFormat('en',{timeZone});
+ if(timeZoneCache.size>=48)timeZoneCache.delete(timeZoneCache.values().next().value);
+ timeZoneCache.add(timeZone);
+}
+function parse(source,record,formulaContext){
+ const parsed=parsedSyntax(source);
  const expression=formulaContext.flowReferences?normalizeFlowCalls(parsed):parsed;
  return evaluateParsedExpression(expression,record,formulaContext);
 }
@@ -674,7 +695,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    throw Error('Invalid formula evaluation context');
   const timeZone=options.timeZone??'UTC';
   if(typeof timeZone!=='string'||timeZone.length>100)throw Error('Invalid formula time zone');
-  new Intl.DateTimeFormat('en',{timeZone});
+  validateFormulaTimeZone(timeZone);
   const now=options.now===undefined?new Date():options.now instanceof Date
    ?new Date(options.now):typeof options.now==='string'
     ?parseFormulaDateTime(options.now,'UTC'):new Date(NaN);
