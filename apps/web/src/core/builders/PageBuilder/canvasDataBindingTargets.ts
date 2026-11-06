@@ -48,6 +48,8 @@ export function writeCanvasBinding(properties:Props,target:Pick<CanvasBindingTar
 /** A single user-facing name for each metadata binding, shared by the selected
  * field icon and the existing Data ribbon. Property IDs remain unchanged. */
 const bindingLabels:Record<string,Record<string,string>>={
+ smart_numpad:{textSource:'Initial input value',customButton1Label:'Custom Button 1 label',
+  customButton2Label:'Custom Button 2 label',customButton3Label:'Custom Button 3 label'},
  smart_tabs:{tabCaptionFormula:'Tab caption',textSource:'Tab caption',collectionFormula:'Tabs data source'},
  smart_lookup:{label:'Search placeholder',lookupValueFormula:'Search value',textSource:'Result text',
   collectionFormula:'Lookup results source'},
