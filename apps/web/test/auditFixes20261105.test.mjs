@@ -151,3 +151,25 @@ test('UNE privacy policy is a public route accessible without workspace authenti
   assert.match(login,/BASE_URL\}privacy/);
   assert.match(styles,/\.une-privacy-main/);
 });
+
+test('UX-0012 boot splash uses real UNE brand and reduced-motion-aware progress',()=>{
+ const entry=source('src/main.tsx');
+ const style=source('src/core/workspace/WorkspaceTheme/bootSplash.css');
+ assert.match(entry,/<UneBrandLogo className="md-boot-brand"/);
+ assert.match(entry,/md-boot-spinner/);
+ assert.match(style,/prefers-reduced-motion:reduce/);
+});
+test('UX-0028 Setup Home no longer creates empty auto-fit grid tracks',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(css,/home-content \.shortcut-grid \{ display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css,/home-content \.shortcut-grid \{ display:grid;grid-template-columns:repeat\(auto-fit/);
+});
+test('UX-0062 Page Details exposes selected tabs and accessible owned panels',()=>{
+ const dialog=source('src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ const css=source('src/core/builders/PageBuilder/PageDetailsDialog.css');
+ assert.match(dialog,/role="tablist" aria-label="Page edit sections"/);
+ assert.match(dialog,/role="tab"\s+aria-selected=\{activeSection==='properties'\}/);
+ assert.match(dialog,/role="tabpanel"\s+aria-labelledby="page-details-tab-properties"/);
+ assert.match(dialog,/role="tabpanel" aria-labelledby="page-details-tab-history"/);
+ assert.match(css,/\[role="tabpanel"\]\[hidden\]/);
+});
