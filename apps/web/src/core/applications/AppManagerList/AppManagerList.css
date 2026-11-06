@@ -88,7 +88,7 @@
  .app-manager-list-table { min-width: 800px; }
  .app-manager-list-scroll { max-width: 100%; overflow-x: auto; }
 }
-@media(max-width:1023px) {
+@media(max-width:1199px) {
  .app-manager-mobile-sort { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 0 12px 8px; font-size: 13px; }
  .app-manager-mobile-sort select { min-height: 40px; min-width: 140px; max-width: 100%; }
 }
@@ -99,7 +99,7 @@
 }
 
 /* The responsive application sorter exposes the same direction control as desktop headers. */
-@media(max-width:1023px) {
+@media(max-width:1199px) {
  .app-manager-mobile-sort { min-width:0; }
  .app-manager-sort-direction { min-height:44px;padding:0 12px;border:1px solid var(--md-border,#d6dce5);border-radius:7px;background:var(--surface,#fff);color:inherit;cursor:pointer;font:inherit; }
  .app-manager-sort-direction:focus-visible { outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px; }
