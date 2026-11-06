@@ -2022,7 +2022,7 @@ function ObjectManager({
           <option>All Objects</option><option>Standard Objects</option><option>Custom Objects</option>
         </select></div>
       </div>
-      <div ref={objectListScrollRef} className="table-scroll object-manager-desktop-list"><table className="slds-table">
+      {visibleObjects.length>0&&<div ref={objectListScrollRef} className="table-scroll object-manager-desktop-list"><table className="slds-table">
         <thead><tr>
           {([['label','Object label'],['apiName','API name'],['kind','Type']] as const).map(([key,label])=>
             <th key={key} aria-sort={objectSortKey===key?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort(key)}>{label}</button></th>)}
@@ -2037,7 +2037,7 @@ function ObjectManager({
           {showDeploymentColumn&&<td>{item.settings?.deploymentStatus ?? "Deployed"}</td>}
           <td>{item.fields.length}</td>
           <td><button className="btn" type="button" onClick={()=>onObjectSelect(item)}>View</button></td>
-        </tr>)}</tbody></table></div>
+        </tr>)}</tbody></table></div>}
       <label className="object-manager-mobile-sort">Sort objects <select value={objectSortKey} onChange={event=>changeObjectSort(event.target.value as typeof objectSortKey)}><option value="label">Label</option><option value="apiName">API name</option><option value="kind">Type</option><option value="fields">Field count</option></select></label>
       <div className="object-manager-mobile-list" role="list" aria-label="Objects">
         {paginatedObjects.map(item => <div role="listitem" key={item.apiName}>
@@ -2051,12 +2051,12 @@ function ObjectManager({
         <p>No objects match the search or selected type.</p>
         <button className="btn" type="button" onClick={()=>{onSearch('');setViewMode('All Objects');}}>Clear filters</button>
       </div>}
-      <nav className="object-manager-pagination" aria-label="Object Manager pages">
+      {visibleObjects.length>0&&<nav className="object-manager-pagination" aria-label="Object Manager pages">
         <span>{sortedVisibleObjects.length?currentObjectPage*objectPageSize+1:0}–{Math.min((currentObjectPage+1)*objectPageSize,sortedVisibleObjects.length)} of {sortedVisibleObjects.length} {sortedVisibleObjects.length===1?"object":"objects"}</span>
         <button type="button" className="btn" disabled={currentObjectPage===0} onClick={()=>changeObjectPage(Math.max(0,currentObjectPage-1))}>Previous</button>
         <span>Page {currentObjectPage+1} of {objectPageCount}</span>
         <button type="button" className="btn" disabled={currentObjectPage>=objectPageCount-1} onClick={()=>changeObjectPage(Math.min(objectPageCount-1,currentObjectPage+1))}>Next</button>
-      </nav>
+      </nav>}
     </section></PlatformPageSlot>
   );
   return (
