@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { RefreshCw, ArrowRight, ChevronRight, ShieldCheck, AlertCircle, ExternalLink, CircleHelp, Command } from 'lucide-react';
 import { setupShortcuts, type WorkspaceId } from '../../metadata/Definitions/metadata';
 type HeadingProps = { eyebrow?: string; title: string; description?: string; actions?: ReactNode };
@@ -27,13 +27,18 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
   const [error,setError] = useState('');
   const [helpOpen,setHelpOpen] = useState(false);
   const [lastUpdated,setLastUpdated]=useState<number|null>(null);
+  const refreshInFlight=useRef(false);
   const reload = useCallback(() => {
+    // A double click must not start overlapping SQL requests or overwrite newer data.
+    if(refreshInFlight.current)return () => {};
+    refreshInFlight.current=true;
     let active = true;
     setLoading(true);setError('');
-    void request<{events:SecurityEvent[]}>('/auth/security-events?limit=3')
+    // Load enough events to show three distinct activities even when raw rows repeat.
+    void request<{events:SecurityEvent[]}>('/auth/security-events?limit=15')
       .then(result => {if(active){setEvents(result.events ?? []);setLastUpdated(Date.now());}})
       .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);setLastUpdated(null);}})
-      .finally(() => {if(active)setLoading(false);});
+      .finally(() => {refreshInFlight.current=false;if(active)setLoading(false);});
     return () => {active=false;};
   },[request]);
   useEffect(() => reload(), [reload]);
@@ -59,7 +64,7 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
       <div className="home-lower-grid">
         <section className="surface recent-surface"><div className="section-heading"><h2>Recent security activity</h2></div>
           {loading ? <p role="status">Loading security activity…</p> : error ? <p role="status">{error}</p> : events.length === 0 ? <p>No security activity recorded.</p> :
-            events.filter((event,index,list)=>list.findIndex(candidate=>candidate.action===event.action&&candidate.at===event.at)===index).map(event => {
+            events.filter((event,index,list)=>list.findIndex(candidate=>candidate.action===event.action&&candidate.at===event.at)===index).slice(0,3).map(event => {
               const failed=/(failed|denied|blocked|rejected)/i.test(event.action);
               return <div className="recent-row" key={event.id}>
                 <span className={'recent-icon '+(failed?'red':'green')}>{failed?<AlertCircle size={16}/>:<ShieldCheck size={16}/>}</span>
