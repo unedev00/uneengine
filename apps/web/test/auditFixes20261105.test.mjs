@@ -291,6 +291,7 @@ test('App Manager responsive sorting exposes ascending and descending control',(
   assert.match(list,/aria-pressed=\{descending\}/);
   assert.match(list,/setDescending\(value=>!value\)/);
   assert.match(css,/\.app-manager-sort-direction:focus-visible/);
+  assert.match(css,/@media\(max-width:1199px\)\s*\{\s*\.app-manager-mobile-sort/);
 });
 
 test('UX-0023 desktop sidebar preference survives compact resize without persisting drawer state',()=>{
