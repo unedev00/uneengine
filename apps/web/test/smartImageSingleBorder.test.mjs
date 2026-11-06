@@ -62,7 +62,7 @@ test('Smart Card Grid keeps every record and derives card height from configured
     assert.equal((html.split('<article').length-1),23,
       'Rows per column must never discard records');
     assert.match(html,/height:100%;min-height:0/);
-    assert.ok(html.includes('grid-auto-rows:max(96px, calc((100% - '+(rowCount-1)*10+'px) / '+rowCount+'))'));
+    assert.ok(html.includes('grid-auto-rows:max(96px, calc((100% - 8px - '+(rowCount-1)*10+'px) / '+rowCount+'))'));
 
     assert.match(html,/overflow-y:auto/);
   }
