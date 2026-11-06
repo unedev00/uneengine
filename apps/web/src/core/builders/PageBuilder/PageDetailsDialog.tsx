@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Pencil,LayoutTemplate,History,LockKeyhole} from 'lucide-react';
 import type {LightningPageMetadata,LightningAppMetadata,PageActivationAssignmentMetadata,ProfileMetadata} from '../../metadata/Definitions/metadata';
 import PageDetailsAssignmentEditor,{assignmentValidationError} from './PageDetailsAssignmentEditor';
@@ -55,6 +55,20 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
  /** Which layouts the page has designed; the default opens the page's own layout. */
  layoutSummary?:PageLayoutSummary|null;
 }){
+ const dialogRef=useRef<HTMLElement>(null);
+ const originRef=useRef<HTMLElement|null>(typeof document==='undefined'?null:document.activeElement as HTMLElement);
+ useEffect(()=>{
+  return ()=>originRef.current?.focus();
+ },[]);
+ const dialogKeyDown=(event:React.KeyboardEvent<HTMLElement>)=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();if(!busy)onClose();return;}
+  if(event.key!=='Tab')return;
+  const focusable=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')??[]);
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ };
  const [label,setLabel]=useState(page.label);
  const [apiName,setApiName]=useState(page.apiName);
  const apiNameValid=apiName===page.apiName||/^[a-z][a-z0-9_]{0,127}$/.test(apiName);
@@ -174,8 +188,8 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
   }catch(e){setError(e instanceof Error?e.message:'Unable to open the selected layout')}
   finally{setBusy(false)}
  };
- return <div className="modal-backdrop" role="presentation">
-  <section className="modal page-details-dialog" role="dialog" aria-modal="true"
+ return <div className="modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget&&!busy)onClose();}}>
+  <section ref={dialogRef} onKeyDown={dialogKeyDown} className="modal page-details-dialog" role="dialog" aria-modal="true"
    aria-label="Edit page properties and versions">
    <header className="modal-header page-details-header">
     <h2><Pencil size={19}/> Edit Page — {page.label}</h2>
