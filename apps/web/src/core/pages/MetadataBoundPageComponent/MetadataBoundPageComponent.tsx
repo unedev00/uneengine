@@ -1,6 +1,7 @@
 import {beginOptimisticNumberChange} from '../PageRuntime/optimisticPageNumbers';
 import {runSerializedPageAction,planReadWriteObjects} from '../PageRuntime/pageActionCoordinator';
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
+import {evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
 import {isActionPlan,isScreenAction,PartialActionError} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
@@ -364,7 +365,12 @@ export default function MetadataBoundPageComponent({
     if(source&&typeof source==='object'&&!Array.isArray(source))
       return resolveStructuredFlowInput(source as Record<string,unknown>,
        candidate=>resolveInput(candidate,eventPayload));
-    if (source === '$session') return sessionId;
+    if (source === '$session'||source==='$session.id') return sessionId;
+    if (typeof source==='string'&&source.startsWith('$session.')) {
+      const resolved=evaluateFieldExpressionDetailed(source,{}, {sessionId,pageState});
+      if(resolved.error)throw Error(resolved.error);
+      return resolved.value;
+    }
     if (typeof source === 'string' && source.startsWith('$state.')) {
       const key=source.slice(7);
       return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key) ? pageState[key] : undefined;
