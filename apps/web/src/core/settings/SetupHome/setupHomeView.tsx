@@ -32,7 +32,7 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
     setLoading(true);setError('');
     void request<{events:SecurityEvent[]}>('/auth/security-events?limit=3')
       .then(result => {if(active){setEvents(result.events ?? []);setLastUpdated(Date.now());}})
-      .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);}})
+      .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);setLastUpdated(null);}})
       .finally(() => {if(active)setLoading(false);});
     return () => {active=false;};
   },[request]);
