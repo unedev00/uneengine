@@ -42,7 +42,7 @@ for (const component of catalog.components) {
    &&(await readFile(path.join(webSourceRoot,component.jsxFile),'utf8'))
      .includes('kind="'+component.apiName+'"')
    &&(await readFile(path.join(webSourceRoot,component.jsxFile),'utf8'))
-     .includes('import SmartRuntime from "../smart/shared/SmartRuntime.jsx"');
+     .includes('import SmartRuntime from "'+'../smart/'+'shared/SmartRuntime.jsx"');
   // The ordinary renderer remains the default for *all* tenants.
   const asset=JSON.stringify({
     apiName:component.apiName,version:component.version,
