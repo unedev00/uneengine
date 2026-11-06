@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { RefreshCw, Settings2, ArrowRight, Database, ChevronRight, Workflow, ShieldCheck, AlertCircle, ExternalLink, CircleHelp, Command } from 'lucide-react';
+import { RefreshCw, ArrowRight, AlertCircle, ExternalLink, CircleHelp, Command } from 'lucide-react';
 import { setupShortcuts, type WorkspaceId } from '../../metadata/Definitions/metadata';
 type HeadingProps = { eyebrow?: string; title: string; description?: string; actions?: ReactNode };
 export function createSetupHome(Heading: (props: HeadingProps) => ReactNode) {
@@ -22,17 +22,18 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
   useEffect(() => reload(), [reload]);
   return (
     <div className="home-content">
-      <Heading eyebrow="Setup" title="Setup Home" description="Configure objects, pages, flows and access permissions for your organisation."
+      <Heading title="Setup Home" description="Configure objects, pages, flows and access permissions for your organisation."
         actions={<div className="setup-home-refresh"><button type="button" className="btn" onClick={reload} disabled={loading} aria-busy={loading}><RefreshCw size={14} />{loading?'Refreshing…':'Refresh'}</button>
           {lastUpdated&&<small role="status">Updated {new Date(lastUpdated).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}</small>}</div>} />
-      <div className="welcome-banner">
-        <div className="welcome-art"><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" /><div className="art-sphere"><Settings2 size={27} /></div></div>
-        <div className="welcome-copy"><div className="eyebrow">YOUR ORGANIZATION</div><h2>Welcome to Setup</h2><p>Find the tools you need to customize your org and support your users.</p><button className="text-action" onClick={() => onNavigate('object-manager')}>Explore Setup <ArrowRight size={15} /></button></div>
-        <div className="welcome-quick"><div className="quick-label">Common setup tools</div><button onClick={() => onNavigate('object-manager')}><Database size={15} />Object Manager<ChevronRight size={14} /></button><button onClick={() => onNavigate('flow-builder')}><Workflow size={15} />Flows<ChevronRight size={14} /></button><button onClick={() => onNavigate('rbac')}><ShieldCheck size={15} />Permission Sets<ChevronRight size={14} /></button></div>
+      <div className="welcome-banner setup-home-summary">
+        <div className="welcome-copy">
+          <h2>Workspace overview</h2>
+          <p>Open a tool below to manage metadata, automation, access and your applications.</p>
+        </div>
       </div>
       <div className="home-section-title"><div><h2>Quick access</h2><p>Open setup tools for this organisation.</p></div></div>
       <div className="shortcut-grid">
-        {setupShortcuts.filter(item => !['object-manager', 'flow-builder', 'rbac'].includes(item.workspace)).map(({ title, description, workspace, icon: Icon }) => (
+        {setupShortcuts.map(({ title, description, workspace, icon: Icon }) => (
           <button key={title} className="shortcut-card" onClick={() => onNavigate(workspace)}>
             <span className="shortcut-icon"><Icon size={19} /></span><span className="shortcut-title">{title}</span><span className="shortcut-description">{description}</span><ArrowRight className="shortcut-arrow" size={15} />
           </button>
