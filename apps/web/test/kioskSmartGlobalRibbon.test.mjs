@@ -113,7 +113,8 @@ test('Actions and ribbon reuse the Cart slots for Grid without enabling Cart qua
  assert.match(actions,/\['smart_cart','smart_card_grid'\]\.includes\(api\)/);
  assert.match(actions,/\['qtyIcon','qtyIncrease','qtyDecrease'\]\.includes\(event\)\?api==='smart_cart'/);
  assert.match(unified,/slot\.key\.startsWith\('customButton'\)/);
- assert.match(view,/member\.type==='Custom:smart_card_grid'&&key\.startsWith\('customButton'\)/);
+ assert.match(view,/actionMembers\.some\(member=>!supportsSmartActionEvent\(/);
+  assert.match(view,/customButton3:selected\?\.properties\.customButton3Visible/);
  assert.match(ribbon,/customButton1Shape/);
  assert.match(ribbon,/customButton2Shape/);
 });
