@@ -1,3 +1,4 @@
+import {smartShapeAppearance} from "../smart/shared/SmartShapeAppearance.js";
 import {applyNumpadKey,normalizeNumpadValue,numpadSettings} from "./numpadValue.mjs";
 const size=(value,defaultValue,min=0,max=2000)=>{
  const n=Number(value);
@@ -39,12 +40,12 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
  const isPin=settings.mode==="pin"||p.numpadMask===true;
  const headerAlign=["left","center","right"].includes(p.headerAlignment)?p.headerAlignment:"right";
  const headerStyle={
-  width:"100%",height:size(p.headerBoxHeight,60,30,300),
+  width:p.numpadHeaderWidth?size(p.numpadHeaderWidth,100,50,100)+"%":"100%",height:size(p.headerBoxHeight,60,30,300),
   background:p.headerBodyColor||"#fff",border:"1px solid "+(p.headerBorderColor||"#cbd5e1"),
   borderRadius:size(p.numpadHeaderRadius,8,0,128),boxShadow:shadow(p.numpadHeaderShadow),
   color:p.headerTextColor||"#0f172a",fontSize:size(p.headerTextSize,26,10,96),
   fontWeight:p.headerBold===false?400:700,textAlign:headerAlign,
-  minWidth:0,padding:"8px 12px",boxSizing:"border-box"
+  minWidth:0,padding:"8px "+(p.numpadSuffix?"42px":"12px")+" 8px "+(p.numpadPrefix?"42px":"12px"),boxSizing:"border-box"
  };
  const baseKey={
   background:p.numpadKeyFill||"#f1f5f9",border:"1px solid "+(p.numpadKeyBorderColor||"#cbd5e1"),
@@ -52,15 +53,17 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
   fontWeight:p.numpadKeyBold===true?700:400,
   borderRadius:size(p.numpadKeyRadius,9,0,128),boxShadow:shadow(p.numpadKeyShadow),
   height:size(p.numpadKeyHeight,52,28,200),
-  width:p.numpadKeyWidth?Math.min(100,size(p.numpadKeyWidth,100,24,400))+"%":"100%",
-  justifySelf:"center",minWidth:0
+  width:p.numpadKeyWidth?size(p.numpadKeyWidth,100,20,400)+"px":"100%",maxWidth:"100%",
+  justifySelf:"center",minWidth:0,justifyContent:p.numpadKeyAlignment==="left"?"flex-start":p.numpadKeyAlignment==="right"?"flex-end":"center",
+  ...smartShapeAppearance(p.numpadKeyShape||"shape:round-rectangle",size(p.numpadKeyRadius,9,0,128))
  };
  const focusStyle={
   background:p.numpadFocusedFill||"#dbeafe",
   borderColor:p.numpadFocusedBorderColor||"#2563eb",
   color:p.numpadFocusedTextColor||"#1d4ed8",
   boxShadow:shadow(p.numpadFocusedShadow),
-  borderRadius:size(p.numpadFocusedRadius,9,0,128)
+  borderRadius:size(p.numpadFocusedRadius,9,0,128),
+  fontSize:size(p.numpadFocusedTextSize,20,10,96),fontWeight:p.numpadFocusedBold===true?700:400
  };
  const sharedButton=(key,label,style,onClick,custom=false)=><button
   key={key} type="button" className="smart-numpad-key"
@@ -84,11 +87,13 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
    border:"1px solid "+(p[prefix+"BorderColor"]||p.numpadKeyBorderColor||"#cbd5e1"),
    borderRadius:size(p[prefix+"Radius"],9,0,128),
    height:size(p[prefix+"Height"],52,28,200),
-   width:p[prefix+"Width"]?Math.min(100,size(p[prefix+"Width"],100,24,400))+"%":"100%",
+   width:p[prefix+"Width"]?size(p[prefix+"Width"],100,20,400)+"px":"100%",maxWidth:"100%",
    color:p[prefix+"TextColor"]||baseKey.color,
    fontSize:size(p[prefix+"TextSize"],16,10,96),
    fontWeight:p[prefix+"Bold"]===true?700:400,
-   boxShadow:shadow(p[prefix+"Shadow"])
+   boxShadow:shadow(p[prefix+"Shadow"]),
+   justifyContent:p[prefix+"Alignment"]==="left"?"flex-start":p[prefix+"Alignment"]==="right"?"flex-end":"center",
+   ...smartShapeAppearance(p[prefix+"Shape"]||"shape:round-rectangle",size(p[prefix+"Radius"],9,0,128))
   };
  };
  return <div className="smart-numpad" style={bodyStyle} aria-label="Numeric keypad">
@@ -111,7 +116,7 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
    {labels.map(key=>sharedButton(key,key==="backspace"?"⌫":key,baseKey,()=>press(key)))}
   </div>
   <div className="smart-numpad-custom-row" style={{gap:size(p.numpadGap,8,0,48)}}>
-   {[1,2,3].map(index=>sharedButton("customButton"+index,
+   {[1,2,3].filter(index=>p["customButton"+index+"Visible"]!==false).map(index=>sharedButton("customButton"+index,
     String(buttonLabels[index-1]||"Custom "+index),customStyle(index),
     ()=>fire("customButton"+index,valueRef.current),true))}
   </div>
