@@ -204,6 +204,8 @@ import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvas
 import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds, fitCanvasComponentToPage} from './canvasLayerGroups';
 import {canvasScrollbarHit,constrainCanvasRect} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
+import {selectCanvasIds,selectCanvasInRect,nudgeCanvasSelection} from './canvasSelectionInteractions';
+import {useCanvasMarqueeSelection} from './useCanvasMarqueeSelection';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import {pageBuilderPreviewDevice} from './pageBuilderPreviewDevice';
 import { copyComponentTree, cloneComponentTree, remapComponentInteractionTargets, assignTabOnReparent, removePageComponentSelection, type ComponentClipboard } from './pageComponentTree';
@@ -577,6 +579,7 @@ function PageBuilder({
   const canvasGuideYRef = useRef<HTMLDivElement | null>(null);
   const canvasSnap = false;
   const [componentMenuId, setComponentMenuId] = useState('');
+  const suppressCanvasClickRef = useRef(false);
   const canvasMoveStart = useRef<{
     id: string; pointerId: number; pointerX: number; pointerY: number;
     original: { x: number; y: number; width: number; height: number };
@@ -699,7 +702,11 @@ function PageBuilder({
       canonicalComponentName(otherName)===canonicalComponentName(name))
       ?'Component Name already exists on this page layout.':null;
   };
-  const selectedGroupMembers = selected && page.layoutMode === 'free-canvas' ? canvasGroupMembers(page.components,selected) : [];
+  const selectedGroupMembers = selected && page.layoutMode === 'free-canvas'
+    ? selectionIds.length>1 && selectionIds.every(id=>page.components.some(item=>item.id===id&&!rawLayoutParentId(item)))
+      ? page.components.filter(item=>selectionIds.includes(item.id))
+      : canvasGroupMembers(page.components,selected).filter(item=>!rawLayoutParentId(item))
+    : [];
   const selectedGroupBounds = canvasGroupBounds(selectedGroupMembers);
   // Shift selection and persisted canvas groups use one shared-property context.
   const ribbonSelectedMembers = selected
@@ -1358,8 +1365,9 @@ function PageBuilder({
   // re-rendering the entire page on each frame. A normal drag always targets
   // exactly the hit component; multi-selection is for explicit Group/Align.
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
-    if (canvasGroupKey(component) || previewMode || !component.position || isCanvasLocked(component)
-      || event.button !== 0 || event.shiftKey || canvasMoveStart.current || canvasResizeStart.current) return;
+    if (previewMode || !component.position || isCanvasLocked(component)
+      || event.button !== 0 || event.shiftKey || event.ctrlKey || event.metaKey
+      || canvasMoveStart.current || canvasResizeStart.current) return;
     const hit = event.target as Element;
     // The action grip lives in a top-level portal so it cannot be obscured.
     // Resolve its authored canvas element explicitly; do not use document-wide
@@ -1375,6 +1383,12 @@ function PageBuilder({
     if (!element || (!portalGrip && hit.closest('[data-component-id]') !== element)) return;
     if (!hit.closest('.free-canvas-move-edge,.canvas-move-grip') &&
       hit.closest('input,select,textarea,[contenteditable="true"],.free-canvas-resize-handle,.canvas-element-actions')) return;
+    // A selected multi-set drags as one shape; leave modifier clicks to selection.
+    if (selectedGroupMembers.length>1 && selectedGroupMembers.some(item=>item.id===component.id)) {
+      startCanvasGroupGesture(event,'move');
+      return;
+    }
+    if (canvasGroupKey(component)) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -1431,6 +1445,7 @@ function PageBuilder({
     if (canvasGuideXRef.current) canvasGuideXRef.current.style.display = 'none';
     if (canvasGuideYRef.current) canvasGuideYRef.current.style.display = 'none';
     if (changed) {
+      suppressCanvasClickRef.current=true;
       applyPage({ ...page, components: page.components.map(item =>
         item.id === start.id ? { ...item, position: { ...start.original, x: start.x, y: start.y } } : item) });
     }
@@ -1450,12 +1465,21 @@ function PageBuilder({
   const {start:startCanvasGroupGesture,move:moveCanvasGroupGesture,end:endCanvasGroupGesture}
     = useCanvasGroupGestures({
       members:selectedGroupMembers,bounds:selectedGroupBounds,width:page.canvasWidth,height:page.canvasHeight,
-      scale:fitCanvas?fitScale:1,enabled:!previewMode,
-      onCommit:positions=>applyPage({...page,components:page.components.map(item=>{
+      scale:fitCanvas?fitScale:canvasZoom/100,enabled:!previewMode,
+      onCommit:positions=>{suppressCanvasClickRef.current=true;applyPage({...page,components:page.components.map(item=>{
         const position=positions.get(item.id);
         return position?{...item,position}:item;
-      })})
+      })});}
     });
+  const canvasMarquee=useCanvasMarqueeSelection({
+    enabled:editorMode&&!previewMode&&page.layoutMode==='free-canvas',
+    onSelect:(rect,additive)=>{
+      const ids=selectCanvasInRect(page.components,rect,additive?selectionIds:[]);
+      setSelectionIds(ids);setSelectedId(ids[ids.length-1]??'');
+      setSelectedRegion(null);setPageSettingsOpen(false);
+    },
+    onClear:()=>{setSelectedId('');setSelectionIds([]);setSelectedRegion(null);}
+  });
   const startCanvasResize = (event: React.PointerEvent<HTMLButtonElement>, component: PageComponentMetadata, edge: ResizeEdge) => {
     if (!component.position || isCanvasLocked(component) || event.button !== 0
       || canvasMoveStart.current || canvasResizeStart.current) return;
@@ -2003,27 +2027,21 @@ function PageBuilder({
         event.preventDefault();
         if (event.shiftKey) ungroupSelected();
         else wrapSelectedInContainer();
+      } else if (!command && event.key==='Escape' && !previewMode &&
+        !(target instanceof HTMLElement && target.closest('[role="dialog"],[aria-modal="true"]'))) {
+        setSelectionIds([]);setSelectedId('');setSelectedRegion(null);
       } else if (!previewMode && page.layoutMode === 'free-canvas'
-        && !event.altKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-        const ids = selectionIds.length ? selectionIds : (selectedId ? [selectedId] : []);
-        if (!ids.length) return;
-        if (event.target instanceof HTMLElement && event.target.closest('.office-builder-ribbon,button,[role="tab"]')) return;
+        && !event.altKey && !command && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+        const ids=selectionIds.length?selectionIds:selectedId?[selectedId]:[];
+        if(!ids.length)return;
+        if(event.target instanceof HTMLElement && event.target.closest('.office-builder-ribbon,button,[role="tab"],[role="dialog"]'))return;
         event.preventDefault();
-        const step = command ? 1 : 8;
-        const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
-        const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
-        const next = page.components.map(c => {
-          if (!ids.includes(c.id) || !c.position || isCanvasLocked(c) || rawLayoutParentId(c)) return c;
-          return {
-            ...c,
-            position: {
-              ...c.position,
-              x: Math.max(0, Math.min(page.canvasWidth - c.position.width, c.position.x + dx)),
-              y: Math.max(0, Math.min(page.canvasHeight - c.position.height, c.position.y + dy))
-            }
-          };
-        });
-        applyPage({ ...page, components: next });
+        const step=event.shiftKey?10:1;
+        const dx=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;
+        const dy=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;
+        const next=nudgeCanvasSelection(page.components,ids,dx,dy,
+          {width:page.canvasWidth,height:page.canvasHeight});
+        if(next.some((item,index)=>item!==page.components[index]))applyPage({...page,components:next});
       }
     };
     // Capture first: embedded Smart controls may stop bubbling. Preserve
@@ -2620,19 +2638,14 @@ function PageBuilder({
     // Canvas selection is a builder operation, never a component's runtime action.
     // The same selection path is used for pointer hits and intercepted live controls.
     const selectCanvasComponent = (event: React.MouseEvent<HTMLDivElement>) => {
-      const linkedIds = canvasGroupMembers(page.components,component).map(item=>item.id);
       event.stopPropagation();
-
-        if (event.shiftKey && page.layoutMode === 'free-canvas') {
-          const next = selectionIds.includes(component.id) && selectionIds.length > linkedIds.length
-            ? selectionIds.filter(id => !linkedIds.includes(id)) : [...new Set([...selectionIds, ...linkedIds])];
-          setSelectionIds(next);
-          setSelectedId(next.includes(component.id) ? component.id : next[0]);
-        } else {
-          setSelectionIds(linkedIds);
-          setSelectedRegion(null);
-          setSelectedId(component.id);
-        }
+      if (suppressCanvasClickRef.current){suppressCanvasClickRef.current=false;return;}
+      const additive=page.layoutMode==='free-canvas'&&(event.ctrlKey||event.metaKey||event.shiftKey);
+      const next=selectCanvasIds(page.components,selectionIds,component.id,
+        additive?(event.shiftKey?'add':'toggle'):'replace');
+      setSelectionIds(next);
+      setSelectedRegion(null);
+      setSelectedId(next.includes(component.id)?component.id:next[next.length-1]??'');
         if(component.type==='Custom:ui_item_grid'){
           const target=event.target as HTMLElement;
           const mapping=target.closest('.md-product-image')?'imageFieldApiName'
@@ -2643,7 +2656,7 @@ function PageBuilder({
           setFocusedCardMapping(mapping);
         }else setFocusedCardMapping('');
         setPageSettingsOpen(false); setComponentMenuId('');
-        if (!(event.shiftKey && page.layoutMode === 'free-canvas') && ribbonTab==='Add Block') { setRibbonTab('Component Design 2'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
+        if (!additive && ribbonTab==='Add Block') { setRibbonTab('Component Design 2'); openComponentInspector(componentNeedsData(component.type)?'Data & Actions':'Design'); }
 
     };
     const selectOnlyInDesigner = !previewMode && !libraryPreview;
@@ -2710,28 +2723,21 @@ function PageBuilder({
         if(event.pointerType==='touch' || canvasScrollbarHit(target,event.clientX,event.clientY,event.currentTarget))return;
         startCanvasMove(event, component);
       } : undefined}
-      onPointerMove={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? moveCanvasPointer : undefined}
-      onPointerUp={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event) : undefined}
-      onPointerCancel={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
-      onLostPointerCapture={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event => endCanvasMove(event, true) : undefined}
+      onPointerMove={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event=>{moveCanvasPointer(event);moveCanvasGroupGesture(event);} : undefined}
+      onPointerUp={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event=>{endCanvasMove(event);endCanvasGroupGesture(event);} : undefined}
+      onPointerCancel={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event=>{endCanvasMove(event,true);endCanvasGroupGesture(event,true);} : undefined}
+      onLostPointerCapture={!previewMode && !libraryPreview && page.layoutMode === 'free-canvas' && !nested ? event=>{endCanvasMove(event,true);endCanvasGroupGesture(event,true);} : undefined}
       onKeyDown={!libraryPreview ? (event) => {
-         if (event.currentTarget !== event.target || previewMode) return;
-         if (event.key === 'Enter' || event.key === ' ') {
-           event.preventDefault(); setSelectedId(component.id); setPageSettingsOpen(false);
-         } else if (page.layoutMode === 'free-canvas' && component.position && !nested
-           && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-           event.preventDefault();
-           const delta = event.shiftKey ? 1 : canvasSnap ? 8 : 1;
-           const pos = component.position;
-           const x = pos.x + (event.key === 'ArrowLeft' ? -delta : event.key === 'ArrowRight' ? delta : 0);
-           const y = pos.y + (event.key === 'ArrowUp' ? -delta : event.key === 'ArrowDown' ? delta : 0);
-           const position={...pos,
-             x:Math.max(0,Math.min(page.canvasWidth-pos.width,x)),
-             y:Math.max(0,Math.min(page.canvasHeight-pos.height,y))};
-           applyPage({...page,
-             components:page.components.map(item=>item.id===component.id?{...item,position}:item)});
-         }
-       } : undefined}
+        if (event.currentTarget !== event.target || previewMode) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          const ids=selectCanvasIds(page.components,selectionIds,component.id,
+            event.shiftKey?'add':event.ctrlKey||event.metaKey?'toggle':'replace');
+          setSelectionIds(ids);
+          setSelectedId(ids.includes(component.id)?component.id:ids[ids.length-1]??'');
+          setPageSettingsOpen(false);
+        }
+      } : undefined}
       onDragOver={!previewMode && !libraryPreview && !isPhoneBuilder ? (event) => { event.preventDefault(); event.stopPropagation(); setDragOverId(isLayoutContainer(component) ? component.id : rawLayoutParentId(component) ?? component.id); } : undefined}
       onDragLeave={!previewMode && !libraryPreview ? () => setDragOverId('') : undefined}
       onDrop={!previewMode && !libraryPreview && !isPhoneBuilder ? (event) => handleDrop(event, index, component.region ?? 'main', isLayoutContainer(component) ? component.id : rawLayoutParentId(component)) : undefined}
@@ -3268,12 +3274,14 @@ function PageBuilder({
   const renderRibbonPanel = () => (<div id="page-builder-tab-content" ref={ribbonStripRef}
           className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
+          {(ribbonTab==='Preview'||ribbonTab==='Arrange') && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
             <PageComponentNavigator components={page.components} libraryComponents={libraryComponents}
               pageKey={page.apiName+':'+(page.layoutVariant??'Desktop')}
-              selectedId={selectedId}
-              onSelect={id=>{
-                setSelectedId(id);setSelectionIds([id]);setSelectedRegion(null);setPageSettingsOpen(false);
+              selectedId={selectedId} selectedIds={selectionIds}
+              onSelect={(id,mode)=>{
+                const ids=selectCanvasIds(page.components,selectionIds,id,mode,selectedId);
+                setSelectedId(ids.includes(id)?id:ids[ids.length-1]??'');
+                setSelectionIds(ids);setSelectedRegion(null);setPageSettingsOpen(false);
                 window.requestAnimationFrame(()=>{
                   const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
                   Array.from(nodes??[]).find(node=>node.dataset.componentId===id)
@@ -3853,6 +3861,9 @@ function PageBuilder({
             >
               {page.layoutMode === 'free-canvas' ? <div
                 className={`free-canvas-stage ${canvasSnap && !previewMode ? 'canvas-grid-on' : ''} ${!previewMode ? 'canvas-editing' : ''}`}
+                onPointerDown={canvasMarquee.down} onPointerMove={canvasMarquee.move}
+                onPointerUp={event=>canvasMarquee.end(event)}
+                onPointerCancel={event=>canvasMarquee.end(event,true)}
                 style={{
                   width: page.canvasWidth,
                   height: page.canvasHeight,
@@ -3862,6 +3873,9 @@ function PageBuilder({
                 }}
               >
                 {childrenOf(page.components, null).map((component) => renderPageComponent(component, page.components.findIndex((item) => item.id === component.id)))}
+                {canvasMarquee.rect && <div className="canvas-marquee-selection" aria-hidden="true"
+                  style={{left:canvasMarquee.rect.x,top:canvasMarquee.rect.y,
+                    width:canvasMarquee.rect.width,height:canvasMarquee.rect.height}}/>}
                 {!previewMode && selectedGroupBounds && selected && <div className="canvas-group-outline"
                   role="group" aria-label="Move or resize selected group" style={{
                     left:selectedGroupBounds.x,top:selectedGroupBounds.y,
