@@ -29,6 +29,7 @@ import TenantFederationControls from '../src/core/settings/SettingsWorkspace/Ten
 import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import {createSettingsViews} from '../src/core/settings/SettingsWorkspace/settingsWorkspaceViews';
 import {createSetupHome} from '../src/core/settings/SetupHome/setupHomeView';
+import AppManager from '../src/core/applications/AppManager/AppManager';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
 import '../src/core/workspace/WorkspaceTheme/appleTheme.css';
@@ -206,6 +207,14 @@ function Fixture(){
  if(view==='till')return <AcetillTerminal/>;
  let content;
  if(view==='setup-home')content=<SetupHome onNavigate={noop} request={uxRequest} onShowShortcuts={noop}/>;
+ else if(view==='app-manager')content=<AppManager
+    apps={[
+      {apiName:'AceAssist',label:'Ace Assist',description:'Assisted workspace',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#1d4ed8'},
+      {apiName:'Sales',label:'Sales Workspace',description:'Sales records',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#147d74'}
+    ]}
+    objects={[object]} pages={[]}
+    onSave={async app=>{window.savedAuditApp=app;}}
+    onDelete={async id=>{window.deletedAuditApp=id;}}/>;
  else if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
  else if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
