@@ -12,9 +12,16 @@ export function formulaDollarSuggestions(
  flows?:readonly {apiName:string;label:string}[]
 ):DollarFormulaSuggestion[]{
  const suggestions:DollarFormulaSuggestion[]=[
-  {reference:'$session',label:'Current page session ID'},
-  {reference:'$tenant.name',label:'Company name (Company Settings)'},
-  {reference:'$tenant.logo',label:'Company logo (Company Settings)'}
+  {reference:'$session.id',label:'Current page session ID'},
+  {reference:'$session.user.id',label:'Logged-in user ID'},
+  {reference:'$session.user.email',label:'Logged-in user email'},
+  {reference:'$session.user.name',label:'Logged-in user name'},
+  {reference:'$session.user.locale',label:'Logged-in user locale'},
+  {reference:'$session.user.timeZone',label:'Logged-in user time zone'},
+  {reference:'$session.user.currencyIsoCode',label:'Logged-in user currency'},
+  {reference:'$session.tenant.id',label:'Current tenant ID'},
+  {reference:'$session.tenant.name',label:'Company name (Company Settings)'},
+  {reference:'$session.tenant.logo',label:'Company logo (Company Settings)'}
  ];
  const unique=new Set<string>();
  for(const choice of choices){
