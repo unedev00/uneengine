@@ -83,7 +83,8 @@ const inputs:DefinitionInput[]=[
   ['ISBLANK',1,1],['ISNULL',1,1],['ISNUMBER',1,1],['ISCHANGED',1,1,validationAndFlow],
   ['ISNEW',0,0,validationAndFlow],['ISCLONE',0,0],['PRIORVALUE',1,1,validationAndFlow],
   ['BLANKVALUE',2,2],['NULLVALUE',2,2],['TEXT',1,1],['VALUE',1,1],['LEN',1,1],
-  ['COLLECTIONCOUNT',1,1,flowOnly],['COLLECTIONSUM',2,2,flowOnly],
+  ['COLLECTIONCOUNT',1,1,['flow_formula','ribbon_binding']],
+  ['COLLECTIONSUM',2,2,['flow_formula','ribbon_binding']],
   ['COLLECTION',2,20,['flow_formula','ribbon_binding']],
   ['TABLE',1,129,['ribbon_binding']],['SUM',1,1],['ASCII',1,1],
   ['LOWER',1,1],['UPPER',1,1],['PROPER',1,1],['TRIM',1,1],['LEFT',1,2],['RIGHT',1,2],
@@ -101,7 +102,7 @@ const inputs:DefinitionInput[]=[
   ['ADDMONTHS',2,2],['TIMEVALUE',1,1],['TIMENOW',0,0],['PI',0,0],['SIN',1,1],
   ['COS',1,1],['TAN',1,1],['ASIN',1,1],['ACOS',1,1],['ATAN',1,1],['ATAN2',2,2],
   ['SINH',1,1],['COSH',1,1],['TANH',1,1],['DEGREES',1,1],['RADIANS',1,1],
-  ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,flowOnly]
+  ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,['flow_formula','ribbon_binding']]
 ];
 
 const definitions=new Map<string,FormulaFunctionDefinition>();
