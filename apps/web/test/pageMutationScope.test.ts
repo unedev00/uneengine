@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {shouldInvalidatePageComponent,applyCompleteRecordMutation} from '../src/core/pages/PageRuntime/pageMutationScope';
+import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation} from '../src/core/pages/PageRuntime/pageMutationScope';
 import {visibleSessionRelatedQuery} from '../src/core/pages/PageRuntime/usePageSessionRelatedQuery';
 import {createRecordPageCoalescer} from '../src/core/authentication/Client/recordPageCoalescer';
 
@@ -106,4 +106,31 @@ test('unknown write projection, deletes and creates must use the existing safe r
   [{objectApiName:'CartLine',operation:'delete' as const,record:{Id:'row-1'}}],
   [{objectApiName:'CartLine',operation:'update' as const,record:{Id:'not-visible',Name:'N',Quantity:1}}]
  ])assert.equal(applyCompleteRecordMutation(rows,'CartLine',{...base,recordChanges}),null);
+});
+
+test('selected secondary COLLECTION and TABLE dependencies invalidate their consumers',()=>{
+ const objs=[{apiName:'Primary',fields:[]},
+  {apiName:'Secondary',fields:[{apiName:'Amount',dataType:'Number'}]},
+  {apiName:'Category',fields:[{apiName:'Name',dataType:'Text'}]},
+  {apiName:'Unrelated',fields:[]}];
+ const reads=pageComponentReadObjectNames('Primary',{
+  objectApiName:'Primary',objectApiName2:'Secondary',objectApiName3:'Category',
+  text:'=SUM(COLLECTION(Secondary.Amount))',caption:'=TABLE(Category)'
+ },objs);
+ assert.deepEqual(reads,['Primary','Secondary','Category']);
+ const mutation=(name:string)=>({pageSessionKey:page,sessionId:session,objectApiNames:[name]});
+ assert.equal(shouldInvalidatePageComponent(mutation('Secondary'),page,session,reads),true);
+ assert.equal(shouldInvalidatePageComponent(mutation('Category'),page,session,reads),true);
+ assert.equal(shouldInvalidatePageComponent(mutation('Unrelated'),page,session,reads),false);
+});
+test('unreferenced selected sources remain idle; unknown dependencies use safe broad refresh',()=>{
+ const objs=[{apiName:'Primary',fields:[]},{apiName:'Secondary',fields:[]}];
+ assert.deepEqual(pageComponentReadObjectNames('Primary',
+  {objectApiName2:'Secondary',title:'Static text'},objs),['Primary']);
+ const unknown=pageComponentReadObjectNames('Primary',
+  {text:'=COLLECTION(Secondary.Amount'},objs);
+ assert.equal(unknown,null);
+ assert.equal(shouldInvalidatePageComponent({
+  pageSessionKey:page,sessionId:session,objectApiNames:['Secondary']
+ },page,session,unknown),true);
 });
