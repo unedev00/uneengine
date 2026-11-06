@@ -185,6 +185,7 @@ test('Card Grid Header Position 22px to 8px changes bounded title height in prev
    assert.match(caption,new RegExp('height:'+height+'px;min-height:0;max-height:'+height+'px'),
     'The authored box height must not expand to intrinsic text size');
    assert.match(caption,/overflow:auto/,'Text must remain scroll accessible');
+   assert.match(caption,/align-items:safe center/,'Overflowing text must not be clipped above the scroll origin');
   }
   assert.match(header(22),/padding:1px 10px/,'Compact header padding should not consume title text');
   assert.match(header(8),/padding:0px 10px/);
