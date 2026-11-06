@@ -3660,15 +3660,15 @@ function PageBuilder({
           <th scope="col" className="page-manager-actions-heading">Actions</th>
           {([['label','Page name'],['apiName','API name']] as const).map(([key,label])=>
             <th key={key} scope="col" aria-sort={pageListSort===key?(pageListSortDescending?'descending':'ascending'):undefined}>
-              <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort(key)}>{label}</button>
+              <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort(key)}>{label} {pageListSort===key&&<span className="md-sort-indicator" aria-hidden="true">{pageListSortDescending?'↓':'↑'}</span>}</button>
             </th>)}
           <th scope="col">Application</th><th scope="col">Version</th>
           {showRelatedObjectColumn&&<th scope="col">Related object</th>}<th scope="col">Layout</th>
           <th scope="col" aria-sort={pageListSort==='updatedAt'?(pageListSortDescending?'descending':'ascending'):undefined}>
-            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('updatedAt')}>Last modified</button>
+            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('updatedAt')}>Last modified {pageListSort==='updatedAt'&&<span className="md-sort-indicator" aria-hidden="true">{pageListSortDescending?'↓':'↑'}</span>}</button>
           </th>
           <th scope="col" aria-sort={pageListSort==='status'?(pageListSortDescending?'descending':'ascending'):undefined}>
-            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('status')}>Status</button>
+            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('status')}>Status {pageListSort==='status'&&<span className="md-sort-indicator" aria-hidden="true">{pageListSortDescending?'↓':'↑'}</span>}</button>
           </th>
         </tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
