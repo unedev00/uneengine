@@ -549,3 +549,41 @@
   .advanced-fixed-field:has(input[type="checkbox"])>label{
   white-space:normal;line-height:16px;
 }
+
+
+/* Smart Numpad Header uses the SAME SQL property controls as other components.
+ * Its formula-driven placeholder/prefix/suffix need a full-width editor, not the
+ * 2-column chip grid used by small Extras counters. Scoped to numpad only. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental {
+ grid-template-columns:minmax(0,1fr)!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental-setting {
+ display:grid!important;grid-template-columns:98px minmax(0,1fr)!important;
+ gap:5px!important;width:100%!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental-setting>.smart-property {
+ box-sizing:border-box!important;width:100%!important;
+ max-width:100%!important;min-width:0!important;flex:1 1 auto!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental-setting>.smart-property>.smart-label,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental-setting .smart-formula-prefix {
+ display:none!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental-setting .smart-formula-filter,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+ .smart-design2-ribbon[data-smart-api="smart_numpad"] .smart-design2-area-section
+ .smart-design2-supplemental-setting .smart-formula {
+ flex:1 1 auto!important;min-width:0!important;width:100%!important;
+}
