@@ -256,6 +256,7 @@
     "apps/web/test/pageComponentNavigator.test.mjs",
     "apps/web/test/pageDetailsAndFormulaNavigation.test.mjs",
     "apps/web/test/pageManagerTabHierarchy.test.mjs",
+    "apps/web/test/pageMutationScope.test.ts",
     "apps/web/test/pagePerformanceAnalysis.test.ts",
     "apps/web/test/pageStateDependencies.test.ts",
     "apps/web/test/phase1UiFoundation.test.ts",
