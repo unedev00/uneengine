@@ -9,8 +9,6 @@ const waitImage=(img:HTMLImageElement)=>img.complete?Promise.resolve():
   img.addEventListener('load',()=>resolve(),{once:true});
   img.addEventListener('error',()=>reject(Error('Print Template image did not load')),{once:true});
  });
-function escapeSvg(value:string){return value.replaceAll('&','&amp;').replaceAll('<','&lt;')
- .replaceAll('>','&gt;').replaceAll('"','&quot;');}
 async function embedImages(root:Element,copy:Element){
  const originals=[root,...root.querySelectorAll('*')];
  const copies=[copy,...copy.querySelectorAll('*')];
@@ -117,9 +115,9 @@ export async function createTemplatePdf(template:string,id:string,request:Reques
   throw Error('Print Template did not render');
  const root=dialog.querySelector('.free-canvas-runtime')??dialog.querySelector('main')??dialog;
  const clone=root.cloneNode(true) as HTMLElement;
- clone.querySelectorAll('button,[data-print-hide]').forEach(item=>item.remove());
  copyStyles(root,clone);
  await embedImages(root,clone);
+ clone.querySelectorAll('button,[data-print-hide]').forEach(item=>item.remove());
  const width=Math.round(pageSize.width),height=Math.round(pageSize.height);
  clone.style.width=width+'px';clone.style.minHeight=height+'px';
  clone.style.height='auto';clone.style.maxHeight='none';clone.style.transform='none';
