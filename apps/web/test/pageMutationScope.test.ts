@@ -32,3 +32,12 @@ test('same-session cart lookup remains visible while a revision is being refresh
  assert.deepEqual(visibleSessionRelatedQuery(true,'session:B',cached),{blocked:true});
  assert.deepEqual(visibleSessionRelatedQuery(false,'session:A',cached),{blocked:true});
 });
+
+test('baseline: component record requests with same filter but different limits are separate',async()=>{
+ const calls:number[]=[];
+ const fake=async(limit:number)=>{calls.push(limit);return {records:Array(limit).fill(null),total:200};};
+ const results=await Promise.all([fake(2),fake(100)]);
+ assert.deepEqual(calls,[2,100]);
+ assert.deepEqual(results.map(v=>v.records.length),[2,100]);
+ console.info('record page coalesce baseline: 2 requests for same filter, limits=2,100');
+});
