@@ -216,10 +216,10 @@ export function renderSetupShell(ctx: any) {
             </nav>
           </aside>
         )}
-        {route.kind === 'setup' && runtimeFormFactor !== 'Phone' && !route.dashboardView && (workspace !== 'flow-builder' || !route.resourceApiName) && !(workspace === 'page-builder' && Boolean(route.resourceApiName)) && (
+        {route.kind === 'setup' && !route.dashboardView && (workspace !== 'flow-builder' || !route.resourceApiName) && !(workspace === 'page-builder' && Boolean(route.resourceApiName)) && (
           <aside id="md-setup-sidebar" className={setupSidebarCollapsed ? 'setup-sidebar setup-sidebar-collapsed' : 'setup-sidebar'}
             onClick={(event: React.MouseEvent<HTMLElement>) => {
-              if (window.matchMedia('(min-width: 600px) and (max-width: 1023px)').matches
+              if (window.matchMedia('(max-width: 1023px)').matches
                 && (event.target as HTMLElement).closest('.tree-item')) setSetupSidebarCollapsed(true);
             }}>
             <div className="setup-sidebar-toolbar">
@@ -287,8 +287,7 @@ export function renderSetupShell(ctx: any) {
           {(route.kind!=='setup'||(sessionPermissionsLoaded&&setupRouteAllowed)) && <React.Fragment>
           {route.kind === 'setup' && runtimeFormFactor === 'Phone' && workspace !== 'home' && !route.dashboardView &&
             <nav className="mobile-settings-back-bar" aria-label="Settings navigation">
-              <button type="button" onClick={() => openSetupWorkspace('home')}><ChevronLeft size={20} aria-hidden="true" />Settings</button>
-              <strong>{workspaces.find(item => item.id === workspace)?.label ?? 'Settings'}</strong>
+              <button type="button" onClick={() => openSetupWorkspace('home')}><ChevronLeft size={20} aria-hidden="true" />Setup Home</button>
             </nav>}
           {(route.kind === 'record-list' || route.kind === 'record-detail') && (metadataLoadError && !objects.length ? <section className="setup-card" role="alert"><h1>Unable to load record metadata</h1><p>{metadataLoadError}</p><button className="btn" onClick={() => window.location.reload()}>Retry</button><button className="btn" onClick={() => navigateRoute({kind:'setup',workspace:'rbac',resourceApiName:'Users'})}>Back to Users</button></section> : <RecordWorkspace route={route} objects={objects} apps={apps} pages={pages}
             availableFlows={flows.filter(item => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
