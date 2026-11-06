@@ -381,3 +381,8 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  .auth-screen--standalone .auth-card .auth-signin-footer {margin-top:2px;padding-top:0;gap:0 8px}
  .auth-screen--standalone .auth-card .auth-signin-footer a {min-height:32px}
 }
+
+@media(max-width:360px) and (min-height:461px) and (orientation:portrait) {
+ .auth-screen--standalone .auth-card > .auth-product-heading,
+ .auth-screen--standalone .auth-card > p {display:none}
+}
