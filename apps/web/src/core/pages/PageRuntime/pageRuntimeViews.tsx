@@ -5,6 +5,7 @@ import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyComplete
 
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
+import {evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
 import {isActionPlan,isScreenAction,PartialActionError} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen,type PopupScreen} from './screenFormula';
 import {PageFormulaScope,useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
@@ -611,7 +612,12 @@ function MetadataBoundPageComponent({
       }
       return undefined;
     }
-    if (source === '$session') return sessionId;
+    if (source === '$session'||source==='$session.id') return sessionId;
+    if (typeof source==='string'&&source.startsWith('$session.')) {
+      const resolved=evaluateFieldExpressionDetailed(source,{}, {sessionId,pageState});
+      if(resolved.error)throw Error(resolved.error);
+      return resolved.value;
+    }
     if (typeof source === 'string' && source.startsWith('$state.')) {
       return resolvePageStatePath(pageState,source.slice(7));
     }
