@@ -527,10 +527,16 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.ok((await control.getAttribute('class'))?.includes('disabled'),
    'Unsupported Image slot must remain disabled');
  }
- await chooseArea('Body');
- const tabsFocus=row.locator('[data-design-row="2"] [data-design-slot="focused"]');
+ // Selected-state styling was intentionally migrated to Focused R1C1.
+ // Verify both the real property binding and its editable control.
+ await chooseArea('Focused');
+ const tabsFocus=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
+ assert.equal(await tabsFocus.getAttribute('data-property'),'selectedTabColor',
+   'Focused Fill must preserve the existing Selected Tab colour key');
  assert.equal(await tabsFocus.getAttribute('data-supported'),'true',
-   'Selected Tab colour must remain editable in Body');
+   'Selected Tab colour must remain editable in Focused');
+ assert.equal(await tabsFocus.locator('button.office-ribbon-colour-property').isDisabled(),false,
+   'Selected Tab colour palette must be enabled');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await chooseArea('Row');
  assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),1,
