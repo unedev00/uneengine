@@ -1,6 +1,6 @@
 import {beginOptimisticNumberChange} from './optimisticPageNumbers';
 import {printRecordPages} from './printRecordPages';
-import {shouldInvalidatePageComponent,applyCompleteRecordMutation,type PageMutationDetail} from './pageMutationScope';
+import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation,type PageMutationDetail} from './pageMutationScope';
 
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
@@ -402,11 +402,13 @@ function MetadataBoundPageComponent({
     loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
   const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
+  const readObjectApiNames=pageComponentReadObjectNames(objectApiName,properties,objects);
+  const readObjectKey=JSON.stringify(readObjectApiNames);
   // Only data consumers of the written objects reload; unknown Flow writes remain broad.
   useEffect(() => {
     const sync = (event: Event) => {
       const detail = (event as CustomEvent<PageMutationDetail>).detail;
-      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,[objectApiName])) return;
+      if (!shouldInvalidatePageComponent(detail,pageSessionKey,sessionId,readObjectApiNames)) return;
       if (detail.sessionId && detail.sessionId !== sessionId) {
         setSessionId(detail.sessionId);
         setPageState({});
@@ -428,7 +430,7 @@ function MetadataBoundPageComponent({
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
   }, [pageSessionKey, sessionId, objectApiName,recordOffset,recordsForQueryKey,
     recordDataKey,recordTotal,records,printRows,relatedQuery,recordQuery,
-    properties.liveRefreshEnabled,properties.collectionFormula,properties.recordPresenterApiName]);
+    properties.liveRefreshEnabled,properties.collectionFormula,properties.recordPresenterApiName,readObjectKey]);
   const lastRecordDataKey=useRef('');
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
