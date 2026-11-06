@@ -3631,7 +3631,7 @@ function PageBuilder({
            <option value="apiName">API name</option><option value="status">Status</option>
           </select>
         </label>
-        <ResponsiveDataList rows={paginatedPages} includeTablet getId={item=>item.apiName}
+        <ResponsiveDataList rows={paginatedPages} includeTablet includeNarrowDesktop getId={item=>item.apiName}
           label="Page Manager pages" emptyText={pageListSearch||pageListObject||pageListDeviceTab!=="all"?"No pages match the selected filters.":"No pages of this type exist yet."}
           onOpen={item=>void openPageDesign(item.apiName)} openLabel="Open page designer"
           columns={[
