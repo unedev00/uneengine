@@ -1,3 +1,4 @@
+import {requestPageMediaAsset} from '../src/core/pages/PageRuntime/pageMediaAssetCoalescer';
 import {dispatchComponentEvent} from '../src/component-libraries/shared/componentEventDispatch.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -378,4 +379,35 @@ test('metadata change publishes input but dispatches a single action',async()=>{
  const direct={onChange:(value:unknown)=>{events.push(String(value));}};
  await dispatchComponentEvent(direct,'change',7);
  assert.deepEqual(events,['7']);
+});
+
+test('in-flight private media coalesces only identical auth identity and ID',async()=>{
+ const asset='11111111-1111-4111-8111-111111111111';
+ const other='22222222-2222-4222-8222-222222222222';
+ let calls=0;
+ let release!:(payload:{contentType:string;contentBase64:string})=>void;
+ const pending=new Promise<{contentType:string;contentBase64:string}>(resolve=>{release=resolve;});
+ const req=async<T>(path:string):Promise<T>=>{
+  calls++;assert.ok(path.startsWith('/media-assets/'));return pending as T;
+ };
+ const p1=requestPageMediaAsset(req,asset,'actor-one');
+ const p2=requestPageMediaAsset(req,asset,'actor-one');
+ const p3=requestPageMediaAsset(req,asset,'actor-two');
+ const p4=requestPageMediaAsset(req,other,'actor-one');
+ assert.equal(calls,3);
+ assert.strictEqual(p1,p2);
+ release({contentType:'image/png',contentBase64:'test'});
+ await Promise.all([p1,p2,p3,p4]);
+ await requestPageMediaAsset(req,asset,'actor-one');
+ assert.equal(calls,4,'after completion, API reauthorizes without cached media');
+ await assert.rejects(requestPageMediaAsset(req,'invalid','actor-one'),/Invalid media asset ID/);
+});
+test('rejected shared media request is retryable',async()=>{
+ const asset='11111111-1111-4111-8111-111111111111';
+ let calls=0;
+ const req=async<T>():Promise<T>=>{calls++;throw Error('Access denied');};
+ await Promise.allSettled([requestPageMediaAsset(req,asset,'actor'),requestPageMediaAsset(req,asset,'actor')]);
+ assert.equal(calls,1);
+ await assert.rejects(requestPageMediaAsset(req,asset,'actor'),/Access denied/);
+ assert.equal(calls,2);
 });

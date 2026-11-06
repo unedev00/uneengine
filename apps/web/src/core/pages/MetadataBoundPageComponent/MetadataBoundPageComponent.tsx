@@ -11,7 +11,8 @@ import * as React from 'react';
 import {useState,useEffect,useRef,useMemo} from 'react';
 import {ensureTenantBrand} from '../../branding/tenantBrandLoader';
 import {pageStateDependencies,applyPageSelection} from '../PageRuntime/pageStateDependencies';
-import {loadFlowScreenRecordPage} from '../../authentication/Client/authClient';
+import {loadFlowScreenRecordPage,getAccessToken} from '../../authentication/Client/authClient';
+import {requestPageMediaAsset} from '../PageRuntime/pageMediaAssetCoalescer';
 // Load the browser API client only during the mounted effect, not on SSR import.
 import {presentPageRecords,type ChannelGrant} from '../../records/RecordWorkspace/recordPresentationAdapters';
 import {filterPageComponentRecords,pageComponentRecordQuery,bindPageStateProperties,activePageRecordFilters,collectionRecordFilterFormula} from '../PageRuntime/pageComponentBindings';
@@ -645,9 +646,7 @@ export default function MetadataBoundPageComponent({
        pageSessionKey, componentId: component.id,
       device: formFactor, onNavigate, onLaunchFlow, onAction, actionError,
       disabled:behaviorAction(properties,'click',behaviorContext??{formFactor})!=='enabled',
-      loadAsset: (id:string) => /^[0-9a-f-]{36}$/i.test(id)
-        ? apiRequest<{contentType:string;contentBase64:string}>('/media-assets/'+id)
-        : Promise.reject(new Error('Invalid media asset ID')),
+      loadAsset: (id:string) => requestPageMediaAsset<{contentType:string;contentBase64:string}>(apiRequest,id,getAccessToken()??''),
       loadCompanySettings: () => apiRequest('/metadata/currencies'),
       onChange: (value: unknown, dispatch?:{actionHandled?:boolean}) => {
         publishComponentInput(component.id,value);
