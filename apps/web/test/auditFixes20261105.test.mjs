@@ -72,3 +72,20 @@ test('Authentication recovery has a working fallback and appropriately keyed vis
   assert.match(login,/auth-password-toggle/);
   assert.match(styles,/max-width: 420px/);
 });
+
+test('Setup Home keeps all five quick-access tools and no duplicate welcome navigation',()=>{
+ const home=source('src/core/settings/SetupHome/setupHomeView.tsx');
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(home,/setupShortcuts\.map/);
+ assert.match(home,/setup-home-summary/);
+ assert.doesNotMatch(home,/className="welcome-quick"/);
+ assert.match(css,/welcome-banner\.setup-home-summary/);
+});
+
+test('Sign-in reveal state and autofill maintain accessible light controls',()=>{
+ const login=source('src/core/authentication/Login/loginView.tsx');
+ const styles=source('src/core/authentication/Login/standaloneLogin.css');
+ assert.match(login,/aria-pressed=\{passwordVisible\}/);
+ assert.match(styles,/input:-webkit-autofill/);
+ assert.match(styles,/color-scheme:light/);
+});
