@@ -43,7 +43,8 @@ export async function executePageFormulaAction(
  createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>,
  /** Page data the action may read: TABLE()/COLLECTION() sources and $component values. */
  formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'> & {timingName?:string}={}
-):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[]}>{
+):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[];
+ recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
   // Production diagnostics are disabled by default and scoped to this browser session.

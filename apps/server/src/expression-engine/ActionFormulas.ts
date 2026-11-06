@@ -288,6 +288,8 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   let completed=0;
   let recordChanged=false;
   const mutatedObjectApiNames=new Set<string>();
+  const recordChanges:Array<{objectApiName:string;operation:'create'|'update'|'delete';
+   record:Record<string,unknown>}> = [];
   let iterations=0;
 
   /** Runs one list of steps. Each IF condition is decided once, when its first step runs,
@@ -463,6 +465,10 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      completed++;
      recordChanged=true;
      mutatedObjectApiNames.add(step.object);
+     const savedChange={objectApiName:step.object,
+      operation:method==='POST'?'create' as const:method==='PUT'?'update' as const:'delete' as const,
+      record:response.record??{}};
+     recordChanges.push(savedChange);
      if(step.alias){
       const alias=step.alias;
       const later=(next:ActionStep):boolean=>[...stepNodes(next),...(next.guards??[]).map(g=>g.condition)]
@@ -473,6 +479,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
        if(typeof id!=='string'||!recordIdPattern.test(id))throw Error('Missing saved record ID');
        const read=await tracedRequest<{record:Record<string,unknown>}>('/records/'+step.object+'/'+encodeURIComponent(id));
        variables[alias]=read.record;
+       savedChange.record=read.record;
       }
      }
     }catch(error){
@@ -489,7 +496,8 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   let status:'completed'|'failed'='completed';
   try{
    await run(steps,Object.create(null),true);
-   return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames]};
+   return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames],
+    recordChanges};
   }catch(error){
    status='failed';
    throw error;

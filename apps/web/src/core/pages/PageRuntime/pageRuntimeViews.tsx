@@ -1,5 +1,5 @@
 import {printRecordPages} from './printRecordPages';
-import {shouldInvalidatePageComponent,type PageMutationDetail} from './pageMutationScope';
+import {shouldInvalidatePageComponent,applyCompleteRecordMutation,type PageMutationDetail} from './pageMutationScope';
 
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
@@ -397,11 +397,24 @@ function MetadataBoundPageComponent({
         setSessionId(detail.sessionId);
         setPageState({});
       }
+      let fastPath=false;
+      try{fastPath=window.sessionStorage.getItem('metadrive:mutation-record-fastpath')==='1';}
+      catch{/* Disabled private session. */}
+      if(fastPath&&detail?.sessionId===sessionId&&recordOffset===0&&
+        recordsForQueryKey===recordDataKey&&recordTotal===records.length&&
+        !printRows&&!properties.liveRefreshEnabled&&
+        !properties.collectionFormula&&!properties.recordPresenterApiName&&
+        !relatedQuery.filter&&!recordQuery.filter&&!recordQuery.filters?.length){
+        const updated=applyCompleteRecordMutation(records,objectApiName,detail);
+        if(updated){setRecords(updated);return;}
+      }
       setRevision(value => value + 1);
     };
     window.addEventListener('metadrive:page-flow-mutated', sync);
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
-  }, [pageSessionKey, sessionId, objectApiName]);
+  }, [pageSessionKey, sessionId, objectApiName,recordOffset,recordsForQueryKey,
+    recordDataKey,recordTotal,records,printRows,relatedQuery,recordQuery,
+    properties.liveRefreshEnabled,properties.collectionFormula,properties.recordPresenterApiName]);
   const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
   const selectedRecordFilters=activePageRecordFilters(properties);
  const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
@@ -735,7 +748,8 @@ function MetadataBoundPageComponent({
         }));
       if(result.recordChanged){
         window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames}
+          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames,
+            recordChanges:result.recordChanges}
         }));
       }
       return {updated:true};

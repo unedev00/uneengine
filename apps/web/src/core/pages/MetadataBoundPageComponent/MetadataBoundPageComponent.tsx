@@ -1,5 +1,5 @@
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
-import {shouldInvalidatePageComponent,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
+import {shouldInvalidatePageComponent,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
 import {useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
@@ -217,11 +217,23 @@ export default function MetadataBoundPageComponent({
         setSelectedCategories({});
         setSelectedFilterRecords({});
       }
+      let fastPath=false;
+      try{fastPath=window.sessionStorage.getItem('metadrive:mutation-record-fastpath')==='1';}
+      catch{/* Disabled private session. */}
+      if(fastPath&&detail?.sessionId===sessionId&&recordOffset===0&&
+        recordsForRequest===recordRequestKey&&recordTotal===records.length&&
+        !properties.collectionFormula&&!properties.recordPresenterApiName&&
+        !relatedQuery.filter&&!recordQuery.filter&&!recordQuery.filters?.length){
+        const updated=applyCompleteRecordMutation(records,objectApiName,detail);
+        if(updated){setRecords(updated);return;}
+      }
       setRevision(value => value + 1);
     };
     window.addEventListener('metadrive:page-flow-mutated', sync);
     return () => window.removeEventListener('metadrive:page-flow-mutated', sync);
-  }, [pageSessionKey, sessionId, objectApiName]);
+  }, [pageSessionKey, sessionId, objectApiName,recordOffset,recordsForRequest,
+    recordRequestKey,recordTotal,records,relatedQuery,recordQuery,
+    properties.collectionFormula,properties.recordPresenterApiName]);
   useEffect(() => {
     let active = true;
     if(lastRequestKey.current!==recordRequestKey){
@@ -481,7 +493,8 @@ export default function MetadataBoundPageComponent({
         }));
       if(result.recordChanged){
         window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames}
+          detail:{pageSessionKey,sessionId,objectApiNames:result.mutatedObjectApiNames,
+            recordChanges:result.recordChanges}
         }));
       }
       return {updated:true};

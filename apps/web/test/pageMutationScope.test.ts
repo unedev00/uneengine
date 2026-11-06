@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {shouldInvalidatePageComponent} from '../src/core/pages/PageRuntime/pageMutationScope';
+import {shouldInvalidatePageComponent,applyCompleteRecordMutation} from '../src/core/pages/PageRuntime/pageMutationScope';
 import {visibleSessionRelatedQuery} from '../src/core/pages/PageRuntime/usePageSessionRelatedQuery';
 import {createRecordPageCoalescer} from '../src/core/authentication/Client/recordPageCoalescer';
 
@@ -84,4 +84,26 @@ test('coalescer rejected read is retryable and cannot leak partial success',asyn
  assert.ok(denied.every(result=>result.status==='rejected'));
  await batch('actor:1',2,async()=>{calls++;return {records:[{Id:'safe'}],total:1};});
  assert.equal(calls,2);
+});
+
+test('complete authorized row changes update in place without invalidation',()=>{
+ const original=[{Id:'row-1',Name:'Old',Quantity:1},{Id:'row-2',Name:'Other',Quantity:4}];
+ const mutation={pageSessionKey:page,sessionId:session,objectApiNames:['CartLine'],
+  recordChanges:[{objectApiName:'CartLine',operation:'update' as const,
+   record:{Id:'row-1',Name:'New',Quantity:2}}]};
+ const result=applyCompleteRecordMutation(original,'CartLine',mutation);
+ assert.deepEqual(result,[{Id:'row-1',Name:'New',Quantity:2},original[1]]);
+ assert.equal(original[0].Name,'Old','state remains immutable');
+ assert.equal(shouldInvalidatePageComponent(mutation,page,session,['Product']),false);
+});
+
+test('unknown write projection, deletes and creates must use the existing safe refetch',()=>{
+ const rows=[{Id:'row-1',Name:'Original',Quantity:1}];
+ const base={pageSessionKey:page,sessionId:session,objectApiNames:['CartLine']};
+ for(const recordChanges of [
+  [{objectApiName:'CartLine',operation:'update' as const,record:{Id:'row-1'}}],
+  [{objectApiName:'CartLine',operation:'create' as const,record:{Id:'row-2',Name:'New',Quantity:1}}],
+  [{objectApiName:'CartLine',operation:'delete' as const,record:{Id:'row-1'}}],
+  [{objectApiName:'CartLine',operation:'update' as const,record:{Id:'not-visible',Name:'N',Quantity:1}}]
+ ])assert.equal(applyCompleteRecordMutation(rows,'CartLine',{...base,recordChanges}),null);
 });
