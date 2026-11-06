@@ -86,5 +86,6 @@ test('The Design 2 SQL migration consolidates duplicate sections without touchin
  assert.match(ribbon,/const design2SupplementalProperties:UneRibbonProperty\[\]/);
  assert.match(ribbon,/!slot.slotKey.startsWith\('extra_'\)/);
  assert.match(ribbon,/smart-design2-supplemental-setting/);
- assert.match(dock,/margin-top:12px!important/);
+ assert.match(dock,/margin-top:0!important/);
+ assert.match(dock,/border-top:1px solid #cbd5e1!important/);
 });

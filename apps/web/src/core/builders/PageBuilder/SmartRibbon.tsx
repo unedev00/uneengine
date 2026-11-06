@@ -1,6 +1,6 @@
 import {useState,useRef,useEffect,useLayoutEffect,type ChangeEvent,type CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
-import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff,Hand,ChevronDown,Plus,X} from 'lucide-react';
+import {AlignLeft,AlignCenter,AlignRight,Bold,WrapText,ArrowLeftRight,ArrowUpDown,ImagePlus,SlidersHorizontal,Eye,EyeOff,ChevronDown,Plus,X} from 'lucide-react';
 import {RibbonTextSizeIcon,RibbonCornerRadiusIcon} from './SmartRibbonIcons';
 import type {ObjectMetadata} from '../../metadata/Definitions/metadata';
 import type {UneRibbonProperty,UneBuilderTab,Design2Slot,Design2SlotRule} from './uneBuilderPropertyInventory';
@@ -95,7 +95,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
 
  const expandedInspector=inspectorSection===undefined?'Body':inspectorSection;
  const chooseInspectorSection=(section:string)=>onInspectorSectionChange?.(expandedInspector===section?null:section);
- const [countKey,setCountKey]=useState<'cardsPerRow'|'cardsPerColumn'>('cardsPerRow');
+ const [countKey,setCountKey]=useState('cardsPerRow');
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [filterTarget,setFilterTarget]=useState('Record');
  const [filterFieldId,setFilterFieldId]=useState<string|null>(null);
@@ -200,7 +200,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // A null property key displays the fallback glyph, always disabled.
  // SQL supplies the shared area order. Retired aliases cannot return from
  // an older cached catalog during rolling deployment.
- const retiredDesign2Areas=new Set(['Tabs','Card Grid','Focused',
+ const retiredDesign2Areas=new Set(['Tabs','Card Grid',
    'Custom Button 1','Custom Button 2','Calendar']);
  const design2Areas=[...new Map(design2Slots
    .filter(slot=>!retiredDesign2Areas.has(slot.area))
@@ -213,6 +213,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // occupy their fixed R2C5/R3C6 positions on EVERY section (disabled when
  // the current area/component has no matching supported property).
  // Existing SQL still owns each selected area's semantic property binding.
+ // Focused and Extras are canonical sections, not component-specific overlays.
  const design2TemplateSlots=[
    ...design2Slots.filter(slot=>slot.area==='Body'&&!slot.slotKey.startsWith('extra_')),
    ...design2Slots.filter(slot=>slot.area==='Image'&&
@@ -269,15 +270,18 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
    }):[];
  // Independent properties from legacy areas stay editable below the same
  // 17-cell Body icon matrix; SQL owns their types, values and eligibility.
+ // Only the two Card Grid extras remain outside the shared icon matrix.
+ // Other former Body extras now edit their original keys in canonical slots.
  const design2SupplementalProperties:UneRibbonProperty[]=tab==='Design2'?design2Slots
-   .filter(slot=>slot.area==='Body'&&slot.slotKey.startsWith('extra_'))
+   .filter(slot=>slot.area==='Extras'&&
+     ['extra_cardGap','extra_selectionMode'].includes(slot.slotKey))
    .sort((a,b)=>a.order-b.order)
    .flatMap(slot=>{
      const rule=design2SlotRules.find(item=>item.componentApi===api&&
        item.area===slot.area&&item.slotKey===slot.slotKey);
      const property=definitions.find(item=>item.id===rule?.propertyKey);
      return property?.components.includes(api)?[{...property,
-       tab:'Design2' as const,group:'Body',designRow:slot.row,designOrder:slot.order,
+       tab:'Design2' as const,group:'Extras',designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}]:[];
    }):[];
  // The Excel specifies the WIDTH of each control at its R/C coordinate,
@@ -678,70 +682,112 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             <ChevronDown size={15} aria-hidden="true"/>{area}
           </button>
           {expandedInspector===area&&<div className="smart-inspector-section-content">
-      <div className="smart-ribbon-items">
+      {area!=='Extras'&&<div className="smart-ribbon-items">
         {[1,2,3].map(row=><div key={row} className="smart-ribbon-row"
-          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)+(row===1?' 79px':'')}}>
+          data-design-row={row} style={{gridTemplateColumns:design2GridColumns(row)+(row===1?' 110px':row===2?' 76px':'')}}>
           {sectionRow(area,row).map(controls)}
           {row===1&&(()=>{
-        const key=api==='smart_tabs'?'tabCount':
-          api==='smart_cart'?'cardsPerRow':
-          api==='smart_card_grid'&&countKey==='cardsPerColumn'?'cardsPerColumn':'cardsPerRow';
+        // Select existing persisted property keys; no duplicate count state.
+        const options=api==='smart_card_grid'
+          ?[{key:'cardsPerRow',label:'Columns'},{key:'cardsPerColumn',label:'Rows'}]:
+          api==='smart_tabs'
+          ?[{key:'tabCount',label:'No. of tabs'},{key:'tabIndex',label:'Default tab'}]:
+          api==='smart_calendar'
+          ?[{key:'showDays',label:'Show days'},{key:'firstDay',label:'First day'}]:
+          api==='smart_cart'?[{key:'cardsPerRow',label:'Count'}]:[];
+        const key=options.some(option=>option.key===countKey)?countKey:(options[0]?.key??'');
         const property=definitions.find(p=>p.id===key);
         const supported=Boolean(property?.components.includes(api)&&
           (!sharedPropertyIds||sharedPropertyIds.includes(key)));
-        const sourceBound=api==='smart_tabs'&&smartTabsHaveDataSource(properties);
+        const sourceBound=api==='smart_tabs'&&key==='tabCount'&&smartTabsHaveDataSource(properties);
         const enabled=area==='Body'&&supported&&!sourceBound;
         const raw=properties[property?.valueKeys?.[api]??key]??
-          property?.defaultsOverrides?.[api]??property?.default??1;
+          property?.defaultsOverrides?.[api]??property?.default;
         const numeric=Number(raw);
-        const value=Number.isFinite(numeric)?Math.trunc(numeric):1;
+        const value=Number.isFinite(numeric)?Math.trunc(numeric):key==='tabIndex'?0:1;
         const title=sourceBound?'Number of tabs is determined by its data source':
           property?.label??'Count';
-        const minimum=property?.min??1;
-        const maximum=property?.max??(api==='smart_tabs'?20:99);
+        const minimum=property?.min??(key==='tabIndex'?0:1);
+        const maximum=property?.max??(key==='tabIndex'?99:api==='smart_tabs'?20:99);
+        const selectedDays=Array.isArray(raw)?raw.filter((day):day is string=>typeof day==='string'):[];
         return <div className="smart-design2-count" role="group"
-          aria-label="Count controls" data-supported={enabled?'true':'false'}
+          aria-label="Appearance value controls" data-supported={enabled?'true':'false'}
           data-source-bound={sourceBound?'true':'false'}>
           <span className="smart-design2-count-field" title={title}>
-            <Hand size={16} aria-hidden="true"/>
+            <select className="smart-design2-count-choice" aria-label="Appearance property"
+              title="Choose appearance property" disabled={area!=='Body'||options.length<2}
+              value={key} onChange={event=>{setCountKey(event.target.value);setDaysOpen(false);}}>
+              {options.length?options.map(option=>
+                <option key={option.key} value={option.key}>{option.label}</option>):
+                <option value="">Count</option>}
+            </select>
+            {key==='showDays'?<>
+              <button ref={daysButton} type="button" className="smart-design2-days-trigger"
+                aria-label="Show Days" aria-expanded={daysOpen} disabled={!enabled}
+                onClick={()=>setDaysOpen(open=>!open)}>{selectedDays.length}/7</button>
+              {daysOpen&&createPortal(<div ref={daysMenu} className="smart-weekday-popup"
+                role="dialog" aria-label="Choose calendar days"
+                style={{top:daysPosition.top,left:daysPosition.left}}>
+                {weekdays.map(([day,label])=><label key={day}>
+                  <input type="checkbox" checked={selectedDays.includes(day)}
+                    onChange={event=>{if(!enabled)return;
+                      onChange({...properties,showDays:event.target.checked
+                        ?[...selectedDays,day]:selectedDays.filter(item=>item!==day)});
+                    }}/>{label}</label>)}
+              </div>,document.body)}
+            </>:
+            key==='firstDay'?<select className="smart-design2-day-choice"
+              aria-label="First Day" title="First Day" disabled={!enabled}
+              value={String(raw??'mon')} onChange={event=>{
+                if(enabled)onChange({...properties,[property!.valueKeys?.[api]??key]:event.target.value});
+              }}>{(property?.choices??['sun','mon','tue','wed','thu','fri','sat']).map(day=>
+                <option key={day} value={day}>{day.slice(0,3)}</option>)}</select>:
             <BuilderNumberInput key={componentId+':'+key}
               className="smart-office-number" step={1} integer
-              aria-label={api==='smart_tabs'?'Number of tabs':title}
+              aria-label={api==='smart_tabs'&&key==='tabCount'?'Number of tabs':title}
               title={title} min={minimum} max={maximum}
               disabled={!enabled} value={supported?value:''}
               onValueChange={next=>{
                 if(enabled)onChange({...properties,[property!.valueKeys?.[api]??key]:next});
-              }}/>
+              }}/>}
           </span>
-          {api==='smart_card_grid'&&<select className="smart-design2-count-choice"
-            aria-label="Card count dimension" title="Card count dimension"
-            disabled={activeDesign2Area!=='Body'}
-            value={countKey} onChange={event=>
-              setCountKey(event.target.value as 'cardsPerRow'|'cardsPerColumn')}>
-            <option value="cardsPerRow">Columns</option>
-            <option value="cardsPerColumn">Rows</option>
-          </select>}
+        </div>;
+      })()}
+      {row===2&&(()=>{
+        // Position retains the existing Card Grid padding key, not a new focused override.
+        const property=definitions.find(p=>p.id==='cardPadding');
+        const enabled=area==='Body'&&api==='smart_card_grid'&&
+          Boolean(property?.components.includes(api))&&
+          (!sharedPropertyIds||sharedPropertyIds.includes('cardPadding'));
+        const raw=properties.cardPadding??property?.defaultsOverrides?.[api]??property?.default;
+        const value=raw===undefined||raw===null||raw===''?'':Number(raw);
+        return <div className="smart-design2-padding" role="group"
+          aria-label="Padding controls" data-supported={enabled?'true':'false'}>
+          <select aria-label="Position spacing property" title="Padding"
+            disabled={!enabled} value="cardPadding" onChange={()=>{}}>
+            <option value="cardPadding">Padding</option>
+          </select>
+          <BuilderNumberInput key={componentId+':cardPadding'}
+            className="smart-office-number" aria-label="Card Padding"
+            title="Card Padding" min={property?.min??0} max={property?.max??160}
+            disabled={!enabled} value={enabled?value:''}
+            onValueChange={next=>{
+              if(enabled)onChange({...properties,cardPadding:next});
+            }}/>
         </div>;
       })()}
           </div>)}
-      </div>
+      </div>}
 
-      {area==='Body'&&design2SupplementalProperties.length>0&&
-        <div className="smart-design2-supplemental" role="group" aria-label="Additional body settings">
+      {area==='Extras'&&design2SupplementalProperties.length>0&&
+        <div className="smart-design2-supplemental" role="group" aria-label="Extras settings">
           {design2SupplementalProperties.map(property=>
             <div className="smart-design2-supplemental-setting" key={property.id}>
               <span className="smart-design2-supplemental-label" title={property.label}>{property.label}</span>
               {controls(property)}
             </div>)}
         </div>}
-      {area==='Image'&&api==='smart_card_grid'&&(()=>{
-        const property=definitions.find(p=>p.id==='imageBorderColor'&&p.components.includes(api));
-        return property?<div className="smart-design2-image-border">
-          <RibbonColorPalette variant="property" kind="border" label="Image Border Color"
-            value={String(properties.imageBorderColor??'')}
-            onChange={value=>onChange({...properties,imageBorderColor:value})}/>
-        </div>:null;
-      })()}
+
           </div>}
         </section>)}
       </div>

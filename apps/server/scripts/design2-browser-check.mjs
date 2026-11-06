@@ -33,18 +33,22 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const consolidated=await readFile(new URL('../src/system-support/migrations/20271116-page-builder-inspector-consolidation.sql',import.meta.url),'utf8');
  await db.query(consolidated);
  await db.query(consolidated);
+ // The next migration moves existing Focused/Extras controls to canonical areas.
+ const focusedExtras=await readFile(new URL('../src/system-support/migrations/20271117-page-builder-focused-extras-padding.sql',import.meta.url),'utf8');
+ await db.query(focusedExtras);
+ await db.query(focusedExtras);
  const fourRows=await db.query(`SELECT r.component_api,r.area,r.slot_key,r.property_key,
         COALESCE(component.enabled,false) enabled
    FROM md_builder_design2_slot_rules r
    JOIN md_builder_ribbon_component_rules component
      ON component.component_api=r.component_api AND component.property_key=r.property_key
    WHERE (r.component_api,r.area,r.slot_key) IN (
-     ('smart_calendar','Body','focused'),
+     ('smart_calendar','Focused','fill'),
      ('smart_card_grid','Body','wrap'),
      ('smart_navigation','Image','imageFill'),
      ('smart_toggle','Body','shape'))`);
  for(const [api,area,slot,key] of [
-   ['smart_calendar','Body','focused','defaultValueColor'],
+   ['smart_calendar','Focused','fill','defaultValueColor'],
    ['smart_card_grid','Body','wrap','wrapText'],
    ['smart_navigation','Image','imageFill','imageFill'],
    ['smart_toggle','Body','shape','shapeId']
@@ -85,11 +89,13 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(slot('Body','radius')?.row_no,1,'Body Radius must be R1');
  assert.equal(slot('Body','radius')?.order_no,5,'Body Radius must be C5');
  assert.equal(slot('Body','radius')?.width_px,80,'Body Radius must be 80px');
- assert.equal(slot('Body','extra_selectionMode')?.property_key,'selectionMode');
- assert.equal(slot('Body','extra_cardGap')?.property_key,'gap');
- assert.equal(slot('Body','extra_tabIndex')?.property_key,'tabIndex');
+ assert.equal(slot('Extras','extra_selectionMode')?.property_key,'selectionMode');
+ assert.equal(slot('Extras','extra_cardGap')?.property_key,'gap');
+ assert.equal(slot('Body','extra_tabIndex'),undefined);
+ assert.equal(slot('Focused','width')?.row_no,2);
+ assert.equal(slot('Image','border')?.property_key,'imageBorderColor');
  assert.equal(slot('Row Supporting','text')?.property_key,'rowSupportingTextColor');
- for(const retired of ['Tabs','Card Grid','Focused','Custom Button 1','Custom Button 2','Calendar'])
+ for(const retired of ['Tabs','Card Grid','Custom Button 1','Custom Button 2','Calendar'])
   assert.equal(listed.rows.some(row=>row.area===retired),false,
     'Retired inspector area remains: '+retired);
  assert.equal(slot('Row','fill')?.property_key,'backgroundColor',
@@ -100,7 +106,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(definitions.rows.find(row=>row.property_key==='backgroundColor')?.tab,'Design',
   'Original Design property moved during Design 2 migration');
  assert.equal(definitions.rows.find(row=>row.property_key==='rowBold')?.tab,'Design2');
- console.info('Design 2 SQL migration replay and consolidated Body mapping verified');
+ console.info('Design 2 SQL migration replay and Focused/Extras mappings verified');
  await db.query(`INSERT INTO md_component_definitions (tenant_id,api_name,renderer_key,enabled)
  VALUES ($1,'smart_cart','one-bundled:smart_cart',true),
         ($1,'smart_tabs','one-bundled:smart_tabs',true),
@@ -233,7 +239,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // The SQL catalog orders the consolidated sections for every component.
  const allAreas=(await areaButtons().allTextContents()).map(value=>value.trim());
  assert.deepEqual(allAreas,['Body','Badge','Image','Header','Header Supporting',
-  'Table','Row','Row Supporting','Summary','Summary 2','Footer',
+  'Table','Row','Focused','Extras','Row Supporting','Summary','Summary 2','Footer',
   'Button','Button 2','Button 3','Button 4','Button 5']);
  assert.equal(new Set(allAreas).size,allAreas.length,
   'Every metadata area must appear exactly once in the collapsible inspector');
@@ -260,30 +266,37 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(template.length,17,'The approved R1-R3 fixed ribbon must have 17 icon controls');
  const countBox=page.locator('.smart-design2-count');
  const countInput=countBox.locator('input.smart-office-number');
- assert.equal(await countBox.count(),1,'The hand count box must always be mounted');
- assert.equal(await countBox.locator('.smart-design2-count-field svg').count(),1,
-  'The hand icon must be inside the same bordered numeric field');
+ assert.equal(await countBox.count(),1,'The Appearance value box must always be mounted');
+ assert.equal(await countBox.locator('.smart-design2-count-choice').count(),1,
+  'The property dropdown and value must share one bordered field');
+ assert.equal(await countBox.locator('.smart-design2-count-field svg').count(),0,
+  'The previous hand icon should be removed');
  assert.equal(await countInput.getAttribute('type'),'number');
  assert.equal(await countInput.getAttribute('step'),'1','Count must have native spinner arrows');
- const firstHand=await countBox.boundingBox();
+ const firstCount=await countBox.boundingBox();
  const horizontalVertical=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="orientation"]');
  if(await horizontalVertical.count()){
   const hv=await horizontalVertical.boundingBox();
-  assert.ok(hv&&firstHand&&firstHand.x>=hv.x+hv.width-2&&
-   firstHand.x-(hv.x+hv.width)<16,
-   'Hand control must be immediately beside H/V without a wide gap');
+  assert.ok(hv&&firstCount&&firstCount.x>=hv.x+hv.width-2&&
+   firstCount.x-(hv.x+hv.width)<16,
+   'Appearance value control must be immediately beside orientation');
  }
 
  assert.ok(template.every(item=>item.visible&&item.hasEditor),
   'Every fixed cell must show its real control, even when disabled');
  for(const section of allAreas){
   await chooseArea(section);
+  if(section==='Extras'){
+   assert.equal(await page.locator('.smart-design2-supplemental').count(),0,
+    'Extras for Cart should not display unsupported controls');
+   continue; // This section has two explicit settings, not the 17-icon matrix.
+  }
   assert.deepEqual(await design2GridFingerprint(),template,
    'Switching to '+section+' changed the R/C icon layout instead of only enable/disable');
-  assert.equal(await countBox.count(),1,'Hand box disappeared in '+section);
-  const hand=await countBox.boundingBox();
-  assert.ok(hand&&firstHand&&Math.abs(hand.x-firstHand.x)<1,
-   'Hand box moved when selecting '+section);
+  assert.equal(await countBox.count(),1,'Appearance value box disappeared in '+section);
+  const count=await countBox.boundingBox();
+  assert.ok(count&&firstCount&&Math.abs(count.x-firstCount.x)<1,
+   'Appearance value box moved when selecting '+section);
   assert.equal(await countInput.isDisabled(),section!=='Body',
    'Count must be disabled outside a supported Body context');
  }
@@ -514,10 +527,16 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.ok((await control.getAttribute('class'))?.includes('disabled'),
    'Unsupported Image slot must remain disabled');
  }
- await chooseArea('Body');
- const tabsFocus=row.locator('[data-design-row="2"] [data-design-slot="focused"]');
+ // Selected-state styling was intentionally migrated to Focused R1C1.
+ // Verify both the real property binding and its editable control.
+ await chooseArea('Focused');
+ const tabsFocus=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
+ assert.equal(await tabsFocus.getAttribute('data-property'),'selectedTabColor',
+   'Focused Fill must preserve the existing Selected Tab colour key');
  assert.equal(await tabsFocus.getAttribute('data-supported'),'true',
-   'Selected Tab colour must remain editable in Body');
+   'Selected Tab colour must remain editable in Focused');
+ assert.equal(await tabsFocus.locator('button.office-ribbon-colour-property').isDisabled(),false,
+   'Selected Tab colour palette must be enabled');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await chooseArea('Row');
  assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),1,
@@ -803,8 +822,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  };
  const fourRibbon=page.locator('.smart-design2-group');
 
- const calendarBlock=await selectFour('four-calendar','Body');
- const focus=fourRibbon.locator('[data-design-row="2"] [data-design-slot="focused"]');
+ const calendarBlock=await selectFour('four-calendar','Focused');
+ const focus=fourRibbon.locator('[data-design-row="1"] [data-design-slot="fill"]');
  assert.equal(await focus.getAttribute('data-property'),'defaultValueColor');
  assert.equal(await focus.getAttribute('data-design-column'),'1');
  assert.equal(await focus.getAttribute('data-supported'),'true');
@@ -813,7 +832,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.ok(await focusTrigger.locator('svg').count(),'Calendar Focus must use the palette icon');
  await focusTrigger.click();
  const palette=page.locator('.office-ribbon-colour-palette');
- await palette.getByRole('textbox',{name:'HEX for Focused Color'}).fill('#126abc');
+ await palette.getByRole('textbox',{name:'HEX for Default Value Color'}).fill('#126abc');
  await palette.getByRole('button',{name:'Apply',exact:true}).click();
  const focusedDay=calendarBlock.locator('.smart-calendar-selected-day');
  await focusedDay.waitFor({state:'visible'});
