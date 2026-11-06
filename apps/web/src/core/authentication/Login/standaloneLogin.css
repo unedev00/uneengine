@@ -168,3 +168,28 @@
   .auth-screen .auth-card > p { margin-block: 4px; }
   .auth-screen .auth-card .form-control { min-height: 36px; }
 }
+
+/* Input-affordance separation and recovery deep-linking (UX-0004–0009, 0017–18). */
+.auth-screen .auth-card .auth-password-control { display:flex;align-items:center;position:relative;min-width:0; }
+.auth-screen .auth-card .auth-password-control .form-control { min-width:0;width:100%;padding-right:62px; }
+.auth-screen .auth-card .auth-password-toggle {
+ position:absolute;right:4px;top:50%;transform:translateY(-50%);
+ min-width:48px;min-height:40px;padding:0 6px;
+ border:0;border-radius:8px;background:transparent;
+ color:var(--standalone-accent,#075b95);font-weight:600;
+}
+.auth-screen .auth-card .auth-recovery-action { justify-content:flex-end;margin:3px 0 10px; }
+.auth-screen .auth-card .auth-inline-actions .text-action { min-height:40px; }
+.auth-screen .auth-card :is(input,select,textarea) { padding-inline:12px; }
+.auth-screen .auth-card .auth-signin-footer {
+ margin-top:14px; padding-top:12px;border-top:1px solid #e2e8f0;
+ text-align:center;font-size:13px;
+}
+.auth-screen .auth-card .auth-signin-footer a {color:#075b95;text-decoration:underline;min-height:40px;display:inline-flex;align-items:center;}
+.auth-screen .auth-card .auth-brand-logo {height:auto;max-height:82px;}
+.auth-screen .auth-card .eyebrow { margin:10px 0; }
+@media(max-height:460px) and (orientation:landscape){
+ .auth-screen .auth-card > p {display:none;}
+ .auth-screen .auth-card .auth-recovery-action {margin:0;}
+ .auth-screen .auth-card .auth-signin-footer {padding:0;margin:4px 0;}
+}
