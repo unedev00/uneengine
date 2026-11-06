@@ -9,7 +9,7 @@
   flex:1 1 0!important;width:auto!important;min-width:0!important;
 }
 .page-builder-design-dock{
-  box-sizing:border-box;flex:0 0 440px;width:440px;
+  box-sizing:border-box;flex:0 0 308px;width:308px;
   position:sticky;top:0;max-height:calc(100vh - 96px);overflow-x:hidden;overflow-y:auto;
   background:#f4f5f7;border-right:1px solid #ccd2dd;color:#25344c;
 }
@@ -50,24 +50,24 @@
 /* Dock tab panel: vertical, no fixed ribbon height, no horizontal scroll. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
   display:block!important;box-sizing:border-box!important;
-  width:440px!important;height:auto!important;min-height:0!important;max-height:none!important;
+  width:308px!important;height:auto!important;min-height:0!important;max-height:none!important;
   padding:10px!important;overflow:visible!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
   >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]{
-  width:420px!important;min-width:0!important;max-width:420px!important;
+  width:284px!important;min-width:0!important;max-width:284px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content
   >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]
   >.smart-ribbon-group.smart-design2-group[data-design-three-row="true"]{
-  flex:none!important;width:420px!important;min-width:0!important;max-width:420px!important;
+  flex:none!important;width:284px!important;min-width:0!important;max-width:284px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
   padding:0!important;border:0!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-workbench{
-  width:420px!important;min-width:0!important;max-width:420px!important;
+  width:284px!important;min-width:0!important;max-width:284px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
   gap:10px!important;
 }
@@ -76,13 +76,13 @@
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-context[data-design-row="0"]{
   flex:none!important;flex-wrap:wrap!important;align-content:flex-start!important;
-  width:420px!important;min-width:0!important;max-width:420px!important;
+  width:284px!important;min-width:0!important;max-width:284px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
   gap:6px 4px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-area-picker{
-  order:0!important;flex:0 0 420px!important;width:420px!important;height:30px!important;
+  order:0!important;flex:0 0 284px!important;width:284px!important;height:30px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-area-select{height:28px!important}
@@ -122,7 +122,7 @@
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
   .smart-design2-group .smart-design2-workbench>.smart-ribbon-items{
   height:auto!important;gap:6px!important;padding-top:8px!important;
-  border-top:1px solid #ccd2dd!important;width:420px!important;
+  border-top:1px solid #ccd2dd!important;width:284px!important;
 }
 
 
@@ -164,7 +164,7 @@
  .smart-design2-group .smart-design2-context[data-design-row="0"] .smart-design2-arrange-actions[data-design-section]{
  box-sizing:border-box!important;display:flex!important;flex-flow:row wrap!important;
  align-content:flex-start!important;align-items:center!important;
- width:420px!important;min-width:420px!important;max-width:420px!important;
+ width:284px!important;min-width:284px!important;max-width:284px!important;
  flex:none!important;height:auto!important;min-height:0!important;max-height:none!important;
  gap:6px 4px!important;position:relative!important;
  padding:23px 0 0!important;margin:0!important;
@@ -252,23 +252,23 @@
  height:auto!important;min-height:26px!important;
  flex-wrap:wrap!important;margin:4px 0 0!important;
 }
-/* Fixed 420px Design matrix fits the 440px dock including its 10px padding.
+/* Fixed Design matrix fits the compact dock, including scrollbar and padding.
  * Preserve vertical scrolling for taller content but never scroll sideways. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  >.smart-ribbon.smart-design2-ribbon{
  box-sizing:border-box!important;max-width:100%!important;
 }
 
-/* FIX: The left dock stacks its context vertically. A 420px flex basis on
- * the area picker became 420px of HEIGHT and produced the enormous blank box.
- * Keep its existing 420px width and 30px height instead. */
+/* FIX: The left dock stacks its context vertically. A 284px flex basis on
+ * the area picker became 284px of HEIGHT and produced the enormous blank box.
+ * Keep its existing 284px width and 30px height instead. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-group .smart-design2-context[data-design-row="0"]>.smart-design2-area-picker{
   box-sizing:border-box!important;order:0!important;
-  flex:0 0 30px!important;width:420px!important;min-width:420px!important;max-width:420px!important;
+  flex:0 0 30px!important;width:284px!important;min-width:284px!important;max-width:284px!important;
   height:30px!important;min-height:30px!important;max-height:30px!important;
 }
-/* Keep the original 440px dock and every icon width. Reserve enough room
+/* Compact dock; reserve enough room
  * for the vertical scrollbar so the sixth 66px alignment button is visible. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content{
   padding:10px 2px!important;
@@ -294,7 +294,7 @@
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  >.smart-ribbon.smart-design-source{
  box-sizing:border-box!important;display:block!important;
- width:420px!important;min-width:420px!important;max-width:420px!important;
+ width:284px!important;min-width:284px!important;max-width:284px!important;
  height:auto!important;min-height:0!important;max-height:none!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
@@ -304,12 +304,12 @@
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-area-list{
  box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
- width:420px!important;min-width:420px!important;max-width:420px!important;
+ width:284px!important;min-width:284px!important;max-width:284px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-inspector-section{
  box-sizing:border-box!important;display:block!important;
- width:420px!important;min-width:420px!important;max-width:420px!important;
+ width:284px!important;min-width:284px!important;max-width:284px!important;
  margin:0!important;padding:0!important;
  border:0!important;border-bottom:1px solid #ccd2dd!important;
 }
@@ -340,21 +340,21 @@
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-inspector-section-content{
- box-sizing:border-box!important;width:420px!important;
- min-width:420px!important;max-width:420px!important;
+ box-sizing:border-box!important;width:284px!important;
+ min-width:284px!important;max-width:284px!important;
  padding:1px 0 9px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-area-section .smart-ribbon-items{
  box-sizing:border-box!important;display:flex!important;
  flex-direction:column!important;align-items:flex-start!important;
- gap:0!important;width:420px!important;min-width:420px!important;
+ gap:0!important;width:284px!important;min-width:284px!important;
  height:auto!important;min-height:0!important;max-height:none!important;
  margin:0!important;padding:0!important;overflow:visible!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-area-section .smart-ribbon-row[data-design-row]{
- width:420px!important;min-width:420px!important;
+ width:284px!important;min-width:284px!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
@@ -366,11 +366,11 @@
  .smart-design2-dimensions-section .smart-design2-context[data-design-row="0"] .smart-design2-dimensions,
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-dimensions-section .smart-design2-context[data-design-row="0"] .smart-design2-arrange-actions{
- width:420px!important;min-width:420px!important;max-width:420px!important;
+ width:284px!important;min-width:284px!important;max-width:284px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design-source .smart-source-heading{
- display:flex!important;align-items:center!important;width:420px!important;
+ display:flex!important;align-items:center!important;width:284px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design-source .smart-source-heading>.smart-inspector-section-toggle{
@@ -437,7 +437,7 @@
  grid-auto-flow:row!important;grid-template-rows:26px!important;
  grid-auto-rows:26px!important;column-gap:4px!important;row-gap:0!important;
  justify-content:start!important;align-items:center!important;
- width:420px!important;min-width:420px!important;max-width:420px!important;
+ width:284px!important;min-width:284px!important;max-width:284px!important;
  height:26px!important;min-height:26px!important;max-height:26px!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
@@ -474,7 +474,7 @@
  .smart-design2-supplemental {
  box-sizing:border-box!important;display:grid!important;
  grid-template-columns:repeat(2,minmax(0,1fr))!important;
- gap:6px 8px!important;width:420px!important;max-width:420px!important;
+ gap:6px 8px!important;width:284px!important;max-width:284px!important;
  padding:10px 6px 2px!important;border-top:1px solid #d6e0eb!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
@@ -490,4 +490,62 @@
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
  .smart-design2-supplemental-setting > .smart-property {
  flex:0 0 auto!important;min-width:0!important;
+}
+
+/* Compact shared Page Builder inspector: ~30% narrower than the original
+ * 440px CSS dock. At any browser zoom its CSS proportions remain identical.
+ * SQL property bindings, event handlers and disabled states stay unchanged. */
+.page-builder-design-dock{
+  --page-builder-dock-width:308px;
+  --page-builder-dock-content-width:284px;
+}
+.page-builder-design-dock-header{padding-left:5px;padding-right:4px;gap:2px}
+.page-builder-design-dock-header .office-ribbon-tabs{
+  justify-content:space-between;gap:0;
+}
+.page-builder-design-dock-header .office-ribbon-tabs>button[role=tab]{
+  padding:7px 5px!important;font-size:12px!important;
+}
+/* The same six fixed icon positions and compact numeric widths apply across
+ * Body, Header, Image, Badge and every other SQL-backed Design section. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-area-section .smart-ribbon-row[data-design-row]{
+  column-gap:4px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-area-section .smart-ribbon-row[data-design-row="1"],
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-area-section .smart-ribbon-row[data-design-row="3"]{
+  grid-template-columns:40px 40px 40px 40px 40px 60px!important;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-area-section .smart-ribbon-row[data-design-row="2"]{
+  grid-template-columns:60px 60px 40px 40px!important;
+}
+/* Count and Padding are not dynamic toolbar slots. They occupy permanent
+ * places inside Extras and use the existing component eligibility checks. */
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-extras-fixed{
+  box-sizing:border-box;display:flex;flex-flow:row nowrap;align-items:center;
+  gap:8px;width:284px;min-width:0;max-width:100%;
+  padding:8px 6px 10px;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-extras-cell{
+  display:flex;align-items:center;flex:none;min-width:0;
+}
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-extras-fixed .smart-design2-count,
+.page-builder-design-dock .office-builder-ribbon #page-builder-tab-content
+  .smart-design2-extras-fixed .smart-design2-padding{
+  position:static!important;grid-area:auto!important;margin:0!important;
+}
+/* Match labels to controls; retain 12px type and the existing input height. */
+.page-builder-design-dock .page-builder-advanced-inline
+  .advanced-fixed-field:has(input[type="checkbox"]){
+  justify-content:flex-start!important;gap:6px!important;
+}
+.page-builder-design-dock .page-builder-advanced-inline
+  .advanced-fixed-field:has(input[type="checkbox"])>label{
+  white-space:normal;line-height:16px;
 }
