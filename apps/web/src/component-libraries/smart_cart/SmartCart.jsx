@@ -309,6 +309,5 @@ export default function SmartCart({p,records,Picture,expression,fieldAllowed,fir
     <span data-md-bind={p.builderPreview?"totalLabel":undefined} data-md-bind-titles={p.builderPreview?"Total heading":undefined}>{summaryLabels.Total}</span><span data-md-bind={p.builderPreview?"totalValue":undefined} data-md-bind-titles={p.builderPreview?"Total amount":undefined} aria-label={summaryAmounts.Total===null?summaryLabels.Total+" not bound":undefined}>{summaryAmounts.Total??"—"}</span>
    </div>
   </section>
-  {(p.builderPreview||p.previewOnly)&&<div className="smart-cart-preview-note">Visual preview — totals and actions are configured separately</div>}
  </section>;
 }
