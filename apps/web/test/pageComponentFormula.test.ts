@@ -37,7 +37,7 @@ test('secondary COLLECTION uses 100-row bounded pages for 0 through 200 rows',as
   const rows=await loadBoundedCollectionSource('Secondary',async (_name,options)=>{
    reads.push(options);
    return {total,records:Array.from({length:Math.min(options.limit,Math.max(0,total-options.offset))},
-    (_,index)=>({Id:String(options.offset+index)})};
+    (_,index)=>({Id:String(options.offset+index)}))};
   });
   assert.equal(rows.length,total);
   assert.deepEqual(reads,total<=100?[{limit:100,offset:0}]:
