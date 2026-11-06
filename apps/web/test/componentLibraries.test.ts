@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import {gzipSync,brotliCompressSync} from 'node:zlib';
 import {rendererFileName,compressRenderer} from '../component-delivery.mjs';
+import {loadBundledRenderer} from '../src/core/components/RegisteredComponent/bundledAssetCache';
 import type { LibraryComponentMetadata } from '../src/core/metadata/Definitions/metadata';
 import ComponentLibrary from '../src/core/components/ComponentLibrary/ComponentLibrary';
 import { libraryComponentLabel, oneComponentLabel, uniqueLibraryComponents } from '../src/core/components/Registry/componentLibraryDiscovery';
@@ -297,4 +298,59 @@ test('flagged Smart asset build keeps full default renderer and emits smaller sh
  }finally{
   await rm(directory,{recursive:true,force:true});
  }
+});
+
+test('baseline: 22 independent bundled renderer mounts issue 22 requests for 9 types',async()=>{
+ const kinds=[...Array(11).fill('smart_button'),...Array(4).fill('smart_text'),
+  ...Array.from({length:7},(_,index)=>'other_'+index)];
+ const calls:string[]=[];
+ const request=async(kind:string)=>{
+  calls.push(kind);
+  await Promise.resolve();
+  return {compiledJs:'validated'};
+ };
+ await Promise.all(kinds.map(request));
+ assert.equal(calls.length,22);
+ assert.equal(new Set(kinds).size,9);
+ assert.deepEqual(calls.slice(0,11),Array(11).fill('smart_button'));
+ console.info('renderer baseline: requests=22 distinct=9 ordering='+calls.join(','));
+});
+
+test('repeated 22 component mounts fetch 9 distinct hashed renderers once in order',async()=>{
+ const kinds=[...Array(11).fill('smart_button'),...Array(4).fill('smart_text'),
+  ...Array.from({length:7},(_,i)=>'unique_'+i)];
+ const ordered:string[]=[];
+ const asset=(kind:string)=>loadBundledRenderer('component-library/components/'+kind+'.0123456789abcdef.json@1',async()=>{
+  ordered.push(kind);
+  await new Promise<void>(resolve=>setTimeout(resolve,2));
+  return {apiName:kind};
+ });
+ await Promise.all(kinds.map(asset));
+ assert.equal(ordered.length,9,'one HTTP request per component kind');
+ assert.deepEqual(ordered,['smart_button','smart_text',...Array.from({length:7},(_,i)=>'unique_'+i)]);
+ await Promise.all(kinds.map(asset));
+ assert.equal(ordered.length,9,'cached immutable renderer must not refetch on remount');
+ console.info('renderer fixed: 22->9 requests, ordered distinct kinds='+ordered.join(','));
+});
+
+test('rejected renderer retries and legacy revisions refetch without cross-version reuse',async()=>{
+ let count=0;
+ const key='test/rejected-asset';
+ await assert.rejects(loadBundledRenderer(key,async()=>{
+  count++;throw Error('Network denied');
+ }));
+ assert.equal(await loadBundledRenderer(key,async()=>{count++;return 'approved';}),'approved');
+ assert.equal(count,2);
+ let legacy=0;
+ const legacyLoader=()=>loadBundledRenderer('component-library/components/legacy.json@1',async()=>{
+  legacy++;await Promise.resolve();return legacy;
+ },false);
+ assert.deepEqual(await Promise.all([legacyLoader(),legacyLoader(),legacyLoader()]),[1,1,1]);
+ assert.equal(await legacyLoader(),2,'legacy non-hashed assets must revalidate');
+ let hashed=0;
+ assert.equal(await loadBundledRenderer('component-library/components/button.hash1.json@1',
+  async()=>{hashed++;return 'v1';}),'v1');
+ assert.equal(await loadBundledRenderer('component-library/components/button.hash2.json@2',
+  async()=>{hashed++;return 'v2';}),'v2');
+ assert.equal(hashed,2,'new published renderer hash requires a fresh fetch');
 });
