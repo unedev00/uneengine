@@ -116,6 +116,14 @@ export function createLoginView(logoUrl: string) {
           : failure instanceof TypeError
             ? 'Cannot connect to the workspace API. Please retry when the service is online.'
             : failure instanceof Error ? failure.message : 'Unable to sign in');
+        // Put focus back on the actionable field for invalid credentials.
+        // Connection errors retain focus on the submit/retry action.
+        if (!(failure instanceof DOMException && failure.name==='AbortError') &&
+            !(failure instanceof TypeError)) {
+          window.requestAnimationFrame(()=>{
+            document.getElementById(challenge?'login-mfa':'login-password')?.focus();
+          });
+        }
       } finally {
         window.clearTimeout(timeout);
         setSubmitting(false);
