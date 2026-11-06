@@ -113,7 +113,7 @@ test('Design 2 keeps every SQL R/C slot even when unsupported or metadata is abs
  assert.doesNotMatch(shared,/\.filter\(\(p\):p is NonNullable<typeof p>=>p!==null\)/);
 });
 
-test('Design 2 SQL widths and column positions are never dynamically compacted',()=>{
+test('Design 2 SQL values remain intact while fixed dock slots compact visually',()=>{
  assert.equal(fixed('Body','fill').row,1);
  assert.equal(fixed('Body','fill').order,1);
  assert.equal(fixed('Body','fill').width,40);
@@ -125,6 +125,9 @@ test('Design 2 SQL widths and column positions are never dynamically compacted',
  assert.equal(fixed('Header','height').width,80);
  assert.match(shared,/if\(tab==='Design2'&&p\.designWidth!==undefined\)return p\.designWidth/);
  assert.match(shared,/gridTemplateColumns:design2GridColumns\(row\)/);
+  assert.match(shared,/const design2DockColumns:Record<string,number>/);
+  assert.match(shared,/design2DockNumericSlots.has\(slot.slotKey\)\?60:slot.width/);
+  assert.match(shared,/filter\(slot=>slot.slotKey!=='focused'\)/);
  assert.match(shared,/--smart-slot-column/);
  assert.match(css,/\.smart-ribbon-row:not\(\.smart-design2-top-row\)/);
  assert.match(css,/display:grid!important/);
