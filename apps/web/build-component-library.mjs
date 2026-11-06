@@ -43,12 +43,25 @@ for (const component of catalog.components) {
      .includes('kind="'+component.apiName+'"')
    &&(await readFile(path.join(webSourceRoot,component.jsxFile),'utf8'))
      .includes('import SmartRuntime from "../smart/shared/SmartRuntime.jsx"');
+  // The ordinary renderer remains the default for *all* tenants.
   const asset=JSON.stringify({
     apiName:component.apiName,version:component.version,
-    compiledJs:smartWrapper?'':built.compiledJs,
-    ...(smartWrapper?{sharedSmartRuntime:true,sharedRuntimePath}:{}),
-    scopedCss:built.cssSource,defaultProps
+    compiledJs:built.compiledJs,scopedCss:built.cssSource,defaultProps
   });
+  // A parallel slim renderer is published only for explicit tenant-session
+  // pilots, so rollback never requires changing saved Page Builder metadata.
+  const sharedAsset=smartWrapper?JSON.stringify({
+    apiName:component.apiName,version:component.version,
+    compiledJs:'',sharedSmartRuntime:true,sharedRuntimePath,
+    scopedCss:built.cssSource,defaultProps
+  }):null;
+  const sharedFingerprint=sharedAsset?rendererFileName(component.apiName,sharedAsset):null;
+  if(sharedAsset&&sharedFingerprint){
+    const packed=compressRenderer(sharedAsset);
+    const target='dist/component-library/components/'+sharedFingerprint;
+    await Promise.all([writeFile(target,sharedAsset),
+      writeFile(target+'.gz',packed.gzip),writeFile(target+'.br',packed.brotli)]);
+  }
   const fingerprint=rendererFileName(component.apiName,asset);
   const path=`dist/component-library/components/${fingerprint}`;
   const {gzip,brotli}=compressRenderer(asset);
@@ -59,6 +72,7 @@ for (const component of catalog.components) {
   ]);
   index.push({
     assetPath:'component-library/components/'+fingerprint,
+    ...(sharedFingerprint?{sharedAssetPath:'component-library/components/'+sharedFingerprint}:{}),
     apiName: component.apiName,
     label: component.label,
     description: component.description ?? '',

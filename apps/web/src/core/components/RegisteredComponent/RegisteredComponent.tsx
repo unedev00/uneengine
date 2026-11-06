@@ -63,6 +63,16 @@ export default function RegisteredComponent({ definition, props, formulaInstance
   const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string}|null>(null);
   const [assetError, setAssetError] = useState('');
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
+  // Session storage is origin/tenant-domain scoped. Shared runtime pilots are
+  // explicitly OFF until the tenant operator opts in on that tenant origin.
+  let sharedOptIn=false;
+  if(typeof window!=='undefined'){
+   try{sharedOptIn=window.sessionStorage.getItem('metadrive:shared-smart-runtime')==='1';}
+   catch{/* Storage can be blocked; use the existing renderer. */}
+  }
+  const sharedPath=(definition as LibraryComponentMetadata & {sharedAssetPath?:unknown}).sharedAssetPath;
+  const selectedPath=sharedOptIn&&typeof sharedPath==='string'&&assetApiName.startsWith('smart_')
+    ?sharedPath:(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
   useEffect(() => {
     if (!definition.trustedBundled || definition.compiledJs) { setAsset(null); setAssetError(''); return; }
     const controller = new AbortController();
@@ -70,7 +80,7 @@ export default function RegisteredComponent({ definition, props, formulaInstance
     setAssetError('');
     // Only release-indexed, content-hashed renderer paths qualify for immutable caching.
     // Older catalogs retain the original no-cache path for backward compatibility.
-    const publishedPath=(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
+    const publishedPath=selectedPath;
     const match=typeof publishedPath==='string'
       ?/^component-library\/components\/([A-Za-z][A-Za-z0-9_]*)\.([0-9a-f]{16})\.json$/.exec(publishedPath)
       :null;
@@ -102,7 +112,7 @@ export default function RegisteredComponent({ definition, props, formulaInstance
       });
     return () => controller.abort();
   }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,
-    definition.compiledJs,(definition as LibraryComponentMetadata & {assetPath?:string}).assetPath]);
+    definition.compiledJs,selectedPath]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;
   if (definition.trustedBundled && !definition.compiledJs && assetError)
     return <div role="alert" className="registered-component-error">{assetError}</div>;
