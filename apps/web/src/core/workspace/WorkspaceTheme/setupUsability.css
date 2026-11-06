@@ -765,3 +765,13 @@ html, body, #root { min-width:0; max-width:100%; }
 @media(max-width:399px){
  .lightning .page-manager-mobile-sort .form-control{flex:1 1 125px;min-width:0}
 }
+
+/* UX-0021: hold both lines of card titles in one reserved row so descriptions
+   and title starting edges align even when Company Settings wraps at 1024px. */
+.lightning .home-content .shortcut-card {
+ grid-template-rows: minmax(36px,auto) minmax(0,1fr);
+ min-height:106px;
+ align-items:start;
+}
+.lightning .home-content .shortcut-card .shortcut-title {align-self:start}
+.lightning .home-content .shortcut-card .shortcut-description {align-self:start}
