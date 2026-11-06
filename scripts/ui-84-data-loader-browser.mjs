@@ -28,6 +28,32 @@ try{
   assert.equal(await tabs.getByRole('tab',{name:'Records',exact:true}).getAttribute('aria-selected'),'true');
   await tabs.getByRole('tab',{name:'Smart Component Property Library'}).click();
   assert.equal(await tabs.getByRole('tab',{name:'Smart Component Property Library'}).getAttribute('aria-selected'),'true');
+  if(width===1440){
+    // UX-0047: a real pointer sequence must always change the selected panel.
+    const sequence=['Objects & Fields','Records','Smart Component Property Library',
+      'Objects & Fields','Records','Smart Component Property Library',
+      'Objects & Fields','Records','Smart Component Property Library','Objects & Fields'];
+    for(const label of sequence){
+      const tab=tabs.getByRole('tab',{name:label,exact:true});
+      await tab.click();
+      assert.equal(await tab.getAttribute('aria-selected'),'true',
+        'Mouse click did not activate '+label);
+    }
+  }
+  if(width===1920){
+    // UX-0053: category bar starts on the same x as the inset panel controls.
+    await tabs.getByRole('tab',{name:'Objects & Fields'}).click();
+    const align=await page.evaluate(()=>{
+      const bar=document.querySelector('[aria-label="Data Loader categories"]');
+      const content=document.querySelector('[aria-label="Object Metadata Loader"] > section > .section-toolbar');
+      return {bar:bar?.getBoundingClientRect().left,
+        content:content?.getBoundingClientRect().left};
+    });
+    assert.ok(align.bar!==undefined&&align.content!==undefined,
+      'Data Loader panel geometry unavailable');
+    assert.ok(Math.abs(align.bar-align.content)<=1,
+      'Data Loader tabs and panel content do not align: '+JSON.stringify(align));
+  }
   await tabs.getByRole('tab',{name:'Objects & Fields'}).focus();
   await page.keyboard.press('ArrowRight');
   assert.equal(await tabs.getByRole('tab',{name:'Records'}).getAttribute('aria-selected'),'true');
