@@ -2005,13 +2005,13 @@ function ObjectManager({
     <PlatformPageSlot slotKey="object-workspace"><section className="object-manager surface object-setting-surface" aria-label="Object Manager">
       <div className="section-toolbar"><div><h1>Object Manager</h1><p>Browse object definitions. Select an object to view its details.</p></div>
         <div className="toolbar-actions">
+          <button className="btn btn-brand" type="button" aria-label="Create new object" onClick={onCreateObject}><Plus size={14}/>New Object</button>
           <button className="btn" type="button" onClick={()=>void showDeletedObjects()} disabled={deletedObjectsBusy}
             aria-label={deletedObjectsOpen?'Hide Deleted Objects':'Deleted Objects'}>
             <span className="object-action-long">{deletedObjectsOpen?'Hide Deleted Objects':'Deleted Objects'}</span>
             <span className="object-action-short" aria-hidden="true">{deletedObjectsOpen?'Hide Deleted':'Deleted'}</span></button>
           <a className="btn" href="/une/setup/data-loader" aria-label="Universal Data Loader"><Upload size={14}/>
             <span className="object-action-long">Universal Data Loader</span><span className="object-action-short" aria-hidden="true">Data Loader</span></a>
-          <button className="btn btn-brand" type="button" aria-label="Create new object" onClick={onCreateObject}><Plus size={14}/>New Object</button>
         </div></div>
       {deletedObjectsOpen&&<section className="metadata-card" aria-label="Deleted objects">
         <h2>Deleted Objects</h2>
