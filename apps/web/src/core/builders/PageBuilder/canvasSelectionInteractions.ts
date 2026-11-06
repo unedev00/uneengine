@@ -60,9 +60,9 @@ export function selectCanvasInRect(
 /** Nudge the complete selection using a single clamped delta so relative geometry never changes. */
 export function nudgeCanvasSelection(
   components:readonly PageComponentMetadata[],ids:readonly string[],
-  dx:number,dy:number,canvas:CanvasSize
+  dx:number,dy:number,canvas:CanvasSize,expandGroups=true
 ):PageComponentMetadata[]{
-  const selected=new Set(expandCanvasSelection(components,ids));
+  const selected=new Set(expandGroups?expandCanvasSelection(components,ids):ids);
   const members=components.filter(item=>selected.has(item.id));
   if(!members.length||members.some(item=>!item.position||parentOf(item)||
     item.properties.editorLocked===true))return [...components];
