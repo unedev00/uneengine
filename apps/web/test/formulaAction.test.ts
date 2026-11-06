@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
-import {executeActionPlan,type ActionPlanTiming} from '../../server/src/expression-engine/ActionFormulas.js';
+import {executeActionPlan,PartialActionError,type ActionPlanTiming} from '../../server/src/expression-engine/ActionFormulas.js';
 import type {Expression} from '../../server/src/expression-engine/FormulaParser.js';
 
 const rowId='11111111-1111-4111-8111-111111111111';
@@ -427,6 +427,77 @@ test('optimistic state guard rejects concurrent provisional changes to avoid sta
  const later=beginOptimisticNumberChange('same','session','cartItems',{total:5},
   [{key:'total',value:7}],()=>{});
  later.commit();
+});
+
+test('lazy server expressions do not read unselected IF, CASE and short-circuit branches',async()=>{
+ const urls:string[]=[];
+ const req=async<T>(path:string):Promise<T>=>{
+  urls.push(path);
+  if(path.startsWith('/records/Blocked'))throw Error('Denied unused aggregate');
+  return {total:5} as T;
+ };
+ const formulas=[
+  '=STATE(result, IF(TRUE, 7, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, IF(FALSE, COUNTIFS(Blocked, Status, "New"), 7))',
+  '=STATE(result, CASE("yes", "yes", 7, "no", COUNTIFS(Blocked, Status, "New"), 9))',
+  '=STATE(result, IFERROR(7, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, AND(FALSE, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, OR(TRUE, COUNTIFS(Blocked, Status, "New")))',
+  '=STATE(result, FALSE AND COUNTIFS(Blocked, Status, "New"))',
+  '=STATE(result, TRUE OR COUNTIFS(Blocked, Status, "New"))'
+ ];
+ for(const formula of formulas){
+  urls.length=0;
+  const result=await executePageFormulaAction(req,{formula},{},{},[],'');
+  assert.equal(result.recordChanged,false);
+  assert.deepEqual(urls,[],'unused server call: '+formula);
+ }
+});
+test('IFERROR handles rejected selected server aggregate and evaluates fallback',async()=>{
+ const calls:string[]=[];
+ const result=await executePageFormulaAction(async<T>(path:string):Promise<T>=>{
+  calls.push(path);throw Error('Permission denied');
+ },{formula:'=STATE(result, IFERROR(COUNTIFS(Blocked, Status, "New"), 11))'},
+ {},{},[],'');
+ assert.deepEqual(result.changes,[{key:'result',value:11}]);
+ assert.equal(calls.length,1);
+});
+
+test('partial plan failure exposes committed Object dependencies without retrying a create',async()=>{
+ const paths:string[]=[];
+ const task=executePageFormulaAction(async<T>(path,options)=>{
+  paths.push((options?.method??'GET')+' '+path);
+  if(options?.method==='PUT')throw Error('Permission denied');
+  return {record:{Id:rowId}} as T;
+ },{formula:'ACTIONS(CREATERECORD(Parent, Name, "created", AS(row)), UPDATERECORD(Parent, row.Id, Name, "denied"))'},
+ {},{},[],'');
+ await assert.rejects(task,error=>{
+  assert.ok(error instanceof PartialActionError);
+  assert.deepEqual(error.mutatedObjectApiNames,['Parent']);
+  assert.equal(error.completedActionCount,1);
+  assert.match(error.message,/partially completed/i);
+  assert.match(error.message,/Permission denied/);
+  return true;
+ });
+ assert.deepEqual(paths,['POST /records/Parent','PUT /records/Parent/'+rowId]);
+});
+test('confirmed creates survive later print or navigation failures as partial completion',async()=>{
+ for(const failure of ['PRINT','SCREEN']){
+  let writes=0;
+  const formula=failure==='PRINT'
+   ?'ACTIONS(CREATERECORD(Item, Name, "ok"), PRINT(Receipt, "11111111-1111-4111-8111-111111111111"))'
+   :'ACTIONS(CREATERECORD(Item, Name, "ok"), SCREEN(Home))';
+  const run=executePageFormulaAction(async<T>()=>{writes++;return {record:{Id:rowId}} as T;},
+   {formula},{},{},[],'','',
+   async()=>{throw Error('Print unavailable');},
+   async()=>{throw Error('Navigation unavailable');});
+  await assert.rejects(run,error=>{
+   assert.ok(error instanceof PartialActionError);
+   assert.deepEqual(error.mutatedObjectApiNames,['Item']);
+   return true;
+  });
+  assert.equal(writes,1);
+ }
 });
 
 test('lazy server expressions do not read unselected IF, CASE and short-circuit branches',async()=>{
