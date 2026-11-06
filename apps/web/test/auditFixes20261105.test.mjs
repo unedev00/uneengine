@@ -135,3 +135,19 @@ test('Object Manager phone toolbar retains three named, compact actions',()=>{
  assert.match(manager,/aria-label="Universal Data Loader"/);
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 });
+
+test('UNE privacy policy is a public route accessible without workspace authentication',()=>{
+  const entry=source('src/main.tsx');
+  const marketing=source('src/core/public/MarketingSite/MarketingSite.tsx');
+  const login=source('src/core/authentication/Login/loginView.tsx');
+  const styles=source('src/core/public/MarketingSite/marketing.css');
+  assert.match(entry,/isPrivacyRoute/);
+  assert.match(entry,/pathname === '\/privacy'/);
+  assert.match(entry,/<PrivacyPolicyPage\s*\/>/);
+  assert.match(marketing,/export function PrivacyPolicyPage/);
+  assert.match(marketing,/support@unesolutions\.co\.uk/);
+  assert.match(marketing,/href=\{\x60\$\{prefix\}privacy\x60\}/);
+  assert.match(login,/VITE_PRIVACY_POLICY_URL/);
+  assert.match(login,/BASE_URL\}privacy/);
+  assert.match(styles,/\.une-privacy-main/);
+});

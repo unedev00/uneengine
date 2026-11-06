@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import './core/workspace/WorkspaceTheme/design-system.css';
-import MarketingSite from './core/public/MarketingSite/MarketingSite';
+import MarketingSite, { PrivacyPolicyPage } from './core/public/MarketingSite/MarketingSite';
 import { registerUniversalShell } from './core/workspace/Bootstrap/universalShell';
 import { installPopoverDismissal } from './component-libraries/shared/popoverDismissal';
 import { installKeyboardInset } from './core/workspace/Responsive/keyboardInset';
@@ -137,12 +137,15 @@ if (pathname.toLowerCase().startsWith('/une/apps/acetill/')
   window.location.replace('/acetill/');
 }
 const isMarketingHome = !workspaceDevelopmentRoot && (pathname === '/' || pathname === '/index.html' || (Boolean(basePath) && window.location.pathname === basePath));
+const isPrivacyRoute = pathname === '/privacy' || pathname === '/privacy/' || pathname === '/privacy-policy' || pathname === '/privacy-policy/';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {isMailRoute
       ? <Suspense fallback={<WorkspaceLoadingFallback />}><MailWebmail /></Suspense>
-      : isMarketingHome
+      : isPrivacyRoute
+        ? <PrivacyPolicyPage />
+        : isMarketingHome
         ? <MarketingSite />
         : <WorkspaceFailureBoundary><Suspense fallback={<WorkspaceLoadingFallback />}><Workspace /></Suspense></WorkspaceFailureBoundary>}
   </React.StrictMode>
