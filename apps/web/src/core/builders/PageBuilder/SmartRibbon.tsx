@@ -202,16 +202,14 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // an older cached catalog during rolling deployment.
  const retiredDesign2Areas=new Set(['Tabs','Card Grid',
    'Custom Button 1','Custom Button 2','Calendar']);
- const allDesign2Areas=[...new Map(design2Slots
+ // Keep the shared slot inventory intact for existing components. The
+ // Numpad declares exactly its seven editable areas through SQL mapping rows.
+ const design2Areas=[...new Map(design2Slots
    .filter(slot=>!retiredDesign2Areas.has(slot.area))
    .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
-   .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
- // The keypad declares its seven independent editable parts in SQL. Existing
- // components retain the fixed global inspector inventory unchanged.
- const design2Areas=api==='smart_numpad'
-   ?allDesign2Areas.filter(area=>design2SlotRules.some(rule=>
-      rule.componentApi===api&&rule.area===area))
-   :allDesign2Areas;
+   .sort((a,b)=>a[1]-b[1]).map(([area])=>area)
+   .filter(area=>api!=='smart_numpad'||design2SlotRules.some(rule=>
+     rule.componentApi===api&&rule.area===area));
  const activeDesign2Area=expandedInspector&&design2Areas.includes(expandedInspector)?expandedInspector:'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE, fixed Design scaffold for all sections and selected components.
@@ -493,7 +491,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      (isTextSize||isCorner||isWidth||isHeight||isCanvasAxis);
    const isTabIndex=property.id==='tabIndex';
    let editor;
-   if(['shapeId','numpadKeyShape'].includes(property.id)||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
+   if(property.id==='shapeId'||property.id==='numpadKeyShape'||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
      disabled={!enabled} allowIcons={property.id==='footerShape'?false:(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
