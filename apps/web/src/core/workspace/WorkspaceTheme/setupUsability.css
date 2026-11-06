@@ -706,3 +706,20 @@ html, body, #root { min-width:0; max-width:100%; }
   max-width:100%;box-sizing:border-box;
  }
 }
+
+/* UX-0037: all three Object Manager actions remain on the first toolbar row. */
+.lightning .object-manager .object-action-short{display:none}
+@media(max-width:600px){
+ .lightning .object-manager .object-action-long{display:none}
+ .lightning .object-manager .object-action-short{display:inline}
+ .lightning .object-manager>.section-toolbar>.toolbar-actions {
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+ }
+ .lightning .object-manager>.section-toolbar>.toolbar-actions>.btn-brand {
+  grid-column:auto;grid-row:auto;order:-1;
+ }
+ .lightning .object-manager>.section-toolbar>.toolbar-actions>.btn {
+  font-size:12px;min-height:44px;line-height:1.25;padding-inline:5px;
+  justify-content:center;text-align:center;
+ }
+}
