@@ -170,7 +170,7 @@
   }
   .lightning.md-setup-light:not(.page-builder-editing) .shortcut-grid {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 208px), 1fr));
-    gap: 10px;
+    gap: var(--grid-gutter, 12px);
   }
   .lightning.md-setup-light:not(.page-builder-editing) .shortcut-card {
     min-height: 106px;
