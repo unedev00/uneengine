@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import SmartNumpad from '../src/component-libraries/smart_numpad/SmartNumpad.jsx';
+// Production provides React globally to bundled Smart renderers.
+globalThis.React=React;
 import {applyNumpadKey,normalizeNumpadValue,numpadSettings}
  from '../src/component-libraries/smart_numpad/numpadValue.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
