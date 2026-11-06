@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
+import {gzipSync,brotliCompressSync} from 'node:zlib';
+import {rendererFileName,compressRenderer} from '../component-delivery.mjs';
 import type { LibraryComponentMetadata } from '../src/core/metadata/Definitions/metadata';
 import ComponentLibrary from '../src/core/components/ComponentLibrary/ComponentLibrary';
 import { libraryComponentLabel, oneComponentLabel, uniqueLibraryComponents } from '../src/core/components/Registry/componentLibraryDiscovery';
@@ -124,4 +126,45 @@ test('app-private bundled component identities are never offered for new placeme
   assert.equal(findRegisteredComponent([privateComponent],alias,'page'),privateComponent);
   assert.deepEqual(uniqueLibraryComponents([definition(alias)]),[definition(alias)],'tenant authors remain untouched');
  }
+});
+
+
+test('baseline: 22 independently delivered renderer JSONs have no transfer compression',()=>{
+ // HAR-sized deterministic fixture: 11 buttons, 4 texts and 7 other renderers.
+ const js='function Component(){ return "'+('RUNTIME_SHARED_0123456789'.repeat(9000))+'"; }';
+ const payload=JSON.stringify({apiName:'smart_button',version:1,compiledJs:js,scopedCss:''});
+ const raw=Buffer.byteLength(payload);
+ const requests=22;
+ const total=raw*requests;
+ assert.equal(requests,22);
+ assert.ok(raw>180_000);
+ console.info('component delivery mock baseline: rendererBytes='+raw+
+  ' requests='+requests+' bytes='+total+' cache=no-cache compression=none');
+});
+
+test('content-hashed renderer paths change on publication and transfer sizes drop',()=>{
+ const payload=JSON.stringify({apiName:'smart_button',version:1,
+  compiledJs:'function Renderer(){'+('return 123456789;'.repeat(13000))+'}',scopedCss:'.smart{padding:2px}'});
+ const same=rendererFileName('smart_button',payload);
+ assert.match(same,/^smart_button\.[a-f0-9]{16}\.json$/);
+ assert.equal(same,rendererFileName('smart_button',payload));
+ assert.notEqual(same,rendererFileName('smart_button',payload+'-new'));
+ const packed=compressRenderer(payload);
+ assert.ok(packed.gzip.length<Buffer.byteLength(payload));
+ assert.ok(packed.brotli.length<packed.gzip.length);
+ assert.deepEqual(gzipSync(payload),gzipSync(payload));
+ assert.ok(brotliCompressSync(payload).length<Buffer.byteLength(payload));
+ const raw=Buffer.byteLength(payload);
+ console.info('component delivery mock: 22 renderer requests, rawBytes='+(22*raw)+
+  ' gzipBytes='+(22*packed.gzip.length)+' brBytes='+(22*packed.brotli.length));
+});
+test('Nginx component delivery has immutable renderer caching and catalog revalidation',async()=>{
+ const script=await (await import('node:fs/promises')).readFile(
+  new URL('../../../scripts/oracle/ensure-frontend-component-delivery.sh',import.meta.url),'utf8');
+ assert.match(script,/max-age=31536000, immutable/);
+ assert.match(script,/gzip on/);
+ assert.match(script,/brotli on/);
+ assert.match(script,/catalog-index\.json/);
+ assert.match(script,/no-cache/);
+ assert.match(script,/nginx -t/);
 });

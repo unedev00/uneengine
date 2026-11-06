@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import { rendererFileName, compressRenderer } from './component-delivery.mjs';
 import { loadComponentCatalog, buildBundledComponent } from '../../scripts/component-catalog.mjs';
 
 const catalog = await loadComponentCatalog();
@@ -14,7 +15,20 @@ for (const component of catalog.components) {
   // The compiled component stays usable, but SQL/public indexes never receive
   // UNE property definitions. App-owned defaults ship with the renderer asset.
   components.push(appOwned?{...built,propertyDefinitions:[]}:built);
+  const asset=JSON.stringify({
+    apiName:component.apiName,version:component.version,compiledJs:built.compiledJs,
+    scopedCss:built.cssSource,defaultProps
+  });
+  const fingerprint=rendererFileName(component.apiName,asset);
+  const path=`dist/component-library/components/${fingerprint}`;
+  const {gzip,brotli}=compressRenderer(asset);
+  await Promise.all([
+    writeFile(path,asset),writeFile(path+'.gz',gzip),writeFile(path+'.br',brotli),
+    // Compatibility for older clients; never given immutable cache headers.
+    writeFile(`dist/component-library/components/${component.apiName}.json`,asset)
+  ]);
   index.push({
+    assetPath:'component-library/components/'+fingerprint,
     apiName: component.apiName,
     label: component.label,
     description: component.description ?? '',
@@ -26,9 +40,6 @@ for (const component of catalog.components) {
     eventDefinitions: component.eventDefinitions ?? [],
     scope: component.scope === 'platform-system' ? 'platform-system' : undefined
   });
-  await writeFile(`dist/component-library/components/${component.apiName}.json`,JSON.stringify({
-    apiName:component.apiName,version:component.version,compiledJs:built.compiledJs,scopedCss:built.cssSource,defaultProps
-  }));
 }
 await writeFile('dist/component-library/catalog-index.json',JSON.stringify({
   schemaVersion:catalog.schemaVersion, components:index
