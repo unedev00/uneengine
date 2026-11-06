@@ -17,6 +17,23 @@ import {
  formulaWeekday,isFormulaDate,parseFormulaDateTime
 } from '../../../../server/src/expression-engine/FormulaDate.js';
 
+// Authenticated public identity is shared by independently bundled Page components.
+// It contains only the allowlisted profile fields, never tokens or credentials.
+const SESSION_IDENTITY_KEY=Symbol.for('une.authenticatedFormulaIdentity');
+export function setAuthenticatedFormulaSession(context){
+ const user=context?.user,organization=context?.organization;
+ globalThis[SESSION_IDENTITY_KEY]=user&&organization&&typeof user.Id==='string'
+  &&typeof organization.Id==='string'
+  ?Object.freeze({user:Object.freeze({Id:user.Id,Name:user.Name,Email:user.Email,
+      TimeZone:user.TimeZone,Locale:user.Locale,CurrencyIsoCode:user.CurrencyIsoCode}),
+    organization:Object.freeze({Id:organization.Id,Name:organization.Name})}):null;
+}
+const authenticatedSessionIdentity=context=>
+ context?.user&&context?.organization
+  ?{user:context.user,organization:context.organization}
+  :globalThis[SESSION_IDENTITY_KEY];
+const SESSION_USER_FIELDS=Object.freeze({id:'Id',name:'Name',email:'Email',
+ timeZone:'TimeZone',locale:'Locale',currencyIsoCode:'CurrencyIsoCode'});
 const text=value=>value==null?'':String(value);
 const formulaText=value=>typeof value==='boolean'?value?'TRUE':'FALSE':text(value);
 const textPoints=value=>Array.from(text(value));
@@ -317,8 +334,31 @@ export function evaluateParsedExpression(expression,record,formulaContext){
     if(parts.length!==3||!formulaContext.readComponent)throw Error('Invalid component reference or missing page context');
     return formulaContext.readComponent(parts[1],parts[2]);
    }
-   if(reference==='$session')return typeof formulaContext.sessionId==='string'
-    ?formulaContext.sessionId:'';
+   if(reference==='$session'||reference==='$session.id')
+    return typeof formulaContext.sessionId==='string'?formulaContext.sessionId:'';
+   if(reference.startsWith('$session.')){
+    // Session identity is not an Object field and cannot be traversed freely.
+    const identity=authenticatedSessionIdentity(formulaContext);
+    const userKey=reference.startsWith('$session.user.')
+     ?reference.slice('$session.user.'.length):'';
+    if(Object.hasOwn(SESSION_USER_FIELDS,userKey)){
+     if(!identity?.user)throw Error('Authenticated user is unavailable');
+     return identity.user[SESSION_USER_FIELDS[userKey]]??'';
+    }
+    if(reference==='$session.tenant.id'){
+     if(!identity?.organization)throw Error('Authenticated tenant is unavailable');
+     return identity.organization.Id??'';
+    }
+    if(reference==='$session.tenant.name'){
+     if(!identity?.organization)throw Error('Authenticated tenant is unavailable');
+     return formulaContext.tenant?.name||getTenantBrand().name||identity.organization.Name||'';
+    }
+    if(reference==='$session.tenant.logo'){
+     if(!identity?.organization)throw Error('Authenticated tenant is unavailable');
+     return formulaContext.tenant?.logo??getTenantBrand().logo??'';
+    }
+    throw Error('Unsupported session reference: '+reference);
+   }
    if(reference.startsWith('$state.')){
     const key=reference.slice(7);
     if(!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key))
@@ -343,8 +383,8 @@ export function evaluateParsedExpression(expression,record,formulaContext){
    }
    if(/^\$tenant(?:\.|$)/i.test(reference))
     throw Error('Unsupported tenant reference: '+reference+' (use $tenant.name or $tenant.logo)');
-   if(reference==='$state'||reference.startsWith('$session.'))
-    throw Error('Unsupported Page State or session reference: '+reference);
+   if(reference==='$state')
+    throw Error('Unsupported Page State reference: '+reference);
    // $flow.ApiName exists only in the Action formula bar, which passes the runnable
    // Flow names. It evaluates to the text "$flow.ApiName" for the action runtime.
    if(/^\$flow(?:\.|$)/i.test(reference)){
@@ -708,6 +748,7 @@ export function evaluateFieldExpressionDetailed(expression,record,options={}){
    collectionRows:options.collectionRows,
    readComponent:options.readComponent??options.pageState?.[componentReaderKey],
    pageState:options.pageState,sessionId:options.sessionId,tenant:options.tenant,
+    user:options.user,organization:options.organization,
    flowReferences:options.flowReferences,
    rootObjectApiName:options.rootObjectApiName});
   if(options.collectionResult===true){
