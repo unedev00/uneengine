@@ -5,7 +5,7 @@ export async function runObjectSchemaLifecycleBrowserCheck({page,origin,db,tenan
  const objectApi='browser_lifecycle__c';
  await page.goto(origin+'/une/setup/object-manager',{waitUntil:'domcontentloaded'});
  await page.getByRole('heading',{name:'Object Manager',exact:true}).waitFor({timeout:15000});
- await page.getByRole('button',{name:'New Object',exact:true}).first().click();
+ await page.getByRole('button',{name:/^(?:New Object|Create new object)$/}).first().click();
  const wizard=page.getByRole('dialog',{name:'New Custom Object'});
  await wizard.getByLabel('Label',{exact:true}).fill('Browser Lifecycle');
  await wizard.getByLabel('Plural Label',{exact:true}).fill('Browser Lifecycles');
