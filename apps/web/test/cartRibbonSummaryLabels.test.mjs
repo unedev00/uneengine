@@ -71,6 +71,15 @@ test('Cart keeps historical labels and does not render partial or invalid sums',
 });
 
 
+test('Cart renders text-prefixed SUM as zero when all cart rows are loaded and empty',async()=>{
+ const html=await cartMarkup({
+  records:[],subtotalValue:'="£ " & SUM(@LineTotal)',
+  totalValue:'="£ " & SUM(@LineTotal)',currencyCode:'GBP'
+ });
+ assert.match(html,/>Subtotal<\/span><span>£ 0<\/span>/);
+ assert.match(html,/>Total<\/span><span>£ 0<\/span>/);
+});
+
 test('Cart uses the universal Formula Engine for =SUM of line totals and row expressions',async()=>{
  const html=await cartMarkup({
   records:[{Id:'a',LineTotal:6,Price:3,Quantity:2},{Id:'b',LineTotal:10,Price:5,Quantity:2}],
@@ -120,6 +129,9 @@ test('Universal SUM handles authorised row expressions, explicit markers and bou
  const {evaluateFieldExpressionDetailed:evaluate}=await import('../src/component-libraries/shared/FieldExpression.js');
  const rows=[{LineTotal:6,Price:3,Quantity:2},{LineTotal:10,Price:5,Quantity:2}];
  assert.equal(evaluate('=SUM(@LineTotal)',{}, {collectionRows:rows}).value,'16');
+ assert.equal(evaluate('="£ " & SUM(@LineTotal)',{}, {collectionRows:rows}).value,'£ 16');
+ assert.equal(evaluate('="£ " & SUM(@LineTotal)',{}, {collectionRows:[]}).value,'£ 0');
+ assert.match(evaluate('="£ " & SUM(@LineTotal)',{}).error,/bounded numeric collection/);
  assert.equal(evaluate('SUM(@Price * @Quantity)',{}, {collectionRows:rows}).value,'16');
  assert.equal(evaluate('SUM(@Values)',{Values:[4,7]}, {collectionRows:rows}).value,'11');
  assert.equal(evaluate('=SUM(@Sale.LineTotal)',{}, {

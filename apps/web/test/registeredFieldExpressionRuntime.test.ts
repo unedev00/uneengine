@@ -118,6 +118,21 @@ test('registered formula bindings aggregate only complete authorised row sets',(
   formulaCollectionSources:{},recordPagination:{offset:0,total:2}
  });
  assert.equal(partial.subtotalValue,'=SUM(@LineTotal)');
+ const prefixed=resolveRegisteredTextProperties(definitions,{
+  subtotalValue:'="£ " & SUM(@LineTotal)',records,
+  recordPagination:{offset:0,total:2}
+ });
+ assert.equal(prefixed.subtotalValue,'£ 16');
+ const prefixedPartial=resolveRegisteredTextProperties(definitions,{
+  subtotalValue:'="£ " & SUM(@LineTotal)',record:records[0],
+  records:records.slice(0,1),recordPagination:{offset:0,total:2}
+ });
+ assert.equal(prefixedPartial.subtotalValue,'="£ " & SUM(@LineTotal)');
+ const empty=resolveRegisteredTextProperties(definitions,{
+  subtotalValue:'="£ " & SUM(@LineTotal)',records:[],
+  recordPagination:{offset:0,total:0}
+ });
+ assert.equal(empty.subtotalValue,'£ 0');
 });
 
 

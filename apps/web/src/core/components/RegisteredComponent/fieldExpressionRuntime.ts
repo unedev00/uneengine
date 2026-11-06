@@ -120,14 +120,16 @@ export function resolveRegisteredTextProperties(
     if(typeof value!=='string'||!isFieldExpression(value))continue;
     const localRefs=[...value.matchAll(/@([A-Za-z][A-Za-z0-9_]*)/g)].map(match=>match[1]);
     if(!hasRecord&&rows&&rows.length>1&&value.includes('$component.')&&localRefs.length)continue;
-    const localSum=/^=?\s*SUM\s*\(/i.test(value.trim())&&rows?.some(row=>
+    // SUM may be nested in a text expression (e.g. "£ " & SUM(@LineTotal)).
+    // Do not pre-evaluate a partial record page and show a misleading total.
+    const localSum=/\bSUM\s*\(/i.test(value)&&rows?.some(row=>
       row&&typeof row==='object'&&!Array.isArray(row)&&localRefs.some(key=>Object.hasOwn(row,key)));
     if(localSum&&!completeRows)continue; // Never evaluate totals from an incomplete page.
     const hasNamed=Boolean(formulaContext.namedCollections&&Object.keys(formulaContext.namedCollections).length);
     const hasSources=Boolean(formulaContext.collectionSources&&Object.values(formulaContext.collectionSources)
       .some(value=>Array.isArray(value)&&value.length>0));
     if(!hasRecord&&/@[A-Za-z]/.test(value)&&!hasNamed&&!hasSources
-      &&!formulaContext.collectionRows?.length)continue;
+      &&!Array.isArray(formulaContext.collectionRows))continue;
     if(!resolvedContext?.timeZone&&requiresAuthenticatedTimeZone(value,record))
       throw new FieldExpressionEvaluationError('Authenticated formula time zone is unavailable');
     if(next===properties)next={...properties};
