@@ -83,6 +83,10 @@ export function useCanvasGroupGestures({members,bounds,width,height,scale,enable
       if(node&&position)Object.assign(node.style,{left:position.x+'px',top:position.y+'px',
         width:position.width+'px',height:position.height+'px'});
     }
+    if(active.outline)Object.assign(active.outline.style,{
+      left:active.bounds.x+'px',top:active.bounds.y+'px',
+      width:active.bounds.width+'px',height:active.bounds.height+'px'
+    });
     if(!cancelled&&[...active.current].some(([id,pos])=>{
       const original=active.members.find(item=>item.id===id)?.position;
       return original&&(pos.x!==original.x||pos.y!==original.y
