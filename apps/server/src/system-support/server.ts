@@ -108,6 +108,7 @@ import {createIntegrationCommunicationWriter,IntegrationCommunicationOutbox} fro
 import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-inspection-routes.js';
 import {registerDurableJobAdminRoutes} from './durable-job-admin-routes.js';
 import {registerScheduledActionRoutes} from './scheduled-action-routes.js';
+import {sendActionCommunication} from './action-formula-communication-service.js';
 import {registerSeederManagerRoutes} from './seeder-manager-routes.js';
 import {registerPlatformDeploymentRoutes} from './platform-deployment-routes.js';
 import {assertMetadataPackageEditable,MetadataPackageService} from './metadata-package-service.js';
@@ -1901,30 +1902,10 @@ export function createSystemServer(db:SqlPersistence) {
   app.post('/api/action-formulas/communication',route(async(req,res)=>{
     const actor=req.actor!;
     const {channel,credential,values}=req.body??{};
-    const minimum=channel==='EMAIL'?3:2;
-    if(!['EMAIL','WHATSAPP','SMS'].includes(channel)||typeof credential!=='string'
-      ||!Array.isArray(values)||values.length<minimum||values.length>(channel==='SMS'?2:minimum+20)
-      ||values.some(value=>typeof value!=='string'||!value.trim()||value.length>32768))
-      throw Error('Invalid communication formula arguments');
-    const selected=(await namedCredentials.list(actor.tenant_id,actor.user_id))
-      .find(item=>item.enabled&&item.name===credential);
-    if(!selected)throw Error('Named Credential unavailable');
-    const prefix='public_'+channel.toLowerCase();
-    const path=selected.configuration[prefix+'Path'];
-    const body=selected.configuration[prefix+'Body'];
-    if(typeof path!=='string'||!body?.trim().startsWith('{'))
-      throw Error('Configure '+prefix+'Path and '+prefix+'Body on the Named Credential');
-    const variables:Record<string,string>={to:values[0],recipient:values[0],message:values[minimum-1],body:values[minimum-1]};
-    if(channel==='EMAIL')variables.subject=values[1];
-    for(const [index,value] of values.slice(minimum).entries()){
-      const key='attachment'+(index+1);
-      if(!body.includes('{!'+key+'}'))throw Error('Provider mapping must include '+key);
-      variables[key]=value;
-    }
-    const result=await namedCredentials.callout(actor.tenant_id,actor.user_id,
-      {namedCredentialId:selected.id,method:'POST',path,body},variables,randomUUID());
-    if(result.status<200||result.status>=300)throw Error('Provider rejected the communication');
-    res.json({status:result.status});
+    if(!['EMAIL','WHATSAPP','SMS'].includes(channel))throw Error('Invalid communication channel');
+    const result=await sendActionCommunication(db,rbac,namedCredentials,
+      actor.tenant_id,actor.user_id,channel,credential,values,randomUUID());
+    res.json(result);
   }));
   app.post('/api/named-credentials/:id/test',route(async(req,res)=>{
     const actor=req.actor!;
