@@ -237,28 +237,16 @@ export default function AppManager({
     if (changed && !window.confirm('Discard unsaved app changes and return to the app list?')) return;
     cancel();
   };
-  const cloneApp = async (source: AppDraft) => {
+  const cloneApp = (source: AppDraft) => {
     if (busy) return;
+    // Cloning is a draft operation: review and save without a blocking browser dialog.
     const copy = cloneAppConfiguration(source, apps);
-    if (!window.confirm(
-      'Clone "' + source.label + '" as "' + copy.label + '" (' + copy.apiName + ')?\n\n' +
-      'Only app settings and navigation references are copied. Pages, business records, ' +
-      'licences, AppExchange ownership and permissions are not copied.'
-    )) return;
-    setBusy(true);
-    setError(''); setNotice('');
-    try {
-      await onSave(copy, false);
-      setSelectedApiName(copy.apiName);
-      setDraft(appDraftFromMetadata(copy));
-      setCreating(false);
-      setView('list');
-      setNotice('App cloned as ' + copy.label + '.');
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Unable to clone app.');
-    } finally {
-      setBusy(false);
-    }
+    setDraft(appDraftFromMetadata(copy));
+    setSelectedApiName('');
+    setCreating(true);
+    setView('form');
+    setError('');
+    setNotice('Review the copied settings and select Create App to save this clone.');
   };
   const openSetupWorkspace = (destination: SetupDestination) => {
     const original = apps.find(app => app.apiName === selectedApiName);
@@ -302,7 +290,7 @@ export default function AppManager({
     {!embedded && view === 'list' ? <>
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <p className="form-success" role="status">{notice}</p>}
-      <AppManagerList apps={apps} busy={busy} onEdit={editApp} onClone={app => void cloneApp(app)}/>
+      <AppManagerList apps={apps} busy={busy} onEdit={editApp} onClone={cloneApp}/>
     </> : <>
     <nav className="app-manager-stepper" aria-label="Application setup steps">
       {steps.map((step, index) => <a href={'#' + step.id} key={step.id} className={'app-manager-step' + (index === 0 ? ' is-first' : '')}
