@@ -4,7 +4,7 @@ import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyComplete
 
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
-import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan,isScreenAction,PartialActionError} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen,type PopupScreen} from './screenFormula';
 import {PageFormulaScope,useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
@@ -881,6 +881,10 @@ function MetadataBoundPageComponent({
       setActionError('');
       return result;
     } catch(error) {
+      if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
+       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+        detail:{pageSessionKey,sessionId,objectApiNames:error.mutatedObjectApiNames}
+       }));
       setActionError(error instanceof Error?error.message:'Action failed');
       throw error;
     } finally {
