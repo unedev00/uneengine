@@ -281,3 +281,18 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  .auth-screen .auth-card .auth-submit {min-height:38px;margin-top:2px}
  .auth-screen .auth-card .auth-signin-footer {margin-top:2px;padding:0}
 }
+
+/* Preserve the supplied UNE logo's 160:101 aspect ratio at narrow sizes. */
+.auth-screen:not(.auth-screen--standalone) .auth-card .une-brand-logo.auth-brand-logo {
+ width:132px;max-width:65%;height:auto;max-height:none;aspect-ratio:160/101;
+}
+@media(max-width:360px){
+ .auth-screen:not(.auth-screen--standalone) .auth-card .une-brand-logo.auth-brand-logo{
+  width:120px;max-width:65%;height:auto;max-height:none;
+ }
+}
+@media(max-height:460px) and (orientation:landscape){
+ .auth-screen:not(.auth-screen--standalone) .auth-card .une-brand-logo.auth-brand-logo{
+  width:64px;max-width:65%;height:auto;max-height:none;
+ }
+}
