@@ -15,24 +15,59 @@ async function render(api,properties){
  return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,properties));
 }
 
-test('Smart Text stays an editable input unless display mode is explicitly set',async()=>{
- const plain=await render('smart_text',{label:'Customer',textSource:'"Mary"',textSize:22});
- assert.match(plain,/class="smart-input-box"/);
+test('Smart Text displays Data formula values without requiring a displayMode property',async()=>{
+ const plain=await render('smart_text',{label:'Customer',defaultValue:'Plain initial value'});
+ assert.match(plain,/class="smart-input-box"/,'an unbound Smart Input remains editable');
  assert.doesNotMatch(plain,/class="smart-display-text"/);
- const display=await render('smart_text',{displayMode:'display',textSource:'"Order Summary"',
+
+ const formula=await render('smart_text',{textSource:'"Order Summary"',
   textSize:32,labelColor:'#161616',headerBold:true,wrapText:true,labelAlignment:'center'});
- assert.match(display,/class="smart-display-text"/);
- assert.doesNotMatch(display,/<input/);
- assert.match(display,/Order Summary/);
- assert.match(display,/font-size:32px/);
- assert.match(display,/font-weight:700/);
- assert.match(display,/color:#161616/);
- assert.match(display,/white-space:pre-wrap/);
- assert.match(display,/justify-content:center/);
- const normal=await render('smart_text',{displayMode:'display',label:'Welcome',
+ assert.match(formula,/class="smart-display-text"/);
+ assert.doesNotMatch(formula,/<input/);
+ assert.match(formula,/Order Summary/);
+ assert.match(formula,/font-size:32px/);
+ assert.match(formula,/font-weight:700/);
+ assert.match(formula,/color:#161616/);
+ assert.match(formula,/white-space:pre-wrap/);
+ assert.match(formula,/justify-content:center/);
+
+ const bound=await render('smart_text',{textSource:'@Name',record:{Name:'Kiosk value'}});
+ assert.match(bound,/class="smart-display-text"/);
+ assert.match(bound,/>Kiosk value</);
+ const oldDefaultInput=await render('smart_text',{displayMode:'input',textSource:'"Computed"'});
+ assert.match(oldDefaultInput,/class="smart-display-text"/,
+  'a persisted input mode must not override automatic formula display');
+ assert.match(oldDefaultInput,/>Computed</);
+ const defaultFormula=await render('smart_text',{defaultValue:'=1+2'});
+ assert.match(defaultFormula,/class="smart-display-text"/);
+ assert.match(defaultFormula,/>3</);
+ const labelFormula=await render('smart_text',{label:'"Heading"'});
+ assert.match(labelFormula,/>Heading</);
+ const valueFormula=await render('smart_text',{value:'=5*2'});
+ assert.match(valueFormula,/>10</);
+
+ const changeAction=await render('smart_text',{textSource:'"Mary"',
+  actionFlows:{change:{actionType:'PageState',stateKey:'name'}}});
+ assert.match(changeAction,/class="smart-input-box"/,
+  'a bound input with a change action must remain editable');
+ assert.match(changeAction,/value="Mary"/);
+ const editable=await render('smart_text',{textSource:'"Editing"',readonly:false});
+ assert.match(editable,/class="smart-input-box"/);
+ const legacyDisplay=await render('smart_text',{displayMode:'display',label:'Welcome',
   headerBold:false,wrapText:false});
- assert.match(normal,/font-weight:400/);
- assert.match(normal,/white-space:nowrap/);
+ assert.match(legacyDisplay,/class="smart-display-text"/);
+ assert.match(legacyDisplay,/font-weight:400/);
+ assert.match(legacyDisplay,/white-space:nowrap/);
+});
+
+test('Text Mode has no active metadata property or Design 2 control',()=>{
+ const migration=read('../../server/src/system-support/migrations/20271119-smart-formula-display-runtime.sql');
+ for(const table of ['md_builder_shared_properties','md_builder_ribbon_component_rules',
+  'md_builder_design2_slots','md_builder_design2_slot_rules']){
+  assert.match(migration,new RegExp('DELETE FROM '+table+'\\\\s'));
+ }
+ assert.match(migration,/property_key='displayMode'/);
+ assert.match(migration,/slot_key='textMode'/);
 });
 
 test('Card Grid uses existing textSize and gap with optional content padding',async()=>{
