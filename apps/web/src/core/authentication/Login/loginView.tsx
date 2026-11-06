@@ -7,6 +7,7 @@ import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import { Eye, EyeOff } from 'lucide-react';
 import './standaloneLogin.css';
 
+declare const __METADRIVE_WEB_RELEASE__: {commit:string|null;builtAt:string};
 type LandingBootstrap = {
   objects: ObjectMetadata[];
   pages: LightningPageMetadata[];
@@ -202,7 +203,7 @@ export function createLoginView(logoUrl: string) {
           <a href="mailto:support@unesolutions.co.uk">Contact support</a>
           {import.meta.env.VITE_PRIVACY_POLICY_URL?.startsWith('https://')&&<a href={import.meta.env.VITE_PRIVACY_POLICY_URL} rel="noopener noreferrer">Privacy Policy</a>}
           {import.meta.env.VITE_TERMS_URL?.startsWith('https://')&&<a href={import.meta.env.VITE_TERMS_URL} rel="noopener noreferrer">Terms</a>}
-          {import.meta.env.VITE_APP_VERSION&&<small>Version {import.meta.env.VITE_APP_VERSION}</small>}
+          <small>Build {__METADRIVE_WEB_RELEASE__?.commit?.slice(0,7)??'development'}</small>
         </nav>}
         {branding && <div className="auth-product-powered"><UneBrandLogo className="auth-product-powered-logo" src={logoUrl}/>Securely powered by MetaDrive</div>}
       </form>
