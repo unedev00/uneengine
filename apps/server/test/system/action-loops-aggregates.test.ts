@@ -5,7 +5,7 @@ import {validateFormulaFunctions} from '../../src/expression-engine/FormulaFunct
 import {Parser,type Expression} from '../../src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../src/expression-engine/FormulaTokenizer.js';
 import {executeActionFormula} from '../../../web/src/component-libraries/shared/FieldExpression.js';
-import {computeFilteredNumericAggregate} from '../../src/system-files/filtered-numeric-aggregate.js';
+import {computeFilteredNumericAggregate} from '../../src/object-engine/FilteredNumericAggregate.js';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import type {RbacEngine} from '../../src/system-files/rbac-engine.js';
 
