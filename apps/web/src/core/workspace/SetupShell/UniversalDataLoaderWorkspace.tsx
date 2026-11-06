@@ -144,7 +144,7 @@ export default function UniversalDataLoaderWorkspace({apiRequest,objects,onMetad
    <div><h1>Universal Data Loader</h1>
     <p>Export, edit, validate and upsert Object Metadata, Records or Smart Ribbon Properties.</p></div>
   </div>
-  <nav role="tablist" aria-label="Data Loader categories" style={{display:'flex',gap:8,flexWrap:'nowrap',overflowX:'auto',maxWidth:1100,marginBottom:18,paddingBlock:4,scrollSnapType:'x mandatory'}}>
+  <nav role="tablist" aria-label="Data Loader categories" style={{display:'flex',gap:8,flexWrap:'nowrap',overflowX:'auto',width:'calc(100% - 48px)',maxWidth:1052,marginLeft:24,marginBottom:18,paddingBlock:4,scrollSnapType:'x mandatory'}}>
    {([
     ['objects','Objects & Fields',Database],
     ['records','Records',Table2],
