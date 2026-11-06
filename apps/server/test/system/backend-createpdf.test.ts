@@ -81,7 +81,7 @@ test('backend PDF preserves related table rows and PDF image objects',async()=>{
  assert(doc.html.includes('Line A'));
  assert(doc.html.includes('Line B'));
  assert(vectorPdf(doc).toString('ascii',0,5)==='%PDF-');
- const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9en9ZJUAAAAASUVORK5CYII=';
+ const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
  const picture={...sample,components:[{id:'logo',type:'smart_image',label:'Logo',
   visible:true,position:{x:5,y:5,width:120,height:120},
   properties:{imageSource:'asset:'+uuid}}]};
