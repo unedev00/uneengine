@@ -511,6 +511,14 @@ function evaluateNode(node:Expression,resolve:FormulaResolver,context:FormulaEva
   }
 }
 
+/** Evaluate a prevalidated server-side action AST node using the same pure Flow
+ * scalar evaluator. Callers must opt in only expressions proven compatible. */
+export function evaluateFlowFormulaNode(node:Expression,resolve:(name:string)=>unknown,
+ context:FormulaEvaluationContext={}):unknown{
+ validateFormulaFunctions(node,'ribbon_binding');
+ return evaluate(node,resolve,context);
+}
+
 export function evaluateFlowFormula(expression:string,resolve:FormulaResolver,
   context:FormulaEvaluationContext={},expressionContext:FormulaExpressionContext='flow_formula'):unknown {
   if(typeof expression!=='string'||!expression.trim())throw new Error('Flow formula is empty');

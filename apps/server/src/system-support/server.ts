@@ -110,6 +110,8 @@ import {countTenantApiRequests,registerTenantInspectionRoutes} from './tenant-in
 import {registerDurableJobAdminRoutes} from './durable-job-admin-routes.js';
 import {registerScheduledActionRoutes} from './scheduled-action-routes.js';
 import {sendActionCommunication} from './action-formula-communication-service.js';
+import {tenantServerFormulaEnabled,executeServerDataAction} from './formula-data-action-runtime.js';
+import {splitServerDataActionPlan} from '../expression-engine/ActionFormulas.js';
 import {registerSeederManagerRoutes} from './seeder-manager-routes.js';
 import {registerPlatformDeploymentRoutes} from './platform-deployment-routes.js';
 import {assertMetadataPackageEditable,MetadataPackageService} from './metadata-package-service.js';
@@ -1893,6 +1895,29 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     res.setHeader('Cache-Control','no-store');
     res.json(await oauth.start(actor.tenant_id,actor.user_id,req.params.id));
+  }));
+  // One authenticated HTTP request for only a validated contiguous data prefix.
+  // Browser-only actions always execute after the server transaction returns.
+  app.post('/api/action-formulas/execute-data',route(async(req,res)=>{
+    const actor=req.actor!;
+    res.setHeader('Cache-Control','private, no-store');
+    if(!await tenantServerFormulaEnabled(db,actor.tenant_id)){
+      res.json({supported:false});return;
+    }
+    const formula=req.body?.formula,scope=req.body?.scope,steps=req.body?.dataSteps;
+    if(typeof formula!=='string'||formula.length>4000||!formula.trim()||
+      !scope||typeof scope!=='object'||Array.isArray(scope)||
+      !Number.isSafeInteger(steps)||steps<1||
+      Object.keys(scope).length>80||
+      Object.keys(scope).some(key=>!/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(key)||
+        ['constructor','prototype','__proto__'].includes(key))){
+      res.json({supported:false});return;
+    }
+    const split=splitServerDataActionPlan(formula);
+    if(!split||split.dataSteps!==steps){
+      res.json({supported:false});return;
+    }
+    res.json(await executeServerDataAction(db,records,actor,formula,scope,steps));
   }));
   app.get('/api/action-formulas/credentials',route(async(req,res)=>{
     const actor=req.actor!;
