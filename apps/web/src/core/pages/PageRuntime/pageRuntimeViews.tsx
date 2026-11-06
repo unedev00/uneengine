@@ -388,6 +388,19 @@ function MetadataBoundPageComponent({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
   });
   const initializedSessions = useRef<Set<string>>(new Set());
+  const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
+  const selectedRecordFilters=activePageRecordFilters(properties);
+ const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
+ const combinedRecordFormula=collectionPredicate
+  ?selectedRecordFilters.formula? 'AND('+String(selectedRecordFilters.formula)+','+collectionPredicate+')'
+   :collectionPredicate:selectedRecordFilters.formula;
+  const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',combinedRecordFormula);
+  const relatedKey=String(properties.relatedFilterKey??'');
+  const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
+    properties,component.type,fields,objects,pageState,sessionId,revision,
+    loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
+  const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
+  const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
   // Only data consumers of the written objects reload; unknown Flow writes remain broad.
   useEffect(() => {
     const sync = (event: Event) => {
@@ -415,19 +428,6 @@ function MetadataBoundPageComponent({
   }, [pageSessionKey, sessionId, objectApiName,recordOffset,recordsForQueryKey,
     recordDataKey,recordTotal,records,printRows,relatedQuery,recordQuery,
     properties.liveRefreshEnabled,properties.collectionFormula,properties.recordPresenterApiName]);
-  const fields = objects.find((item) => item.apiName === objectApiName)?.fields ?? [];
-  const selectedRecordFilters=activePageRecordFilters(properties);
- const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
- const combinedRecordFormula=collectionPredicate
-  ?selectedRecordFilters.formula? 'AND('+String(selectedRecordFilters.formula)+','+collectionPredicate+')'
-   :collectionPredicate:selectedRecordFilters.formula;
-  const recordQuery=pageComponentRecordQuery(selectedRecordFilters.filters,fields,{pageState,recordId,sessionId},properties.filterLogic==='OR'?'OR':'AND',combinedRecordFormula);
-  const relatedKey=String(properties.relatedFilterKey??'');
-  const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
-    properties,component.type,fields,objects,pageState,sessionId,revision,
-    loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
-  const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
-  const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
   const lastRecordDataKey=useRef('');
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {
