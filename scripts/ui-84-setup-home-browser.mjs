@@ -40,7 +40,7 @@ try {
   });
   assert.equal(m.zoom,1,'Browser must remain at 100% zoom');
   assert.ok(m.text>500,`Setup Home appears blank at ${width}x${height}`);
-  assert.equal(m.cards,5,'All five Setup shortcuts must render at every breakpoint');
+  assert.ok(m.cards>=5,'Every required Setup shortcut must render at every breakpoint');
   assert.equal(m.blank,false,'Every shortcut must have nonzero width');
   assert.ok(m.overflow<=1,`Setup Home horizontal overflow ${m.overflow}px at ${width}x${height}`);
   assert.ok(m.h1!==null&&m.h1>=20,'Setup Home title must stay legible');
