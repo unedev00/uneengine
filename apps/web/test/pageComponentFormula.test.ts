@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {loadBoundedCollectionSource} from '../src/core/pages/PageRuntime/loadBoundedCollectionSource';
 import test from 'node:test';
 import {componentReaderKey,evaluateFieldExpressionDetailed} from '../src/component-libraries/shared/FieldExpression.js';
 import {resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
@@ -28,4 +29,37 @@ test('page actions and bounded record queries consume the same page-local value'
   [{apiName:'Name',dataType:'Text'}] as never,state);
  assert.deepEqual(result.filters,[{field:'Name',operator:'eq',value:'Andy'}]);
  assert.ok(evaluateFieldExpressionDetailed('$component.userCard.text',{}).error);
+});
+
+test('secondary COLLECTION uses 100-row bounded pages for 0 through 200 rows',async()=>{
+ for(const total of [0,1,100,101,200]){
+  const reads:Array<{limit:number;offset:number}>=[];
+  const rows=await loadBoundedCollectionSource('Secondary',async (_name,options)=>{
+   reads.push(options);
+   return {total,records:Array.from({length:Math.min(options.limit,Math.max(0,total-options.offset))},
+    (_,index)=>({Id:String(options.offset+index)})};
+  });
+  assert.equal(rows.length,total);
+  assert.deepEqual(reads,total<=100?[{limit:100,offset:0}]:
+   [{limit:100,offset:0},{limit:100,offset:100}]);
+ }
+});
+
+test('secondary COLLECTION rejects over-limit, failed and shifting pages without publishing a partial total',async()=>{
+ let count=0;
+ await assert.rejects(loadBoundedCollectionSource('Secondary',async()=>{
+  count++;return {total:201,records:[] as {Id:string}[]};
+ }),/more records than can be safely loaded/);
+ assert.equal(count,1);
+ for(const failure of ['denied','shifted','short']){
+  let reads=0;
+  await assert.rejects(loadBoundedCollectionSource('Secondary',async (_name,options)=>{
+   reads++;
+   if(options.offset===0)return {total:150,records:Array.from({length:100},(_,i)=>({Id:String(i)}))};
+   if(failure==='denied')throw Error('Permission denied');
+   if(failure==='shifted')return {total:149,records:Array.from({length:49},(_,i)=>({Id:String(i+100)}))};
+   return {total:150,records:[] as {Id:string}[]};
+  }),failure==='denied'?/Permission denied/:failure==='shifted'?/changed during pagination/:/incomplete page/);
+  assert.equal(reads,2);
+ }
 });
