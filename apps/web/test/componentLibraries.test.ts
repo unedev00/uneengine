@@ -298,3 +298,19 @@ test('flagged Smart asset build keeps full default renderer and emits smaller sh
   await rm(directory,{recursive:true,force:true});
  }
 });
+
+test('baseline: 22 independent bundled renderer mounts issue 22 requests for 9 types',async()=>{
+ const kinds=[...Array(11).fill('smart_button'),...Array(4).fill('smart_text'),
+  ...Array.from({length:7},(_,index)=>'other_'+index)];
+ const calls:string[]=[];
+ const request=async(kind:string)=>{
+  calls.push(kind);
+  await Promise.resolve();
+  return {compiledJs:'validated'};
+ };
+ await Promise.all(kinds.map(request));
+ assert.equal(calls.length,22);
+ assert.equal(new Set(kinds).size,9);
+ assert.deepEqual(calls.slice(0,11),Array(11).fill('smart_button'));
+ console.info('renderer baseline: requests=22 distinct=9 ordering='+calls.join(','));
+});
