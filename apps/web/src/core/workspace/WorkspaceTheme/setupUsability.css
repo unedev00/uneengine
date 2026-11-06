@@ -450,3 +450,220 @@
  .lightning .flow-existing-pagination{display:flex;flex-wrap:wrap;gap:8px}
  .lightning .flow-existing-pagination .btn{min-height:44px}
 }
+
+/* 2026-11-05 visual audit: constrain only the Setup shell and management lists. */
+html, body, #root { min-width:0; max-width:100%; }
+.lightning .setup-layout,
+.lightning .setup-layout > .workspace,
+.lightning .setup-layout .home-content,
+.lightning .setup-layout .object-manager,
+.lightning .setup-layout .page-manager-view { min-width:0; max-width:100%; box-sizing:border-box; }
+.lightning .setup-layout > .workspace { overflow-x:clip; overflow-y:auto; }
+.lightning .setup-layout :is(.page-heading h1,.page-manager-header h1,.object-manager .section-toolbar h1,.app-manager-top h1) {
+ font-size:28px;line-height:1.2;font-weight:700;
+}
+.lightning .setup-layout .home-content { --text-h1:28px;--icon-inline:16px;--icon-tile:36px;--grid-gutter:12px; }
+.lightning .home-content .welcome-banner { min-height:0; padding:14px 18px; gap:14px; }
+.lightning .home-content .welcome-art { transform:scale(.7); transform-origin:center; }
+.lightning .home-content .welcome-quick { gap:6px; }
+.lightning .home-content .shortcut-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:var(--grid-gutter,12px); }
+.lightning .home-content .shortcut-card { min-width:0;box-sizing:border-box;align-content:center; }
+.lightning .home-content .shortcut-title,.lightning .home-content .shortcut-description { width:auto;max-width:100%;min-width:0; }
+.lightning .home-content .shortcut-description { overflow-wrap:anywhere; }
+/* Object Manager: natural-height rows, sticky headings and keyboard sorting. */
+.lightning .object-manager-desktop-list.table-scroll {
+ max-height:none!important;height:auto!important;overflow:visible!important;
+}
+.lightning .object-manager-desktop-list thead th {
+ position:sticky;top:0;z-index:3;background:var(--md-surface,#fff);
+}
+.lightning .object-manager-desktop-list thead th button {
+ font:inherit;font-weight:600;color:inherit;border:0;background:none;
+ padding:4px 0;cursor:pointer;min-height:32px;text-align:left;
+}
+.lightning .object-manager-desktop-list thead th button:focus-visible {
+ outline:2px solid var(--md-primary,#1d4ed8);outline-offset:2px;
+}
+.lightning .object-manager .field-list-actions {
+ display:flex;flex:1 1 260px;flex-wrap:wrap;min-width:0;gap:8px;
+}
+.lightning .object-manager .field-list-actions .mini-search { flex:1 1 180px;min-width:120px; }
+.lightning .object-manager .field-list-actions select { flex:0 1 170px;min-width:132px; }
+.lightning .object-manager>.section-toolbar .toolbar-actions { display:flex;flex-wrap:wrap;gap:8px; }
+.lightning .object-manager>.section-toolbar .toolbar-actions .btn-brand { order:-1; }
+.object-manager-mobile-sort { display:none; }
+@media(max-width:780px) {
+ .lightning .object-manager-mobile-sort { display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0; }
+ .lightning .object-manager-mobile-sort select { min-height:44px;max-width:100%; }
+ .lightning .object-manager>.section-toolbar .toolbar-actions .btn { min-height:44px; }
+}
+/* Page management: sticky identity/action columns and table that fits typical desktop. */
+.lightning .page-manager-table-scroll { max-width:100%;overflow-x:auto;overscroll-behavior-x:contain; }
+.lightning .page-manager-table { min-width:930px!important;width:100%;table-layout:auto; }
+.lightning .page-manager-table th,.lightning .page-manager-table td { padding:8px 10px;white-space:normal; }
+.lightning .page-manager-table th:first-child,.lightning .page-manager-table td:first-child {
+ position:sticky;left:0;z-index:3;background:var(--md-surface,#fff);
+}
+.lightning .page-manager-table th:nth-child(2),.lightning .page-manager-table td:nth-child(2) {
+ position:sticky;left:155px;z-index:2;background:var(--md-surface,#fff);
+}
+.lightning .page-manager-table thead th:first-child,.lightning .page-manager-table thead th:nth-child(2) {
+ background:var(--md-surface-2,#f8fafc);z-index:4;
+}
+.lightning .page-manager-table td:last-child,.lightning .page-manager-table th:last-child {
+ position:sticky;right:0;z-index:2;background:var(--md-surface,#fff);
+}
+.lightning .page-manager-table thead th:last-child { z-index:4;background:var(--md-surface-2,#f8fafc); }
+.lightning .page-manager-sort-button {
+ border:0;background:transparent;color:inherit;min-height:32px;
+ font:inherit;font-weight:600;cursor:pointer;text-align:left;
+}
+.lightning .page-manager-sort-button:focus-visible { outline:2px solid var(--md-primary,#1d4ed8); }
+.lightning .page-manager-layout-metadata { display:block;font-size:11px;color:var(--md-muted,#596779);font-weight:400;line-height:1.4; }
+.lightning .page-manager-design-layout-trigger { box-sizing:border-box;min-width:32px;min-height:32px;width:32px;height:32px; }
+.page-manager-mobile-sort { display:none; }
+@media(max-width:1023px) {
+ .lightning .page-manager-mobile-sort { display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0; }
+ .lightning .page-manager-mobile-sort select { min-height:40px;max-width:100%;width:auto; }
+}
+@media(max-width:420px) {
+ .lightning .page-manager-header,.lightning .page-manager-header-actions,.lightning .page-manager-filters {
+  flex-wrap:wrap;max-width:100%;min-width:0;
+ }
+ .lightning .page-manager-header-actions>.btn,.lightning .page-manager-header-actions>.form-control {
+  flex:1 1 100%!important;width:100%!important;min-width:0;
+ }
+ .lightning .page-manager-filters>.form-label { flex:1 1 100%;min-width:0;max-width:100%; }
+ .lightning .page-manager-filters .form-control { width:100%;min-width:0;box-sizing:border-box; }
+}
+/* Shared dialog gutters, typographic consistency and small-screen overflow. */
+.lightning .modal-backdrop :is(.page-details-dialog,.builder-create-page-dialog) {
+ box-sizing:border-box;width:min(960px,calc(100vw - 40px));
+ max-height:calc(100dvh - 40px);overflow-y:auto;
+}
+@media(max-width:599px) {
+ .lightning .setup-layout :is(.page-heading h1,.page-manager-header h1,.object-manager .section-toolbar h1,.app-manager-top h1) {
+  font-size:22px;
+ }
+ .lightning .home-content .welcome-banner { padding:12px; }
+ .lightning .home-content .welcome-art,.lightning .home-content .welcome-quick { display:none; }
+ .lightning .home-content .shortcut-grid,.lightning .home-content .home-lower-grid { grid-template-columns:minmax(0,1fr); }
+ .lightning .home-content .shortcut-card { min-height:72px; }
+ .lightning .page-manager-table { min-width:0; }
+}
+
+/* Audit UX-0024/25: bounded global search and labelled Home entry. */
+.lightning .header-searches { min-width:0;max-width:min(420px,40vw); }
+.lightning .header-searches .global-record-search { max-width:100%;min-width:0; }
+.lightning .header-searches .global-record-search>span { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.lightning .brand-home-label { display:inline-block;font-size:12px;font-weight:600;margin-left:5px; }
+@media(max-width:900px){
+ .lightning .header-searches { max-width:48px; }
+ .lightning .header-searches .global-record-search>span,.lightning .header-searches .global-record-search kbd { display:none; }
+ .lightning .brand-home-label { display:none; }
+}
+
+/* Keep the sticky identity column aligned with the actual 200px action column. */
+@media(min-width:1024px){
+ .lightning .page-manager-table th:nth-child(2),.lightning .page-manager-table td:nth-child(2){left:200px;}
+}
+
+/* Small desktop, tablet and landscape widths use the readable object cards. */
+@media(min-width:781px) and (max-width:1199px) {
+ .lightning .object-manager-desktop-list { display:none; }
+ .lightning .object-manager-mobile-list { display:block;margin-top:12px;border:1px solid var(--md-border,#d8dfe9);border-radius:10px;overflow:hidden;background:var(--md-surface,#fff); }
+ .lightning .object-manager-mobile-list [role="listitem"]+[role="listitem"] { border-top:1px solid var(--md-border,#e2e8f0); }
+ .lightning .object-manager-mobile-row { width:100%;min-height:60px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;border:0;background:transparent;text-align:left;color:inherit;font:inherit; }
+ .lightning .object-manager-mobile-row-labels { display:grid;min-width:0;gap:3px;overflow-wrap:anywhere; }
+ .lightning .object-manager-mobile-row:focus-visible { outline:2px solid var(--md-primary,#1d4ed8);outline-offset:-2px; }
+ .lightning .object-manager-mobile-sort { display:flex;align-items:center;gap:8px;margin:12px 0; }
+ .lightning .object-manager-mobile-sort select { min-height:44px; }
+}
+
+/* UX-0019/0035/0048: the same Setup tree remains available on phones as an overlay. */
+@media(max-width:600px) {
+ .lightning .setup-layout { position:relative;display:block;min-width:0; }
+ .lightning .setup-layout>#md-setup-sidebar.setup-sidebar-collapsed { display:none!important; }
+ .lightning .setup-layout>#md-setup-sidebar:not(.setup-sidebar-collapsed) {
+  display:flex!important;flex-direction:column;
+  position:fixed!important;top:44px;bottom:0;left:0;
+  width:min(310px,calc(100vw - 40px))!important;min-width:0!important;
+  max-height:calc(100dvh - 44px)!important;height:auto!important;
+  overflow:auto!important;overscroll-behavior:contain;
+  z-index:120!important;background:var(--md-surface,#fff);
+  box-shadow:8px 0 28px rgb(15 23 42 / 22%);
+ }
+ .lightning .setup-layout>#md-setup-sidebar:not(.setup-sidebar-collapsed) .setup-tree { overflow-y:auto;flex:1 1 auto;min-height:0; }
+ .lightning .setup-layout>.workspace { width:100%;min-width:0; }
+ .lightning .mobile-settings-back-bar { min-width:0; }
+}
+
+/* Collapsed Setup rail keeps a short visible label for each permission group. */
+@media(min-width:601px) {
+ .lightning .setup-sidebar-collapsed .setup-tree-group::before {
+  content:attr(data-group-short);
+  display:block;text-align:center;font-size:10px;font-weight:700;
+  letter-spacing:.055em;color:var(--md-text-2,#526175);
+  padding:7px 0 3px;
+ }
+}
+.lightning .setup-sidebar .tree-item { gap:10px;line-height:1.4;font-weight:500; }
+.lightning .setup-sidebar .tree-item .md-setup-icon { flex-shrink:0; }
+.lightning .setup-sidebar .tree-item>span:not(.md-setup-icon) { min-width:0;overflow-wrap:normal; }
+
+/* UX-0020/0021/0030: brief, nonduplicating welcome summary and aligned shortcuts. */
+.lightning .home-content .welcome-banner.setup-home-summary {
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-height:0;
+  max-height:none;
+  height:auto;
+  padding:14px 18px;
+  box-sizing:border-box;
+}
+.lightning .welcome-banner.setup-home-summary .welcome-copy {
+  min-width:0;max-width:100%;width:100%;flex:1 1 auto;
+  padding:0;margin:0;
+}
+.lightning .welcome-banner.setup-home-summary .welcome-copy h2 {
+  margin:0 0 4px;font-size:17px;line-height:1.35;
+}
+.lightning .welcome-banner.setup-home-summary .welcome-copy p {
+  max-width:100%;margin:0;line-height:1.5;
+}
+.lightning .home-content .shortcut-card {
+  min-width:0;grid-template-columns:38px minmax(0,1fr) 14px;
+  grid-template-rows:minmax(0,1fr) minmax(0,1fr);
+  align-items:center;
+}
+.lightning .home-content .shortcut-card .shortcut-title,
+.lightning .home-content .shortcut-card .shortcut-description {
+  width:auto;min-width:0;max-width:100%;
+  margin:0;
+}
+.lightning .home-content .shortcut-card .shortcut-description {
+  display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+@media(max-width:599px) {
+  .lightning .home-content .welcome-banner.setup-home-summary { padding:12px 14px; }
+}
+
+/* UX-0056 / UX-0072: use operable cards instead of clipped tables at 1024–1199px. */
+@media(min-width:1024px) and (max-width:1199px) {
+ .lightning .page-manager-view>.page-manager-table-scroll,
+ .lightning .app-manager-list>.app-manager-list-scroll { display:none!important; }
+ .lightning .page-manager-view>.md-responsive-rows,
+ .lightning .app-manager-list>.md-responsive-rows {
+   display:block;margin:10px 0;border:1px solid var(--md-border,#dce3eb);
+   border-radius:12px;background:var(--md-surface,#fff);
+ }
+ .lightning .page-manager-view>.md-responsive-empty,
+ .lightning .app-manager-list>.md-responsive-empty {
+   display:block;padding:22px 15px;
+ }
+ .lightning .page-manager-view>.md-responsive-rows .md-responsive-details,
+ .lightning .app-manager-list>.md-responsive-rows .md-responsive-details {
+   max-width:100%;overflow-wrap:anywhere;
+ }
+}

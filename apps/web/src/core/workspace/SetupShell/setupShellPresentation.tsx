@@ -3,7 +3,6 @@ import WorkspaceFormulaScreen from '../../pages/PageRuntime/WorkspaceFormulaScre
 import SetupLoadingState from './SetupLoadingState';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';
 import CompanySettingsWorkspace from '../../settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
-import MobileSettingsHome from '../../settings/MobileSettingsHome';
 import SettingsNavigationIcon from '../../settings/SettingsNavigationIcon';
 import NotificationBell from '../../automation/Notifications/NotificationBell';
 // Shared shell presentation, composed from registered metadata-driven runtime and tools.
@@ -71,11 +70,8 @@ export function renderSetupShell(ctx: any) {
           onClick={() => setSetupSidebarCollapsed((collapsed: boolean) => !collapsed)}>
           {setupSidebarCollapsed ? <ChevronRight size={20} aria-hidden="true" /> : <ChevronLeft size={20} aria-hidden="true" />}
         </button>}
-        {runtimeFormFactor !== 'Phone' && <nav className="md-toolbar-history" aria-label="Page history">
-          <button type="button" className="icon-button" aria-label="Back" title="Back (⌘[)" onClick={()=>window.history.back()}><ChevronLeft size={17}/></button>
-          <button type="button" className="icon-button" aria-label="Forward" title="Forward (⌘])" onClick={()=>window.history.forward()}><ChevronRight size={17}/></button>
-        </nav>}
-        <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /></button>
+
+        <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /><span className="brand-home-label">Home</span></button>
         <label className="header-installed-apps">
           <span>Apps</span>
           <select aria-label="Open installed app" value={installedAppValue} onChange={(event) => openInstalledApp(event.target.value)}>
@@ -220,10 +216,10 @@ export function renderSetupShell(ctx: any) {
             </nav>
           </aside>
         )}
-        {route.kind === 'setup' && runtimeFormFactor !== 'Phone' && !route.dashboardView && (workspace !== 'flow-builder' || !route.resourceApiName) && !(workspace === 'page-builder' && Boolean(route.resourceApiName)) && (
+        {route.kind === 'setup' && !route.dashboardView && (workspace !== 'flow-builder' || !route.resourceApiName) && !(workspace === 'page-builder' && Boolean(route.resourceApiName)) && (
           <aside id="md-setup-sidebar" className={setupSidebarCollapsed ? 'setup-sidebar setup-sidebar-collapsed' : 'setup-sidebar'}
             onClick={(event: React.MouseEvent<HTMLElement>) => {
-              if (window.matchMedia('(min-width: 600px) and (max-width: 1023px)').matches
+              if (window.matchMedia('(max-width: 1023px)').matches
                 && (event.target as HTMLElement).closest('.tree-item')) setSetupSidebarCollapsed(true);
             }}>
             <div className="setup-sidebar-toolbar">
@@ -243,7 +239,8 @@ export function renderSetupShell(ctx: any) {
             </div>
             <nav id="md-setup-navigation" className="setup-tree" aria-label="Setup sections">
               {filteredSetupGroups.map((group) => (
-                <div className="setup-tree-group" key={group.group}>
+                <div className="setup-tree-group" key={group.group} role="group" aria-label={group.group}
+                  data-group-short={group.group.split(/\s+/).map((word:string)=>word[0]).join('').slice(0,3).toUpperCase()} title={group.group}>
                   <div className="tree-group-label">{group.group}</div>
                   {group.items.map((item) => (
                     <React.Fragment key={item}>
@@ -292,8 +289,7 @@ export function renderSetupShell(ctx: any) {
           {(route.kind!=='setup'||(sessionPermissionsLoaded&&setupRouteAllowed)) && <React.Fragment>
           {route.kind === 'setup' && runtimeFormFactor === 'Phone' && workspace !== 'home' && !route.dashboardView &&
             <nav className="mobile-settings-back-bar" aria-label="Settings navigation">
-              <button type="button" onClick={() => openSetupWorkspace('home')}><ChevronLeft size={20} aria-hidden="true" />Settings</button>
-              <strong>{workspaces.find(item => item.id === workspace)?.label ?? 'Settings'}</strong>
+              <button type="button" onClick={() => openSetupWorkspace('home')}><ChevronLeft size={20} aria-hidden="true" />Setup Home</button>
             </nav>}
           {(route.kind === 'record-list' || route.kind === 'record-detail') && (metadataLoadError && !objects.length ? <section className="setup-card" role="alert"><h1>Unable to load record metadata</h1><p>{metadataLoadError}</p><button className="btn" onClick={() => window.location.reload()}>Retry</button><button className="btn" onClick={() => navigateRoute({kind:'setup',workspace:'rbac',resourceApiName:'Users'})}>Back to Users</button></section> : <RecordWorkspace route={route} objects={objects} apps={apps} pages={pages}
             availableFlows={flows.filter(item => ['Screen Flow', 'In-Screen Flow', 'Autolaunched Flow'].includes(item.flowType))
@@ -315,24 +311,9 @@ export function renderSetupShell(ctx: any) {
               .map(({ id, apiName, label, flowType, status, startConfig, resources }) => ({ id, apiName, label, flowType, status, startConfig, resources }))}
             formFactor={runtimeFormFactor} profileId={currentProfileId} pageDefinitionCache={pageDefinitionCache.current} onNavigate={navigateRoute}
             onLaunchFlow={(apiName: string, inputs: Record<string, unknown>,context?:{requestId?:string}) => void runFlow(apiName, inputs,context)} onStandaloneModeChange={setStandalonePageMode} />}
-          {route.kind === 'setup' && workspace === 'home' && (runtimeFormFactor === 'Phone'
-            ? route.resourceApiName==='overview'?
-              <section className="mobile-setup-overview"><button type="button" className="btn" onClick={()=>navigateRoute({kind:'setup',workspace:'home'})}><ChevronLeft size={16}/>Back to Settings</button>
-                <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)}/></section>
-              : <MobileSettingsHome
-                request={apiRequest}
-                loading={!metadataLoaded}
-                permissions={setupPermissions}
-                onOpen={navigateSetupItem}
-                onOpenOverview={()=>navigateRoute({kind:'setup',workspace:'home',resourceApiName:'overview'})}
-                rights={{
-                  viewMetadata:canReadMetadata, editMetadata:canManageApps,
-                  viewSecurity:canReadSecurity, manageSecurity:canManageUserIdentities,
-                  manageFlows:canManageFlows, manageTenants:canManagePlatformTenants,
-                  namedDevices:readableRecordObjects.some(item=>item.apiName==='NamedDevice__c')
-                }} />
-            : <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} />
-          )}
+          {route.kind === 'setup' && workspace === 'home' &&
+            <SetupHome onNavigate={openSetupWorkspace} request={apiRequest} onShowShortcuts={()=>setShortcutHelpOpen(true)} onOpenAuditTrail={()=>navigateSetupItem("Audit Trail")} />
+          }
           {route.kind === 'setup' && workspace === 'data-loader' &&
            <React.Suspense fallback={<section className="setup-card">Loading Universal Data Loader…</section>}>
             <UniversalDataLoaderWorkspace apiRequest={apiRequest}
@@ -483,7 +464,7 @@ export function renderSetupShell(ctx: any) {
             </PlatformWorkspaceSurface>
               )
           )}
-          {route.kind === 'setup' && workspace === 'page-builder' && !advancedMetadataLoaded && <section className="setup-card" role="status">Loading live page definitions…</section>}
+          {route.kind === 'setup' && workspace === 'page-builder' && !advancedMetadataLoaded && <SetupLoadingState label="Page Builder definitions" />}
           {route.kind === 'setup' && workspace === 'page-builder' && advancedMetadataLoaded && route.resourceApiName && !pages.some((item) => item.apiName === route.resourceApiName) && (
             <section className="setup-card" role="alert" style={{ padding: 24 }}>
               <h2>{metadataLoadError ? "Unable to load Lightning pages" : "Lightning page not found"}</h2>

@@ -305,6 +305,11 @@ function ObjectManager({
 }) {
   const [viewMode, setViewMode] = useState<'All Objects' | 'Standard Objects' | 'Custom Objects'>('All Objects');
   const [objectListPage,setObjectListPage]=useState(0);
+  const [objectSortKey,setObjectSortKey]=useState<'label'|'apiName'|'kind'|'fields'>('label');
+  const [objectSortDescending,setObjectSortDescending]=useState(false);
+  const objectListScrollRef=useRef<HTMLDivElement>(null);
+  const changeObjectSort=(key:typeof objectSortKey)=>{if(key===objectSortKey)setObjectSortDescending(value=>!value);else{setObjectSortKey(key);setObjectSortDescending(false);}setObjectListPage(0);};
+  const changeObjectPage=(page:number)=>{setObjectListPage(page);if(objectListScrollRef.current)objectListScrollRef.current.scrollTop=0;};
   const objectPageSize=20;
   useEffect(()=>setObjectListPage(0),[viewMode,search]);
   const [sectionMode, setSectionMode] = useState<'list' | 'view' | 'edit'>('list');
@@ -522,7 +527,12 @@ function ObjectManager({
   const visibleObjects = objects.filter((item) => (viewMode === 'All Objects'
     || (viewMode === 'Custom Objects' ? item.kind === 'Custom Object' : item.kind === 'Standard Object'))
     && `${item.label} ${item.apiName}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
-  const sortedVisibleObjects = [...visibleObjects].sort((a, b) => a.label.localeCompare(b.label));
+  const sortedVisibleObjects = [...visibleObjects].sort((a, b) => {
+    const result=objectSortKey==='fields'?a.fields.length-b.fields.length:objectSortKey==='kind'?a.kind.localeCompare(b.kind):objectSortKey==='apiName'?a.apiName.localeCompare(b.apiName):a.label.localeCompare(b.label);
+    return objectSortDescending?-result:result;
+  });
+  const showDescriptionColumn=sortedVisibleObjects.some(item=>Boolean(item.description?.trim()));
+  const showDeploymentColumn=sortedVisibleObjects.some(item=>Boolean(item.settings?.deploymentStatus&&item.settings.deploymentStatus!=='Deployed'));
   const objectPageCount=Math.max(1,Math.ceil(sortedVisibleObjects.length/objectPageSize));
   const currentObjectPage=Math.min(objectListPage,objectPageCount-1);
   const paginatedObjects=sortedVisibleObjects.slice(currentObjectPage*objectPageSize,(currentObjectPage+1)*objectPageSize);
@@ -1989,7 +1999,7 @@ function ObjectManager({
           <button className="btn" type="button" onClick={()=>void showDeletedObjects()} disabled={deletedObjectsBusy}>
             {deletedObjectsOpen?'Hide Deleted Objects':'Deleted Objects'}</button>
           <a className="btn" href="/une/setup/data-loader"><Upload size={14}/>Universal Data Loader</a>
-          <button className="btn btn-brand" type="button" onClick={onCreateObject}><Plus size={14}/>New Object</button>
+          <button className="btn btn-brand" type="button" aria-label="Create new object" onClick={onCreateObject}><Plus size={14}/>New Object</button>
         </div></div>
       {deletedObjectsOpen&&<section className="metadata-card" aria-label="Deleted objects">
         <h2>Deleted Objects</h2>
@@ -2004,7 +2014,7 @@ function ObjectManager({
           </tr>)}</tbody></table></div>}
       </section>}
       <div className="field-list-toolbar">
-        <div className="results-count">{visibleObjects.length} objects</div>
+        <div className="results-count" role="status">{visibleObjects.length} {visibleObjects.length===1?"object":"objects"}</div>
         <div className="field-list-actions"><div className="mini-search"><Search size={14}/>
           <input aria-label="Search objects" value={search} placeholder="Search objects…" onChange={event => onSearch(event.target.value)}/>
         </div><select className="form-control" aria-label="Filter object types" value={viewMode}
@@ -2012,13 +2022,22 @@ function ObjectManager({
           <option>All Objects</option><option>Standard Objects</option><option>Custom Objects</option>
         </select></div>
       </div>
-      <div className="table-scroll object-manager-desktop-list"><table className="slds-table">
-        <thead><tr><th>Object label</th><th>API name</th><th>Type</th><th>Description</th><th>Deployment</th><th>Fields</th><th>Action</th></tr></thead>
+      {visibleObjects.length>0&&<div ref={objectListScrollRef} className="table-scroll object-manager-desktop-list"><table className="slds-table">
+        <thead><tr>
+          {([['label','Object label'],['apiName','API name'],['kind','Type']] as const).map(([key,label])=>
+            <th key={key} aria-sort={objectSortKey===key?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort(key)}>{label}</button></th>)}
+          {showDescriptionColumn&&<th>Description</th>}{showDeploymentColumn&&<th>Deployment</th>}
+          <th aria-sort={objectSortKey==='fields'?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort('fields')}>Fields</button></th>
+        </tr></thead>
         <tbody>{paginatedObjects.map(item => <tr key={item.apiName}>
-          <td><button type="button" className="field-link" onClick={()=>onObjectSelect(item)}>{item.label}</button></td>
-          <td className="api-name">{item.apiName}</td><td>{item.kind}</td><td>{item.description || "—"}</td><td>{item.settings?.deploymentStatus ?? "Deployed"}</td><td>{item.fields.length}</td>
-          <td><button className="btn" type="button" onClick={()=>onObjectSelect(item)}>View</button></td>
-        </tr>)}</tbody></table></div>
+          <td><a className="field-link" href={'/une/setup/object-manager/'+encodeURIComponent(item.apiName)+'/Details'}
+            onClick={event=>{if(event.ctrlKey||event.metaKey||event.shiftKey)return;event.preventDefault();onObjectSelect(item);}}>{item.label}</a></td>
+          <td className="api-name">{item.apiName}</td><td>{item.kind}</td>
+          {showDescriptionColumn&&<td>{item.description || "—"}</td>}
+          {showDeploymentColumn&&<td>{item.settings?.deploymentStatus ?? "Deployed"}</td>}
+          <td>{item.fields.length}</td>
+        </tr>)}</tbody></table></div>}
+      <label className="object-manager-mobile-sort">Sort objects <select value={objectSortKey} onChange={event=>changeObjectSort(event.target.value as typeof objectSortKey)}><option value="label">Label</option><option value="apiName">API name</option><option value="kind">Type</option><option value="fields">Field count</option></select></label>
       <div className="object-manager-mobile-list" role="list" aria-label="Objects">
         {paginatedObjects.map(item => <div role="listitem" key={item.apiName}>
           <button type="button" className="object-manager-mobile-row" onClick={() => onObjectSelect(item)}>
@@ -2027,13 +2046,16 @@ function ObjectManager({
           </button>
         </div>)}
       </div>
-      {!visibleObjects.length && <div className="empty-state">No objects match this search. Clear the search or select a different object type.</div>}
-      <nav className="object-manager-pagination" aria-label="Object Manager pages">
-        <span>{sortedVisibleObjects.length?currentObjectPage*objectPageSize+1:0}–{Math.min((currentObjectPage+1)*objectPageSize,sortedVisibleObjects.length)} of {sortedVisibleObjects.length} objects</span>
-        <button type="button" className="btn" disabled={currentObjectPage===0} onClick={()=>setObjectListPage(p=>Math.max(0,p-1))}>Previous</button>
+      {!visibleObjects.length && <div className="empty-state" role="status">
+        <p>No objects match the search or selected type.</p>
+        <button className="btn" type="button" onClick={()=>{onSearch('');setViewMode('All Objects');}}>Clear filters</button>
+      </div>}
+      {visibleObjects.length>0&&<nav className="object-manager-pagination" aria-label="Object Manager pages">
+        <span>{sortedVisibleObjects.length?currentObjectPage*objectPageSize+1:0}–{Math.min((currentObjectPage+1)*objectPageSize,sortedVisibleObjects.length)} of {sortedVisibleObjects.length} {sortedVisibleObjects.length===1?"object":"objects"}</span>
+        <button type="button" className="btn" disabled={currentObjectPage===0} onClick={()=>changeObjectPage(Math.max(0,currentObjectPage-1))}>Previous</button>
         <span>Page {currentObjectPage+1} of {objectPageCount}</span>
-        <button type="button" className="btn" disabled={currentObjectPage>=objectPageCount-1} onClick={()=>setObjectListPage(p=>Math.min(objectPageCount-1,p+1))}>Next</button>
-      </nav>
+        <button type="button" className="btn" disabled={currentObjectPage>=objectPageCount-1} onClick={()=>changeObjectPage(Math.min(objectPageCount-1,currentObjectPage+1))}>Next</button>
+      </nav>}
     </section></PlatformPageSlot>
   );
   return (

@@ -1,5 +1,5 @@
 .page-details-dialog{
-  width:min(1080px,96vw)!important;max-height:min(91vh,960px);
+  width:min(960px,calc(100vw - 40px))!important;max-height:min(calc(100dvh - 40px),960px);
   display:flex;flex-direction:column;overflow:hidden;
   background:#fff;border:1px solid #cbd8ed;border-radius:13px;
 }
@@ -118,4 +118,19 @@
   .page-details-section{padding:12px;overflow-wrap:anywhere}
   .page-details-section .form-label{min-width:0}
   .page-details-header,.page-details-footer{padding:12px 14px}
+}
+
+/* The navigation is between two simultaneously visible sections, not tabs. */
+.page-details-nav a[aria-current="location"] {
+ border-bottom-color:var(--md-primary,#0b57d0);
+ color:var(--md-action-ink,#075b95);
+}
+.page-details-dialog :is(button,input,select,textarea):focus-visible {
+ outline:2px solid var(--md-primary,#0b57d0);
+ outline-offset:2px;
+}
+@media(max-width:599px){
+ .page-details-dialog { width:calc(100vw - 32px)!important;max-height:calc(100dvh - 32px); }
+ .page-details-nav { gap:10px; }
+ .page-details-nav a { min-height:40px;display:inline-flex;align-items:center; }
 }

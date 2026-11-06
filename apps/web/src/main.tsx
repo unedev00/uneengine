@@ -48,12 +48,24 @@ function WorkspaceLoadingFallback() {
     const timer=window.setTimeout(()=>setSlow(true),12000);
     return ()=>window.clearTimeout(timer);
   },[]);
-  return <main role="status" style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'system-ui,sans-serif'}}>
-    <div style={{textAlign:'center',maxWidth:480,padding:24}}>
-      <p>Loading your workspace…</p>
-      {slow && <><p>The workspace is taking longer than expected. You can request the latest application files without losing saved data.</p>
-        <button type="button" onClick={reloadLatestWorkspace}>Reload latest version</button></>}
-    </div>
+  return <main role="status" aria-live="polite"
+    style={{minHeight:'100dvh',display:'grid',placeItems:'center',padding:16,boxSizing:'border-box',fontFamily:'system-ui,sans-serif',background:'#f5f6fa',color:'#192230'}}>
+    <section aria-label="Workspace starting" style={{boxSizing:'border-box',width:'min(480px,100%)',padding:'28px 24px',background:'#fff',borderRadius:16,border:'1px solid #d8e1ed',boxShadow:'0 10px 32px #15243c12'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
+        <span aria-hidden="true" style={{display:'grid',placeItems:'center',width:42,height:42,background:'#0b57d0',color:'#fff',fontWeight:800,borderRadius:12}}>U</span>
+        <div><strong style={{fontSize:17}}>UNE Engine Workspace</strong><p style={{fontSize:13,color:'#526175',margin:'4px 0 0'}}>Preparing your secure workspace</p></div>
+      </div>
+      <p style={{fontSize:15,fontWeight:600}}>Loading your workspace…</p>
+      <div aria-hidden="true" style={{display:'grid',gap:10,marginTop:20}}>
+        <div style={{height:18,width:'72%',borderRadius:7,background:'#e7ecf3'}}/>
+        <div style={{height:36,width:'100%',borderRadius:7,background:'#e7ecf3'}}/>
+        <div style={{height:36,width:'92%',borderRadius:7,background:'#e7ecf3'}}/>
+      </div>
+      {slow && <div style={{marginTop:24}}>
+        <p>The workspace is taking longer than expected. Your saved data is unchanged.</p>
+        <button type="button" onClick={reloadLatestWorkspace} style={{minHeight:44,padding:'8px 14px',borderRadius:9,border:'1px solid #0b57d0',color:'#fff',background:'#0b57d0'}}>Reload latest version</button>
+      </div>}
+    </section>
   </main>;
 }
 

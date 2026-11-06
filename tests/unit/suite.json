@@ -167,6 +167,7 @@
     "apps/web/test/actionRibbonFrozenLayout.test.ts",
     "apps/web/test/adaptiveUi.test.ts",
     "apps/web/test/adjustNumberRecord.test.ts",
+    "apps/web/test/auditFixes20261105.test.mjs",
     "apps/web/test/auditRemediationContract.test.ts",
     "apps/web/test/authentication/business-calendar-no-fabricated-defaults.test.mjs",
     "apps/web/test/authentication/login-bootstrap.test.mjs",
