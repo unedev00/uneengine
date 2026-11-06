@@ -220,7 +220,8 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
        border:nativeImageBorder}}/>}
   </div>}
   {header&&headerHeight>0&&<div data-md-bind={p.builderPreview?"textSource":undefined} data-md-bind-titles={p.builderPreview?"Card title":undefined} className="smart-card-content" style={{
-    order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
+    order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,
+    display:"flex",alignItems:fixedGridHeader?"safe center":"center",
     // Explicit Card Grid heights bound the title box; excess text is scrollable.
     // Standalone Image captions retain intrinsic growth for large typography.
     height:headerHeight,minHeight:fixedGridHeader?0:"max-content",
