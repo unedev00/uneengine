@@ -1,4 +1,5 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useState} from 'react';
+import {visiblePageCollectionResult} from './pageCollectionVisibility';
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {evaluateCollectionFormula,evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
@@ -88,7 +89,6 @@ export function usePageCollectionFormula(
   ?rawTextSource:null;
  const entered=selectedTableSource||explicit||tableExpression||listExpression||declared||reference||'';
  const source=entered.startsWith('=')?entered.slice(1).trim():entered;
- const lastValid=useRef<{object:string;collection:PageNamedCollection}|null>(null);
  const directSource=/^@([A-Za-z][A-Za-z0-9_]*)(?:\.([A-Za-z][A-Za-z0-9_]*))?$/.exec(source);
  const tableObject=tableFormulaObject(source);
  const fullObject=directSource&&!directSource[2]
@@ -207,13 +207,7 @@ export function usePageCollectionFormula(
    items:result.collection.items.filter((_,index)=>positions.has(index))},
    error:formulaError??result.error};
  })();
- const recoverable=Boolean(sessionResult.error&&/^COLLECTION has a blank value|^Invalid Flow formula|^COLLECTION requires|^Unexpected|^Unterminated/.test(sessionResult.error));
- // Keep the last successful rendering when legacy persisted metadata contains
- // an invalid expression. Do not turn parser errors into visible list items.
- if(sessionResult.collection&&!sessionResult.error&&sessionResult.collection.name!=='__filtered_list__')
-   lastValid.current={object:primaryObject,collection:sessionResult.collection};
- const visible=recoverable?{collection:lastValid.current?.object===primaryObject
-   ?lastValid.current.collection:null,error:null,loading:false}:sessionResult;
+ const visible=visiblePageCollectionResult(sessionResult);
  // A restricted record presenter may enforce additional channel grants.
  // Its unpresented Object rows must never be published as a shared collection.
  const owned=referencesNamed&&!properties.recordPresenterApiName?visible.collection:null;

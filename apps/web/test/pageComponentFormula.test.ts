@@ -1,3 +1,4 @@
+import {visiblePageCollectionResult} from '../src/core/pages/PageRuntime/pageCollectionVisibility';
 import assert from 'node:assert/strict';
 import {loadBoundedCollectionSource} from '../src/core/pages/PageRuntime/loadBoundedCollectionSource';
 import test from 'node:test';
@@ -62,4 +63,19 @@ test('secondary COLLECTION rejects over-limit, failed and shifting pages without
   }),failure==='denied'?/Permission denied/:failure==='shifted'?/changed during pagination/:/incomplete page/);
   assert.equal(reads,2);
  }
+});
+
+test('invalid COLLECTION or filter does not retain a previously successful aggregate',()=>{
+ const good={collection:{name:'Total',items:[12]},error:null,loading:false};
+ assert.deepEqual(visiblePageCollectionResult(good),good);
+ const changed={...good,error:'Unexpected token'};
+ const shown=visiblePageCollectionResult(changed);
+ assert.equal(shown.collection,null);
+ assert.equal(shown.error,'Unexpected token');
+ assert.equal(shown.loading,false);
+ assert.equal(visiblePageCollectionResult({...good,collection:{name:'New',items:[7]}}).collection?.name,'New');
+});
+test('failed source authorization clears a collection, never reporting a stale success',()=>{
+ const previous={collection:{name:'Authorized',items:[5]},error:'Permission denied',loading:false};
+ assert.deepEqual(visiblePageCollectionResult(previous),{collection:null,error:'Permission denied',loading:false});
 });
