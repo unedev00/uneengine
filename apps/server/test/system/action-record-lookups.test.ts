@@ -178,7 +178,9 @@ test('server transactional data prefix takes one browser call and retains alias 
  assert.equal(server.error,undefined);
  assert.equal(server.completedActionCount,2);
  assert.deepEqual(server.mutatedObjectApiNames,['Cart']);
- assert.deepEqual(calls,['GET Cart','PUT Cart '+cartId]);
+ // The server rehydrates the authorized saved row for the mutation payload.
+ // This GET happens inside the same server transaction, not as another browser call.
+ assert.deepEqual(calls,['GET Cart','PUT Cart '+cartId,'GETBYID Cart '+cartId]);
  const suffix=await executeActionPlan(formula,{},evaluator,{
   request:async()=>{throw Error('Browser suffix must not issue Record API calls');},
   planWindow:{start:2,end:3,variables:server.variables,completedBefore:server.completedActionCount}
