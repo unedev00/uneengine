@@ -204,7 +204,7 @@ import { isCanvasLocked, ungroupCanvasComponent, snapCanvasPosition, alignCanvas
 import {canvasGroupKey, canvasGroupMembers, groupCanvasSelection, ungroupCanvasSelection, moveCanvasLayer, shiftCanvasLayer, canMoveCanvasLayer, canvasSiblingLayerIndex, canvasGroupBounds, fitCanvasComponentToPage} from './canvasLayerGroups';
 import {canvasScrollbarHit,constrainCanvasRect} from './canvasPointerInteractions';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from './canvasSharedRibbonProperties';
-import {selectCanvasIds,selectCanvasInRect,nudgeCanvasSelection} from './canvasSelectionInteractions';
+import {expandCanvasSelection,selectCanvasIds,selectCanvasInRect,nudgeCanvasSelection} from './canvasSelectionInteractions';
 import {useCanvasMarqueeSelection} from './useCanvasMarqueeSelection';
 import {useCanvasGroupGestures} from './useCanvasGroupGestures';
 import {pageBuilderPreviewDevice} from './pageBuilderPreviewDevice';
@@ -3321,6 +3321,13 @@ function PageBuilder({
                 updateComponent(id,{properties:{...component.properties,navigatorName:proposed}});
               }}/>
             <span>Find</span>
+          </div>}
+          {editingGroupId && !previewMode && <div className="office-ribbon-group canvas-group-edit-context" role="status">
+            <span>Editing individual group member</span>
+            <button type="button" onClick={()=>{
+              if(selectedId)setSelectionIds(expandCanvasSelection(page.components,[selectedId]));
+              setEditingGroupId(null);
+            }}>Exit Group Edit</button>
           </div>}
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools ribbon-view-zoom" aria-label="Zoom">
             <div className="office-ribbon-stack">
