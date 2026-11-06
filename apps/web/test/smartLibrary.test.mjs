@@ -1492,6 +1492,8 @@ test('Formula-only UI bindings resolve without Object records and respect field 
  const fallback=await renderSmart('ui_input',{defaultValue:'=2*3',allowTyping:false});
  assert.match(fallback,/une-input-display/);
  assert.match(fallback,/>6</);
+ const email=await renderSmart('ui_metric',{value:'support@example.com'});
+ assert.match(email,/support@example.com/,'literal email text must remain visible');
 });
 
 test('All installed component definitions are independent of displayMode metadata',async()=>{
