@@ -181,7 +181,7 @@ test('UX-0031 collapsed Setup sidebar displays item initials and group abbreviat
  assert.match(css,/content:attr\(data-short-label\)/);
  assert.match(css,/content:attr\(data-group-short\)/);
  assert.match(nav,/data-short-label=/);
- assert.match(nav,/aria-label=\{item === "Tenant Management"/);
+ assert.match(nav,/aria-label=\{item === ['"]Tenant Management['"]/);
 });
 test('UX-0004 and UX-0006 define auth action states and desktop rhythm',()=>{
  const css=source('src/core/authentication/Login/standaloneLogin.css');
