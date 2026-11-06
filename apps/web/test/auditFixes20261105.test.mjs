@@ -282,3 +282,13 @@ test('UX-0008 failed sign-in focuses email while MFA failures return to code',()
  assert.match(login,/getElementById\(challenge\?'login-mfa':'login-email'\)\?\.focus\(\)/);
  assert.doesNotMatch(login,/getElementById\(challenge\?'login-mfa':'login-password'\)\?\.focus\(\)/);
 });
+
+test('App Manager responsive sorting exposes ascending and descending control',()=>{
+  const list=source('src/core/applications/AppManagerList/AppManagerList.tsx');
+  const css=source('src/core/applications/AppManagerList/AppManagerList.css');
+  assert.match(list,/id="app-manager-sort-field"/);
+  assert.match(list,/className="app-manager-sort-direction"/);
+  assert.match(list,/aria-pressed=\{descending\}/);
+  assert.match(list,/setDescending\(value=>!value\)/);
+  assert.match(css,/\.app-manager-sort-direction:focus-visible/);
+});
