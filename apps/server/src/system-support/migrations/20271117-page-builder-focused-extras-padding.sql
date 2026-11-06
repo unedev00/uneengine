@@ -70,12 +70,29 @@ ON CONFLICT(component_api,area,slot_key)
 -- Card Gap and Selection Mode move into their own compact Extras section.
 -- The two existing SQL slots/rules change AREA only; the property keys,
 -- choice list and renderer behaviour do not change.
-UPDATE md_builder_design2_slot_rules
-SET area='Extras'
+INSERT INTO md_builder_design2_slot_rules(component_api,area,slot_key,property_key)
+SELECT component_api,'Extras',slot_key,property_key
+FROM md_builder_design2_slot_rules
+WHERE area='Body' AND component_api='smart_card_grid'
+ AND slot_key IN ('extra_cardGap','extra_selectionMode')
+ON CONFLICT(component_api,area,slot_key)
+ DO UPDATE SET property_key=EXCLUDED.property_key;
+DELETE FROM md_builder_design2_slot_rules
 WHERE area='Body' AND component_api='smart_card_grid'
  AND slot_key IN ('extra_cardGap','extra_selectionMode');
-UPDATE md_builder_design2_slots
-SET area='Extras',area_order=9
+
+-- A previously migrated Extras slot may already exist when the older
+-- consolidation script is replayed. UPSERT instead of updating a primary key.
+INSERT INTO md_builder_design2_slots
+ (area,area_order,slot_key,row_no,order_no,width_px,height_px,property_key,fallback_key)
+SELECT 'Extras',9,slot_key,row_no,order_no,width_px,height_px,property_key,fallback_key
+FROM md_builder_design2_slots
+WHERE area='Body' AND slot_key IN ('extra_cardGap','extra_selectionMode')
+ON CONFLICT(area,slot_key) DO UPDATE SET
+ area_order=EXCLUDED.area_order,row_no=EXCLUDED.row_no,order_no=EXCLUDED.order_no,
+ width_px=EXCLUDED.width_px,height_px=EXCLUDED.height_px,
+ property_key=EXCLUDED.property_key,fallback_key=EXCLUDED.fallback_key;
+DELETE FROM md_builder_design2_slots
 WHERE area='Body' AND slot_key IN ('extra_cardGap','extra_selectionMode');
 
 -- Image border now uses Image > Appearance > Border (R1C2), not a second
