@@ -2028,7 +2028,7 @@ function ObjectManager({
             <th key={key} aria-sort={objectSortKey===key?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort(key)}>{label}</button></th>)}
           {showDescriptionColumn&&<th>Description</th>}{showDeploymentColumn&&<th>Deployment</th>}
           <th aria-sort={objectSortKey==='fields'?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort('fields')}>Fields</button></th>
-          <th>Action</th></tr></thead>
+        </tr></thead>
         <tbody>{paginatedObjects.map(item => <tr key={item.apiName}>
           <td><a className="field-link" href={'/une/setup/object-manager/'+encodeURIComponent(item.apiName)+'/Details'}
             onClick={event=>{if(event.ctrlKey||event.metaKey||event.shiftKey)return;event.preventDefault();onObjectSelect(item);}}>{item.label}</a></td>
@@ -2036,7 +2036,6 @@ function ObjectManager({
           {showDescriptionColumn&&<td>{item.description || "—"}</td>}
           {showDeploymentColumn&&<td>{item.settings?.deploymentStatus ?? "Deployed"}</td>}
           <td>{item.fields.length}</td>
-          <td><button className="btn" type="button" onClick={()=>onObjectSelect(item)}>View</button></td>
         </tr>)}</tbody></table></div>}
       <label className="object-manager-mobile-sort">Sort objects <select value={objectSortKey} onChange={event=>changeObjectSort(event.target.value as typeof objectSortKey)}><option value="label">Label</option><option value="apiName">API name</option><option value="kind">Type</option><option value="fields">Field count</option></select></label>
       <div className="object-manager-mobile-list" role="list" aria-label="Objects">
