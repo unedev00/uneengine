@@ -414,7 +414,7 @@ function MetadataBoundPageComponent({
     properties,component.type,fields,objects,pageState,sessionId,revision,
     loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
-  const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset]);
+  const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
   const lastRecordDataKey=useRef('');
   useEffect(()=>setRecordOffset(0),[objectApiName,recordQueryKey]);
   useEffect(() => {

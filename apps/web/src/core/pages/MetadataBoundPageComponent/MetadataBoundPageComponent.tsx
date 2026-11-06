@@ -164,7 +164,7 @@ export default function MetadataBoundPageComponent({
   },[pageSessionKey]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset]);
+  const recordRequestKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
   const lastRequestKey=useRef('');
   const [channelAccess, setChannelAccess] = useState<{userId: string;viewAll: boolean;grants: ChannelGrant[];eligibleAssignees: {id: string;name: string;channelAccountId: string}[]}>({
     userId: '', viewAll: false, grants: [], eligibleAssignees: []
