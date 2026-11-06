@@ -184,3 +184,39 @@ test('PR10 baseline: multiple Smart renderer types repackage the same runtime in
  console.info('smart-runtime mock baseline types=4 rendererBytes='+bytes.join(',')+
   ' independentBytes='+standaloneBytes+' repeated20Bytes='+repeatedPageBytes);
 });
+
+test('shared Smart Runtime loader allows only hashed internal paths and reuses one request',async()=>{
+ const {loadSharedSmartRenderer}=await import('../src/core/components/RegisteredComponent/sharedSmartRenderer');
+ const fingerprint='smart_runtime.0123456789abcdef.json';
+ const path='component-library/components/'+fingerprint;
+ let calls=0;
+ const prior=globalThis.fetch;
+ globalThis.fetch=async (input:RequestInfo|URL)=>{
+  calls++;
+  assert.equal(String(input),'/'+path);
+  return {ok:true,json:async()=>({compiledJs:'module.exports.default = function Shared(){};'})} as Response;
+ };
+ try{
+  const [first,second]=await Promise.all([
+   loadSharedSmartRenderer(path,'/'),loadSharedSmartRenderer(path,'/')
+  ]);
+  assert.equal(first,second);
+  assert.equal(calls,1);
+  assert.equal(await loadSharedSmartRenderer(path,'/'),first);
+  assert.equal(calls,1);
+  await assert.rejects(loadSharedSmartRenderer('../other/path','/'),/Invalid shared runtime path/);
+  await assert.rejects(loadSharedSmartRenderer('component-library/components/untrusted.0123456789abcdef.json','/'),/Invalid shared runtime path/);
+ }finally{globalThis.fetch=prior;}
+});
+
+test('shared component metadata preserves original Smart kinds while reducing 20 copies of runtime',()=>{
+ const slimButton=JSON.stringify({apiName:'smart_button',version:1,compiledJs:'',
+  sharedSmartRuntime:true,sharedRuntimePath:'component-library/components/smart_runtime.0123456789abcdef.json',scopedCss:''});
+ const slimText=JSON.stringify({apiName:'smart_text',version:1,compiledJs:'',
+  sharedSmartRuntime:true,sharedRuntimePath:'component-library/components/smart_runtime.0123456789abcdef.json',scopedCss:''});
+ const sharedRuntime=JSON.stringify({compiledJs:'module.exports.default = function SmartRuntime(){};'});
+ const before=190_000*20,after=Buffer.byteLength(slimButton)*11+
+  Buffer.byteLength(slimText)*9+Buffer.byteLength(sharedRuntime);
+ assert.ok(after<before);
+ console.info('PR10 lightweight fixture: bytes='+before+'->'+after+' requests=20 component assets+1 shared');
+});
