@@ -71,10 +71,10 @@ export default function AppManager({
   onSelectedAppChange?: (apiName: string) => void;
 }) {
   const linkedAppApiName=embedded?'':new URLSearchParams(window.location.search).get('editApp')??'';
-  const initialApp=apps.find(app=>app.apiName===(initialSelectedApiName||linkedAppApiName))??apps[0];
+  const initialApp=linkedAppApiName==='new'?undefined:apps.find(app=>app.apiName===(initialSelectedApiName||linkedAppApiName))??apps[0];
   const [selectedApiName, setSelectedApiName] = useState(initialApp?.apiName ?? '');
   const [draft, setDraft] = useState<AppDraft>(initialApp ? appDraftFromMetadata(initialApp) : emptyApp());
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(linkedAppApiName==='new');
   const [view, setView] = useState<'list' | 'form'>(embedded||Boolean(linkedAppApiName)?'form':'list');
   const [activeStep,setActiveStep] = useState('app-basics');
   const updateEditorRoute=(apiName:string|null,push=false)=>{
