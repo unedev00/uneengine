@@ -3325,13 +3325,17 @@ function PageBuilder({
   const renderRibbonPanel = () => (<div id="page-builder-tab-content" ref={ribbonStripRef}
           className="office-ribbon-content" role="tabpanel" aria-hidden={previewMode} aria-label={ribbonTab}
           aria-labelledby={`page-builder-tab-${Math.max(0,ribbonTabsVisible.indexOf(ribbonTab))}`}>
-          {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Find">
+          {!previewMode && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Layers">
             <PageComponentNavigator components={page.components} libraryComponents={libraryComponents}
               pageKey={page.apiName+':'+(page.layoutVariant??'Desktop')}
-              selectedId={selectedId}
-              onSelect={id=>{
-                setSelectedId(id);setSelectionIds([id]);setSelectedRegion(null);setPageSettingsOpen(false);
-                window.requestAnimationFrame(()=>{
+              selectedId={selectedId} selectionIds={selectionIds}
+              onSelect={(id,mode)=>{
+                const next=selectCanvasIds(page.components,selectionIds,id,mode,selectedId);
+                setGroupEditId(mode==='member'?id:'');
+                setSelectionIds(next);
+                setSelectedId(next.includes(id)?id:(next[0]??''));
+                setSelectedRegion(null);setPageSettingsOpen(false);
+                if(next.includes(id))window.requestAnimationFrame(()=>{
                   const nodes=pagePreviewAreaRef.current?.querySelectorAll<HTMLElement>('[data-component-id]');
                   Array.from(nodes??[]).find(node=>node.dataset.componentId===id)
                     ?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
@@ -3345,7 +3349,7 @@ function PageBuilder({
                 if(error){onNotify(error);return;}
                 updateComponent(id,{properties:{...component.properties,navigatorName:proposed}});
               }}/>
-            <span>Find</span>
+            <span>Layers</span>
           </div>}
           {ribbonTab==='Preview' && <div className="office-ribbon-group canvas-preview-tools ribbon-view-zoom" aria-label="Zoom">
             <div className="office-ribbon-stack">
