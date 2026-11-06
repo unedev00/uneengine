@@ -210,3 +210,14 @@
 .auth-screen:not(.auth-screen--standalone) .auth-card :is(input,select,textarea,button,a):focus-visible {
  outline:2px solid var(--auth-action);outline-offset:2px;
 }
+
+/* UX-0013: browser autofill must match the white, light-scheme credential fields. */
+.auth-screen .auth-card { color-scheme:light; }
+.auth-screen .auth-card input:-webkit-autofill,
+.auth-screen .auth-card input:-webkit-autofill:hover,
+.auth-screen .auth-card input:-webkit-autofill:focus {
+  -webkit-box-shadow:0 0 0 1000px #fff inset;
+  -webkit-text-fill-color:#192230;
+  caret-color:#192230;
+  border-color:#94a3b8;
+}
