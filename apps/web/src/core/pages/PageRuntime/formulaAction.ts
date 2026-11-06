@@ -1,6 +1,6 @@
 import {isActionPlan} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
-import {executeActionFormula,evaluateFieldExpressionDetailed} from '../../../component-libraries/shared/FieldExpression.js';
+import {executeActionFormula,evaluateFieldExpressionDetailed,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
 import {adjustNumberRecord,type AdjustNumberBinding} from './adjustNumberRecord';
 
 type Request=<T>(path:string,init?:RequestInit)=>Promise<T>;
@@ -40,12 +40,14 @@ export async function executePageFormulaAction(
  objects:ReadonlyArray<{apiName:string;fields:ReadonlyArray<FieldMetadata>}>,
  objectApiName:string,sessionId='',print?:(template:string,id:string)=>Promise<void>,
  runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>,
- createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>
+ createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>,
+ /** Page data the action may read: TABLE()/COLLECTION() sources and $component values. */
+ formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'>={}
 ):Promise<{changes:Change[];recordChanged:boolean}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
   return executeActionFormula(formula,{...payload,state:pageState,event:payload},
-   {pageState,sessionId,timeZone:'UTC',now:new Date()},{request,print,runPageAction,createPdf});
+   {...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()},{request,print,runPageAction,createPdf});
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');

@@ -30,3 +30,12 @@ export function previewPrintTemplate(page:string,recordId:string,parentKey:strin
    failed(Error('This page has no print preview host'));
  });
 }
+
+/** CLOSESCREEN(): closes the formula popup whose runtime instance is parentKey. */
+export function closeFormulaScreen(pageSessionKey:string){
+ const handled=!window.dispatchEvent(new CustomEvent('metadrive:close-formula-screen',{
+  detail:{pageSessionKey},cancelable:true
+ }));
+ if(!handled)throw Error('CLOSESCREEN runs only inside a popup screen');
+ return {closed:true};
+}

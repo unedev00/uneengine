@@ -16,7 +16,7 @@ export async function runRelationshipGraphBrowserCheck({page,origin,db,tenantId,
  await page.goto(origin+'/une/setup/object-manager',{waitUntil:'domcontentloaded'});
  await page.getByRole('heading',{name:'Object Manager',exact:true}).waitFor({timeout:20000});
  const child=page.getByRole('row').filter({hasText:'BrowserRelChild__c'});
- await child.getByRole('button',{name:'View'}).click();
+ await child.getByRole('link',{name:'Browser Relation Child',exact:true}).click();
  await page.getByRole('button',{name:'Fields & Relationships'}).click();
  await page.getByText('PrimaryParentId',{exact:true}).waitFor({timeout:15000});
  await page.getByText('ReviewParentId',{exact:true}).waitFor({timeout:15000});

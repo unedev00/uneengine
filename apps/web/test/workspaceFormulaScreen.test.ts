@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {openFormulaScreen,previewPrintTemplate,type PopupScreen} from '../src/core/pages/PageRuntime/screenFormula';
+import {openFormulaScreen,previewPrintTemplate,closeFormulaScreen,type PopupScreen} from '../src/core/pages/PageRuntime/screenFormula';
 
 test('record workspace popup and print receive the originating record and session',async()=>{
  const host=new EventTarget();
@@ -21,6 +21,27 @@ test('record workspace popup and print receive the originating record and sessio
   assert.deepEqual(received.map(screen=>[screen.page,screen.sessionId,screen.recordId]),
    [['Form','session1','record1'],['Receipt','session2','record2']]);
   assert.notEqual(received[0].instance,received[1].instance);
+ }finally{
+  if(original)Object.defineProperty(globalThis,'window',original);
+  else Reflect.deleteProperty(globalThis,'window');
+ }
+});
+
+test('CLOSESCREEN closes only the popup whose runtime instance requested it',()=>{
+ const host=new EventTarget();
+ const original=Object.getOwnPropertyDescriptor(globalThis,'window');
+ Object.defineProperty(globalThis,'window',{value:host,configurable:true});
+ const closed:string[]=[];
+ host.addEventListener('metadrive:close-formula-screen',event=>{
+  const key=(event as CustomEvent<{pageSessionKey:string}>).detail.pageSessionKey;
+  if(key!=='popup-1')return;
+  closed.push(key);
+  event.preventDefault();
+ });
+ try{
+  assert.deepEqual(closeFormulaScreen('popup-1'),{closed:true});
+  assert.throws(()=>closeFormulaScreen('main-page'),/only inside a popup/);
+  assert.deepEqual(closed,['popup-1']);
  }finally{
   if(original)Object.defineProperty(globalThis,'window',original);
   else Reflect.deleteProperty(globalThis,'window');

@@ -4,7 +4,7 @@ export async function runFieldCatalogueBrowserCheck({page,origin,db,tenantId}){
  const objectApi='Browser_Fields__c';
  await page.goto(origin+'/une/setup/object-manager',{waitUntil:'domcontentloaded'});
  await page.getByRole('heading',{name:'Object Manager',exact:true}).waitFor({timeout:15000});
- await page.getByRole('button',{name:'New Object',exact:true}).first().click();
+ await page.getByRole('button',{name:/^(?:New Object|Create new object)$/}).first().click();
  const objectWizard=page.getByRole('dialog',{name:'New Custom Object'});
  await objectWizard.getByLabel('Label',{exact:true}).fill('Browser Fields');
  await objectWizard.getByLabel('Plural Label',{exact:true}).fill('Browser Fields');

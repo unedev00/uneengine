@@ -13,6 +13,11 @@ type Scope={
  publish:(id:string,values:Record<string,Scalar>|null)=>void;
 };
 const Context=createContext<Scope|null>(null);
+/** Live user input (typed text, selections) published by the page runtime's onChange. */
+export const componentInputEvent='metadrive:component-input';
+export function publishComponentInput(componentId:string,value:unknown){
+ window.dispatchEvent(new CustomEvent(componentInputEvent,{detail:{componentId,value}}));
+}
 export const usePageFormulaScope=()=>useContext(Context);
 const safeKey=/^[A-Za-z_][A-Za-z0-9_]*$/;
 // Preserve simple names. Reserve a prefix for reversible encoding of legacy names.
@@ -41,6 +46,8 @@ export function PageFormulaScope({components,catalog,children}:{
    const keys=Array.from(new Set([...authored,...(definition.propertyDefinitions??[])
     .filter(field=>field.kind!=='GROUP'&&field.kind!=='COLLECTION').map(field=>field.propertyKey)]))
     .filter(key=>safeKey.test(key)&&!['constructor','prototype','__proto__'].includes(key));
+   // Every component exposes its live input as $component.Name.value (typed text, selection).
+   if(!keys.includes('value'))keys.push('value');
    if(['smart_image','ui_image'].includes(definition.apiName)){
     for(const key of ['textSource','imageSource','badgeText'])if(!keys.includes(key))keys.push(key);
    }
@@ -79,13 +86,28 @@ export function PageFormulaScope({components,catalog,children}:{
    return updated;
   });
  }),[]);
+ const [inputs,setInputs]=useState(()=>new Map<string,Scalar>());
+ useEffect(()=>{
+  const ids=new Set(model.entries.map(entry=>entry.id));
+  const changed=(event:Event)=>{
+   const detail=(event as CustomEvent<{componentId?:unknown;value?:unknown}>).detail;
+   if(typeof detail?.componentId!=='string'||!ids.has(detail.componentId))return;
+   const value=detail.value;
+   const scalar:Scalar=typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value)
+    ?value:value==null?'':String(value);
+   setInputs(old=>{const next=new Map(old);next.set(detail.componentId as string,scalar);return next;});
+  };
+  window.addEventListener(componentInputEvent,changed);
+  return ()=>window.removeEventListener(componentInputEvent,changed);
+ },[model]);
  const scope=useMemo(()=>({...model,publish,read(name:string,key:string){
   if(model.cyclic.has(name+'.'+key))throw Error('Circular component reference: '+name+'.'+key);
   const entry=model.entries.find(item=>item.token===name);
   if(!entry?.keys.includes(key))throw Error('Unknown component property: '+name+'.'+key);
+  if(key==='value'&&inputs.has(entry.id))return inputs.get(entry.id)!;
   const row=values.get(entry.id);
   return row&&Object.hasOwn(row,key)?row[key]:'';
- }}),[model,values,publish]);
+ }}),[model,values,inputs,publish]);
  return <Context.Provider value={scope}>{children}</Context.Provider>;
 }
 export function PublishedFormulaProperties({id,values,rendered}:{id?:string;values:Record<string,unknown>;rendered:Readonly<Record<string,string>>}){

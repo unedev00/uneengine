@@ -3,8 +3,8 @@ import {printRecordPages} from './printRecordPages';
 import {createPortal as renderScreenPortal} from 'react-dom';
 import {runSequenceFlow} from './formulaFlowSequence';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
-import {previewPrintTemplate,openFormulaScreen,type PopupScreen} from './screenFormula';
-import {PageFormulaScope,useComponentFormulaState} from '../../components/RegisteredComponent/PageFormulaScope';
+import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen,type PopupScreen} from './screenFormula';
+import {PageFormulaScope,useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {nextAccessibleTabIndex} from '../PageRuntime/tabKeyboardNavigation';
@@ -202,6 +202,7 @@ import {
   type WorkspaceId
 } from '../../metadata/Definitions/metadata';
 import {flowActionFormulaTarget} from './actionFlowFormula';
+import {FormulaScreenDialog} from './FormulaScreenDialog';
 
 
 export function createPageRuntimeViews(apiRequest: <T>(path:string, init?:RequestInit) => Promise<T>) {
@@ -705,6 +706,7 @@ function MetadataBoundPageComponent({
       const result=await executePageFormulaAction(apiRequest,binding,payload,
         pageState,objects,objectApiName,sessionId,(template,id)=>previewPrintTemplate(template,id,pageSessionKey,sessionId,currentAppId),
         async(name,target,mode)=>{
+          if(name==='CLOSESCREEN')return closeFormulaScreen(pageSessionKey);
           if(name==='SCREEN')return openFormulaScreen('SCREEN('+target+(mode?','+mode:'')+')',{
             objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
           },onNavigate,pageSessionKey,sessionId,String(payload.recordId??pageState.recordId??recordId??''));
@@ -716,7 +718,7 @@ function MetadataBoundPageComponent({
           return apiRequest<{FileId:string;AssetRef:string}>('/action-formulas/create-pdf',{
             method:'POST',body:JSON.stringify({template,recordId:id})
           });
-        });
+        },{namedCollections:namedSource.namedCollections,collectionSources:namedSource.formulaSources as never});
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
@@ -909,6 +911,7 @@ function MetadataBoundPageComponent({
       loadAsset: loadPageMediaAsset, viewRevision: revision,
       loadCompanySettings: () => apiRequest('/metadata/currencies'),
       onChange: (value: unknown) => {
+        publishComponentInput(component.id,value);
         if (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
           &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
           void onAction({ event: 'change', value }).catch(() => {});
@@ -1183,6 +1186,7 @@ function LightningAppRuntime({
               emitInteraction(component,action.event,action.value);
             },
             onChange:(value:unknown)=>{
+              publishComponentInput(component.id,value);
               if(behaviorAction(component.properties,'change',appVisibilityContext)==='enabled')
                 emitInteraction(component,'change',value);
             },
@@ -1312,15 +1316,19 @@ function LightningAppRuntime({
     ?<React.Suspense fallback={null}><InScreenFlowHost flows={availableFlows}
       appApiName={appId} pageApiName={page.apiName} onLaunchFlow={onLaunchFlow}
       pageRecordId={typeof layoutState.recordId==='string'?layoutState.recordId:undefined}/></React.Suspense>:null;
-  const screenPopup=popup?renderScreenPortal(<dialog open className={popup.print?'formula-print-preview':undefined} aria-label={popup.page} style={{position:'fixed',inset:0,zIndex:1200,width:'85vw',height:'85vh',overflow:'auto'}}>
-    <button type="button" onClick={()=>{popup.failed?.(Error('Preview closed'));setPopup(null);}}>Close</button>
-    {popup.print&&<button type="button" onClick={()=>window.print()}>Print / Save PDF</button>}
+  const closePopup=()=>{
+    setPopup(null);
+    // The parent page re-reads records the popup may have changed (cart, held sale).
+    window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{detail:{pageSessionKey:runtimeKey}}));
+  };
+  const screenPopup=popup?renderScreenPortal(<FormulaScreenDialog key={popup.instance} screen={popup}
+    canvas={pages.find(item=>item.apiName===popup.page)} onClose={closePopup}>
     <LightningAppRuntime key={popup.instance} printPreview={popup.print?popup:undefined} instanceKey={popup.instance} appId={appId} pageApiName={popup.page}
      objects={objects} apps={apps} pages={pages} reports={reports} libraryComponents={libraryComponents}
      availableFlows={availableFlows} formFactor={formFactor} profileId={profileId} pageDefinitionCache={pageDefinitionCache}
      onNavigate={onNavigate} onLaunchFlow={onLaunchFlow} onStandaloneModeChange={()=>{}}
      inScreenPage={popup.inScreen} inScreenContext={{sessionId:popup.sessionId,values:{recordId:popup.recordId}}}/>
-   </dialog>,document.body):null;
+   </FormulaScreenDialog>,document.body):null;
   const paperStyle=printPreview?<style>{`@media print {
    @page {size:${Number(page.canvasWidth)}px ${Number(page.canvasHeight)}px;margin:0}
    body > :not(.formula-print-preview) {display:none!important}

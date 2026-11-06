@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {createPortal} from 'react-dom';
 import type {PopupScreen} from './screenFormula';
+import {FormulaScreenDialog} from './FormulaScreenDialog';
 
 type Request={appId:string;screen:PopupScreen};
 export default function WorkspaceFormulaScreen({render}:{render:(request:Request)=>React.ReactNode}){
@@ -16,11 +17,9 @@ export default function WorkspaceFormulaScreen({render}:{render:(request:Request
  },[]);
  return <>{requests.map(request=>{
   const {screen}=request;
-  return createPortal(<dialog open aria-label={screen.page} className={screen.print?'formula-print-preview':undefined}
-    style={{position:'fixed',inset:0,zIndex:1200,width:'85vw',height:'85vh',overflow:'auto'}}>
-    <button onClick={()=>{screen.failed?.(Error('Preview closed'));setRequests(current=>current.filter(item=>item!==request));}}>Close</button>
-    {screen.print&&<button onClick={()=>window.print()}>Print / Save PDF</button>}
+  const close=()=>setRequests(current=>current.filter(item=>item!==request));
+  return createPortal(<FormulaScreenDialog screen={screen} onClose={close}>
     <React.Suspense fallback={null}>{render(request)}</React.Suspense>
-   </dialog>,document.body,screen.instance);
+   </FormulaScreenDialog>,document.body,screen.instance);
  })}</>;
 }

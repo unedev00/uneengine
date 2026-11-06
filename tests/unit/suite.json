@@ -148,6 +148,7 @@
     "apps/server/test/system/relationship-path-parity.test.ts",
     "apps/server/test/system/role-administration.test.ts",
     "apps/server/test/system/action-record-lookups.test.ts",
+    "apps/server/test/system/action-loops-aggregates.test.ts",
     "apps/server/test/system/scheduled-action-formulas.test.ts",
     "apps/server/test/system/scheduled-flow-dispatcher.test.ts",
     "apps/server/test/system/security-events-paging-contract.test.ts",

@@ -1,7 +1,7 @@
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
-import {previewPrintTemplate,openFormulaScreen} from '../PageRuntime/screenFormula';
-import {useComponentFormulaState} from '../../components/RegisteredComponent/PageFormulaScope';
+import {previewPrintTemplate,openFormulaScreen,closeFormulaScreen} from '../PageRuntime/screenFormula';
+import {useComponentFormulaState,publishComponentInput} from '../../components/RegisteredComponent/PageFormulaScope';
 import {adjustNumberRecord,type AdjustNumberBinding} from '../PageRuntime/adjustNumberRecord';
 import {executePageFormulaAction,parseActionFormulaAssignment,resolveActionFormulaValue} from '../PageRuntime/formulaAction';
 import {resolveMetadataProperties} from '../../metadata/Definitions/metadataReferences';
@@ -460,11 +460,12 @@ export default function MetadataBoundPageComponent({
       const result=await executePageFormulaAction(apiRequest,binding,payload,
         pageState,objects,objectApiName,sessionId,(template,id)=>previewPrintTemplate(template,id,pageSessionKey,sessionId,currentAppId),
         async(name,target,mode)=>{
+          if(name==='CLOSESCREEN')return closeFormulaScreen(pageSessionKey);
           if(name==='SCREEN')return openFormulaScreen('SCREEN('+target+(mode?','+mode:'')+')',{
             objects,apps,pages,currentAppId,defaultObjectApiName:objectApiName
           },onNavigate,pageSessionKey,sessionId,String(payload.recordId??pageState.recordId??recordId??''));
           return runSequenceFlow(target,availableFlows,apiRequest,onLaunchFlow);
-        });
+        },undefined,{namedCollections:namedSource.namedCollections,collectionSources:namedSource.formulaSources as never});
       for(const change of result.changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
@@ -607,6 +608,7 @@ export default function MetadataBoundPageComponent({
         : Promise.reject(new Error('Invalid media asset ID')),
       loadCompanySettings: () => apiRequest('/metadata/currencies'),
       onChange: (value: unknown) => {
+        publishComponentInput(component.id,value);
         if (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
           &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
           void onAction({ event: 'change', value }).catch(() => {});

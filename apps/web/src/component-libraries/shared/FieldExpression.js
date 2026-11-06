@@ -725,5 +725,8 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
 export function executeActionFormula(formula,record,context,services){
  return executeActionPlan(formula,{...record,sessionId:context?.sessionId??''},
   (node,scope,aliases,state)=>evaluateParsedExpression(node,scope,{...context,actionAliases:aliases,
+   // Actions read the same page inputs as bindings: $component.X.prop and TABLE()/COLLECTION() sources.
+   readComponent:context?.readComponent??context?.pageState?.[componentReaderKey],
+   collectionSources:context?.collectionSources??{},
    pageState:state&&Object.keys(state).length?{...(context?.pageState??{}),...state}:context?.pageState}),services);
 }
