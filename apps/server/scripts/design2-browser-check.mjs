@@ -263,24 +263,23 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    };
   }).sort((a,b)=>a.row-b.row||a.column-b.column));
  const template=await design2GridFingerprint();
- assert.equal(template.length,17,'The approved R1-R3 fixed ribbon must have 17 icon controls');
+ assert.equal(template.length,16,'The compact Design scaffold has 16 fixed controls; Focus is separate');
+ // Count and Padding occupy fixed Extras cells; component applicability still
+ // controls their enabled/disabled states, not their position or existence.
+ await chooseArea('Extras');
  const countBox=page.locator('.smart-design2-count');
  const countInput=countBox.locator('input.smart-office-number');
- assert.equal(await countBox.count(),1,'The Appearance value box must always be mounted');
+ const paddingBox=page.locator('.smart-design2-padding');
+ assert.equal(await countBox.count(),1,'Extras always mounts Count');
+ assert.equal(await paddingBox.count(),1,'Extras always mounts Padding');
  assert.equal(await countBox.locator('.smart-design2-count-choice').count(),1,
-  'The property dropdown and value must share one bordered field');
+  'Count dropdown and value stay together');
  assert.equal(await countBox.locator('.smart-design2-count-field svg').count(),0,
-  'The previous hand icon should be removed');
+  'Count must not reintroduce the retired hand icon');
  assert.equal(await countInput.getAttribute('type'),'number');
- assert.equal(await countInput.getAttribute('step'),'1','Count must have native spinner arrows');
- const firstCount=await countBox.boundingBox();
- const horizontalVertical=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="orientation"]');
- if(await horizontalVertical.count()){
-  const hv=await horizontalVertical.boundingBox();
-  assert.ok(hv&&firstCount&&firstCount.x>=hv.x+hv.width-2&&
-   firstCount.x-(hv.x+hv.width)<16,
-   'Appearance value control must be immediately beside orientation');
- }
+ assert.equal(await countInput.getAttribute('step'),'1');
+ assert.equal(await page.locator('.smart-design2-extras-fixed > .smart-design2-extras-cell').count(),2);
+ await chooseArea('Body');
 
  assert.ok(template.every(item=>item.visible&&item.hasEditor),
   'Every fixed cell must show its real control, even when disabled');
@@ -288,17 +287,14 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   await chooseArea(section);
   if(section==='Extras'){
    assert.equal(await page.locator('.smart-design2-supplemental').count(),0,
-    'Extras for Cart should not display unsupported controls');
-   continue; // This section has two explicit settings, not the 17-icon matrix.
+    'Extras for Cart should not show unsupported supplemental properties');
+   assert.equal(await countBox.count(),1,'Count must remain in Extras');
+   assert.equal(await paddingBox.count(),1,'Padding must remain in Extras');
+   continue;
   }
   assert.deepEqual(await design2GridFingerprint(),template,
-   'Switching to '+section+' changed the R/C icon layout instead of only enable/disable');
-  assert.equal(await countBox.count(),1,'Appearance value box disappeared in '+section);
-  const count=await countBox.boundingBox();
-  assert.ok(count&&firstCount&&Math.abs(count.x-firstCount.x)<1,
-   'Appearance value box moved when selecting '+section);
-  assert.equal(await countInput.isDisabled(),section!=='Body',
-   'Count must be disabled outside a supported Body context');
+   'Switching to '+section+' changed fixed icon placements');
+  assert.equal(await countBox.count(),0,'Count must not appear outside Extras');
  }
  await chooseArea('Table');
  const inactiveShape=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="shape"]');
@@ -364,19 +360,19 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await cart.locator('.smart-cart-header').evaluate(element=>
    getComputedStyle(element).textAlign),'right','R3C2 alignment did not update the Cart header');
 
- // Image Placement sits beside Width at R2C5; Image Fill stays at R3C6.
+ // Image Placement follows Shadow at R2C4; Image Fill is at R3C5.
  // have icon-based menus, including the existing Fit/Fill/Stretch choices.
  await chooseArea('Image');
  const imagePlacement=row.locator('[data-design-row="2"] [data-design-slot="placement"]');
  const imageFill=row.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
- assert.equal(await imagePlacement.getAttribute('data-design-column'),'5');
- assert.equal(await imageFill.getAttribute('data-design-column'),'6');
+ assert.equal(await imagePlacement.getAttribute('data-design-column'),'4');
+ assert.equal(await imageFill.getAttribute('data-design-column'),'5');
  assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
  assert.equal(await imageFill.getAttribute('data-supported'),'true');
  assert.equal(await imagePlacement.locator('.design2-icon-trigger').count(),1,
-   'R2C5 image placement must be an icon dropdown');
+   'R2C4 image placement must be an icon dropdown');
  assert.equal(await imageFill.locator('.design2-icon-trigger').count(),1,
-   'R3C6 image fit must be an icon dropdown');
+   'R3C5 image fit must be an icon dropdown');
  // Geometry is Excel-owned and remains at 40x26px, not enlarged by
  // the earlier Design tab's wider select CSS.
  const placementRect=await imagePlacement.locator('.design2-icon-trigger').boundingBox();
@@ -385,20 +381,20 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   assert.ok(bounds&&Math.abs(bounds.width-40)<1&&Math.abs(bounds.height-26)<1,
     'Image icon dropdown must occupy exactly 40x26 px at its R/C position');
  }
- // Placement must have only the standard 4px grid gap after Width (R2C4).
- const widthRect=await row.locator('[data-design-row="2"] [data-design-slot="width"]').boundingBox();
- assert.ok(widthRect&&placementRect&&Math.abs(placementRect.x-(widthRect.x+widthRect.width+4))<1,
-   'Image Placement has an unnecessary gap after the Width field');
+ // Placement now follows the Shadow selector in compact Position.
+ const shadowRect=await row.locator('[data-design-row="2"] [data-design-slot="shadow"]').boundingBox();
+ assert.ok(shadowRect&&placementRect&&Math.abs(placementRect.x-(shadowRect.x+shadowRect.width+4))<1,
+  'Image Placement must immediately follow Shadow in the fixed Position row');
  assert.equal(Math.round(fillRect.x),Math.round(
-   template.find(item=>item.row===3&&item.column===6).x+
+   template.find(item=>item.row===3&&item.column===5).x+
    (await row.locator('[data-design-row="3"]').boundingBox()).x));
  // Old flex!important plus grid-area:auto!important collapsed Image slots into C1.
  const firstImageCell=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
  const firstRect=await firstImageCell.boundingBox();
- assert.ok(firstRect&&placementRect.x>firstRect.x+200,
-   'Image R2C5 appears at C1 instead of the fixed C5 position');
- assert.ok(firstRect&&fillRect.x>firstRect.x+200,
-   'Image R3C6 appears at C1 instead of the fixed C6 position');
+ assert.ok(firstRect&&placementRect.x>firstRect.x+150,
+   'Image placement must not collapse into C1 from its fixed C4 position');
+ assert.ok(firstRect&&fillRect.x>firstRect.x+150,
+   'Image fill must not collapse into C1 from its fixed C5 position');
  for(const index of [1,2,3]){
   assert.equal(await row.locator('[data-design-row="'+index+'"]').evaluate(
     element=>getComputedStyle(element).display),'grid',
@@ -432,8 +428,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  // Area switching must not change the selected component or old Design view.
  await chooseArea('Table');
  assert.equal(await row.locator('[data-property="tableBackgroundColor"]').getAttribute('data-supported'),'true');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
-   .getAttribute('data-design-column'),'1','Table Focus must remain at R2C1');
+ assert.equal(await row.locator('[data-design-slot="focused"]').count(),0,
+  'Focus shortcut must be absent from the main Design rows');
+ await chooseArea('Focused');
+ assert.equal(await row.locator('[data-design-row="1"] [data-design-slot="fill"]').count(),1,
+  'Focused accordion retains the existing focus property controls');
  await chooseArea('Body');
  // Both user-reported "blank spaces" must contain the actual DISABLED icons,
  // immediately after their 40px predecessor, not a phantom 80px C3 track.
@@ -488,9 +487,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.headerAlignment,'right',
   'Design 2 R3C2 alignment icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imagePlacement,'left',
-  'Design 2 R2C5 image placement icon dropdown did not persist');
+  'Design 2 R2C4 image placement icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imageFill,'fit',
-  'Design 2 R3C6 image fit icon dropdown did not persist');
+  'Design 2 R3C5 image fit icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.x,64,
   'Design 2 R0 X position did not survive SQL save');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.y,68,
@@ -518,7 +517,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const tabsAreas=(await areaButtons().allTextContents()).map(value=>value.trim());
  assert.deepEqual(tabsAreas,allAreas,'All Excel areas must be visible for Smart Tabs');
  await chooseArea('Image');
- for(const [slotKey,rowNumber,column] of [['fill',1,1],['placement',2,5],['imageFill',3,6]]){
+ for(const [slotKey,rowNumber,column] of [['fill',1,1],['placement',2,4],['imageFill',3,5]]){
   const control=row.locator('[data-design-row="'+rowNumber+'"] [data-design-slot="'+slotKey+'"]');
   assert.equal(await control.count(),1,'Unsupported Image slot must remain visible');
   assert.equal(await control.getAttribute('data-design-column'),String(column));
@@ -539,11 +538,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    'Selected Tab colour palette must be enabled');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await chooseArea('Row');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),1,
-   'Row Focus must remain visible, even when not approved');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
-   .getAttribute('data-supported'),'false',
-   'Unsupported Row Focus must remain disabled');
+ assert.equal(await row.locator('[data-design-slot="focused"]').count(),0,
+  'Row Focus shortcut must be omitted; focus remains in the Focused accordion');
+ await chooseArea('Focused');
+ assert.equal(await row.locator('[data-design-row="1"] [data-design-slot="fill"]').count(),1,
+  'Focused section must retain its editable shared fill slot');
+ await chooseArea('Row');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
@@ -624,6 +624,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await chooseArea('Body');
  assert.equal(await dock.locator('.smart-design2-dimensions').count(),0,
   'Dimensions controls must collapse when Body is expanded');
+ // Count is edited in Extras; returning to Body must preserve its value.
+ await chooseArea('Extras');
  const dockCountInput=dock.locator('.smart-design2-count input.smart-office-number');
  if(!await dockCountInput.isDisabled()){
   const original=await dockCountInput.inputValue();
@@ -631,6 +633,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   await replaceNumeric(dockCountInput,replacement);
   await replaceNumeric(dockCountInput,original);
  }
+ await chooseArea('Body');
  const editableBodyNumber=dock.locator('.smart-ribbon-row .smart-property[data-kind="number"] input:not([disabled])').first();
  if(await editableBodyNumber.count()){
   const original=await editableBodyNumber.inputValue();
@@ -882,7 +885,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const navBlock=await selectFour('four-nav','Image');
  const navFit=fourRibbon.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
  assert.equal(await navFit.getAttribute('data-property'),'imageFill');
- assert.equal(await navFit.getAttribute('data-design-column'),'6');
+ assert.equal(await navFit.getAttribute('data-design-column'),'5');
  assert.equal(await navFit.getAttribute('data-supported'),'true');
  const navFitTrigger=navFit.locator('.design2-icon-trigger');
  assert.equal(await navFitTrigger.isDisabled(),false,'Navigation image fit icon disabled');
@@ -982,6 +985,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
     return {width:canvas?.getBoundingClientRect().width??0,
      viewportWidth:viewport.clientWidth,scrollWidth:viewport.scrollWidth};
    });
+   // Wait for the Smart Button selection's Fit Width/ResizeObserver cycle
+   // to settle before attributing a zoom change to expanding Object Source.
+   await page.waitForTimeout(200);
    const before=await measureCanvas();
    await sourceToggle.click();
    assert.equal(await sourceToggle.getAttribute('aria-expanded'),'true');
@@ -990,7 +996,8 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    assert.equal(await sourceSection.locator('button.smart-source-add-label').count(),1);
    const after=await measureCanvas();
    assert.ok(Math.abs(after.width-before.width)<1,
-    'Expanding Object Source must not alter canvas zoom or width');
+    'Expanding Object Source must not alter canvas zoom or width: '+
+     JSON.stringify({before,after}));
    assert.ok(after.scrollWidth<=after.viewportWidth+2,
     'Fit Width must not create a horizontal canvas scrollbar: '+JSON.stringify(after));
    await chooseArea('Body');
@@ -1053,8 +1060,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const arrangeDock=page.locator('.page-builder-design-dock');
  const dockBounds=await arrangeDock.boundingBox();
  const selectorRect=await arrangeDock.locator('.smart-design2-area-section[data-design-area="Body"] > button').boundingBox();
- assert.ok(dockBounds&&selectorRect&&selectorRect.width>=400,
-  'The collapsible Design section heading must fill the left inspector width');
+ assert.ok(dockBounds&&selectorRect&&
+   selectorRect.width>=dockBounds.width-26&&selectorRect.width<=dockBounds.width,
+  'The collapsible section heading must fill the compact inspector content area');
  const rects=[];
  for(let i=0;i<15;i++){
   const button=buttons.nth(i);
@@ -1075,8 +1083,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
     a.y+a.height<=b.y+1||b.y+b.height<=a.y+1,
    'R0 actions must not overlap in wrapped dock sections: C'+(i+7)+' and C'+(j+7));
  }
- assert.ok(rects.slice(0,6).every(rect=>Math.abs(rect.y-rects[0].y)<2),
-  'Six alignment actions must form one orderly line inside the dock');
+ assert.ok(rects.slice(0,4).every(rect=>Math.abs(rect.y-rects[0].y)<2),
+  'The first four alignment actions must share one row in the compact inspector');
+ assert.ok(rects.slice(4,6).every(rect=>Math.abs(rect.y-rects[4].y)<2)&&
+   rects[4].y>rects[0].y+3,
+  'The remaining two alignment actions must wrap together onto the next row');
  assert.equal(await buttons.nth(0).isDisabled(),false,'Align left must work for a single component');
  assert.equal(await buttons.nth(6).isDisabled(),true,'Distribute needs three selected components');
  assert.equal(await buttons.nth(10).isDisabled(),true,'Group needs multiple selected components');
@@ -1154,36 +1165,36 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  await buttons.nth(13).click();
  assert.equal(await page.getByRole('tab',{name:'Advanced',exact:true}).getAttribute('aria-selected'),'true',
   'Component nesting must open the existing Advanced nesting editor');
- // Vertical Design dock uses a real seventh grid column, not a fixed
- // top-ribbon pixel offset. Its controls must fit the dock without x-scroll.
+ // Verify the approximately 30% narrower dock stays free of horizontal
+ // overflow in every Design area, with identical fixed icon positions.
  await page.getByRole('tab',{name:'Design',exact:true}).click();
  await dock.waitFor({state:'visible'});
- // Property areas are collapsible buttons; the previous dropdown is removed.
- const dockHand=dock.locator('.smart-design2-count-field');
- const dockCount=dock.locator('.smart-design2-count');
- const dockOrientation=dock.locator('[data-design-row="1"] [data-design-slot="orientation"]');
+ const dockWidth=await dock.evaluate(node=>node.getBoundingClientRect().width);
+ assert.ok(Math.abs(dockWidth-308)<=2,
+  'The inspector must be 308 CSS px (30% narrower than 440), found '+dockWidth);
  const assertDockGeometry=async(section)=>{
-  const h=await dockHand.boundingBox(),hv=await dockOrientation.boundingBox();
-  assert.ok(h&&hv,'Hand and H/V must be visible in '+section);
-  assert.ok(Math.abs(h.x-(hv.x+hv.width+4))<=3,
-   'Hand must sit directly beside H/V in '+section+
-   ', received '+JSON.stringify({hand:h,hv}));
-  assert.ok(Math.abs(h.y-hv.y)<=2,'Hand must share the H/V row in '+section);
   const extent=await dock.evaluate(node=>({
    scrollWidth:node.scrollWidth,clientWidth:node.clientWidth,
    overflowX:getComputedStyle(node).overflowX
   }));
   assert.ok(extent.scrollWidth<=extent.clientWidth+2,
-   'Vertical Design dock must have no horizontally overflowing controls in '+
-    section+': '+JSON.stringify(extent));
-  assert.equal(extent.overflowX,'hidden','Vertical dock must not display x-scroll');
+   'Design dock horizontally overflows in '+section+': '+JSON.stringify(extent));
+  assert.equal(extent.overflowX,'hidden','The dock must not display x-scroll');
+  if(section!=='Extras'){
+   assert.deepEqual(await design2GridFingerprint(),template,
+    'Fixed icon locations changed in '+section);
+  }
  };
  for(const section of ['Body','Header','Image','Badge']){
   await chooseArea(section);
-  assert.equal(await dockCount.count(),1,'Hand disappeared in vertical '+section);
+  assert.equal(await dock.locator('.smart-design2-count').count(),0,
+   'Count must not reappear in the '+section+' icon grid');
   await assertDockGeometry(section);
  }
- console.info('Design 2 R0 C7–C21 browser: dock layout, Body-only enablement and all 15 commands verified');
-
+ await chooseArea('Extras');
+ assert.equal(await dock.locator('.smart-design2-count').count(),1);
+ assert.equal(await dock.locator('.smart-design2-padding').count(),1);
+ await assertDockGeometry('Extras');
+ console.info('Compact Design dock: 16 fixed controls, Extras positions, no horizontal overflow');
  console.info('Design 2 browser E2E: original Design preserved; Row Bold persisted; Ctrl+A/Delete removes all selected, one Undo restores all');
 }

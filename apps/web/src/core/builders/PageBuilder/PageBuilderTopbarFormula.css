@@ -77,17 +77,17 @@
   >.smart-ribbon.smart-design2-ribbon[data-three-row="true"]:has(+.smart-design-source){
   min-width:0!important;
 }
-/* Left dock: Object Source above the dimensions and visual property sections. */
+/* Left dock: Object Source fits the compact Design matrix. */
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content>.smart-ribbon.smart-design-source{
   display:block!important;box-sizing:border-box!important;
-  width:420px!important;min-width:0!important;max-width:420px!important;
+  width:284px!important;min-width:0!important;max-width:284px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
   margin:0!important;padding:0!important;overflow:visible!important;
 }
 .page-builder-design-dock .office-builder-ribbon #page-builder-tab-content.office-ribbon-content
   >.smart-ribbon.smart-design-source>.smart-ribbon-group{
   position:relative!important;display:block!important;box-sizing:border-box!important;flex:none!important;
-  width:420px!important;min-width:0!important;max-width:420px!important;
+  width:284px!important;min-width:0!important;max-width:284px!important;
   height:auto!important;min-height:0!important;max-height:none!important;
   margin:0!important;padding:21px 0 0!important;border:0!important;border-top:1px solid #ccd2dd!important;
 }

@@ -232,6 +232,7 @@
     "apps/web/test/pageBuilderCollapsibleDesignInspector.test.mjs",
     "apps/web/test/pageBuilderCustomDesktopCanvas.test.ts",
     "apps/web/test/pageBuilderDesignReference.test.ts",
+    "apps/web/test/pageBuilderCompactDock.test.mjs",
     "apps/web/test/pageBuilderDockOnly.test.mjs",
     "apps/web/test/pageBuilderFocusedExtrasMigration.test.mjs",
     "apps/web/test/pageBuilderInsertGalleryLayout.test.ts",
