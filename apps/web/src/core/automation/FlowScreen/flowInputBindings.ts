@@ -3,6 +3,17 @@ import type { FieldMetadata, FlowDefinitionMetadata, FlowResourceMetadata } from
 export type InputSourceKind = 'Unmapped' | 'Literal' | 'Event' | 'Event Field' | 'Record Field' | 'Page State' | 'Numeric Page State' | 'Record Collection' | 'Session' | 'Legacy';
 export type InputSource = { kind: InputSourceKind; detail: string; value: unknown };
 const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
+export const sessionInputFields=Object.freeze([
+ {key:'id',label:'Page session ID'},
+ {key:'user.id',label:'Logged-in user ID'},
+ {key:'user.email',label:'Logged-in user email'},
+ {key:'user.name',label:'Logged-in user name'},
+ {key:'tenant.id',label:'Current tenant ID'},
+ {key:'tenant.name',label:'Company name'},
+ {key:'tenant.logo',label:'Company logo'}
+] as const);
+const isSessionField=(value:string):boolean=>
+ sessionInputFields.some(item=>item.key===value);
 const eventPath = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*$/;
 const isSafeEventPath = (path: string): boolean => eventPath.test(path)
   && !path.split('.').some(segment => ['__proto__', 'prototype', 'constructor'].includes(segment));
@@ -76,7 +87,13 @@ export function resolveStructuredFlowInput(
 
 export function decodeInputSource(value: unknown, hasMapping = true): InputSource {
   if (!hasMapping) return { kind: 'Unmapped', detail: '', value: undefined };
-  if (value === '$session') return { kind: 'Session', detail: '', value };
+  if (value === '$session'||value==='$session.id')
+    return {kind:'Session',detail:'id',value};
+  if(typeof value==='string'&&value.startsWith('$session.')){
+    const detail=value.slice(9);
+    return isSessionField(detail)?{kind:'Session',detail,value}
+     :{kind:'Legacy',detail:'',value};
+  }
   if (value === '$event') return { kind: 'Event', detail: '', value };
   if (typeof value === 'string' && value.startsWith('$event.')) {
     const path = value.slice(7);
@@ -115,7 +132,11 @@ export function encodeInputSource(
   dataType = ''
 ): unknown {
   if (kind === 'Unmapped') return undefined;
-  if (kind === 'Session') return '$session';
+  if (kind === 'Session') {
+    if(!detail)return '$session'; // Previously saved page-session mapping.
+    if(!isSessionField(detail))throw Error('Choose a supported session field.');
+    return '$session.'+detail;
+  }
   if (kind === 'Page State') {
     if(!identifier.test(detail)||detail.length>64)throw new Error('Choose a valid page state key.');
     return '$state.'+detail;
