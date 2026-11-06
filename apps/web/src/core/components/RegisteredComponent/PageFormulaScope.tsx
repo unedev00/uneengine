@@ -127,7 +127,7 @@ export function PublishedFormulaProperties({id,values,rendered}:{id?:string;valu
   if(Object.hasOwn(rendered,source)){output[key]=rendered[source];continue;}
   if(typeof values.fieldAllowed==='function'&&!values.fieldAllowed(source,record??{}))continue;
   let value=values[source];
-  if(typeof value==='string'&&(/^(?:=|@|\$component\.|\$state\.)/.test(value)||/^[A-Z]+\(/i.test(value))){
+  if(typeof value==='string'&&(/^(?:=|@|\$component\.|\$state\.|\$session(?:\.|$))/.test(value)||/^[A-Z]+\(/i.test(value))){
    if(rows.length>1&&!values.record&&/@[A-Za-z]/.test(value)&&!['smart_image','ui_image'].includes(String(values.kind??'')))continue;
    try{
     value=resolveFieldText(value,record,{...getAuthenticatedFormulaBindingContext(),
