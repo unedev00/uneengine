@@ -102,7 +102,7 @@ export default function AppManager({
   const [confirmDiscard,setConfirmDiscard]=useState(false);
   const deleteTrigger=useRef<HTMLButtonElement>(null);
   const confirmDialog=useRef<HTMLElement>(null);
-  const dismissDialog=()=>{setConfirmDelete(false);setConfirmDiscard(false);requestAnimationFrame(()=>deleteTrigger.current?.focus());};
+  const dismissDialog=()=>{setConfirmDelete(false);setConfirmDiscard(false);requestAnimationFrame(()=>{const focusTarget=deleteTrigger.current??document.querySelector<HTMLButtonElement>('.app-manager-top button');focusTarget?.focus();});};
   const dialogKeyboard=(event:ReactKeyboardEvent<HTMLElement>)=>{
     if(event.key==='Escape'){event.preventDefault();dismissDialog();return;}
     if(event.key!=='Tab')return;
