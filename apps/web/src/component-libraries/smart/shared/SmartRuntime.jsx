@@ -546,7 +546,7 @@ function SmartToggle({p,fire}){
    <span className="smart-switch-thumb"/></span></label>;
 }
 export default function SmartRuntime(p){
- // Re-render when the tenant brand arrives so $tenant.name / $tenant.logo show without a reload.
+ // Re-render when the tenant brand arrives so $session.tenant.name / .logo show without a reload.
  React.useSyncExternalStore(subscribeTenantBrand,getTenantBrand,getTenantBrand);
  const name=p.kind||"smart_text",record=recordOf(p),label=scopedExpression(p,"label",p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};
