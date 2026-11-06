@@ -305,3 +305,25 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  .auth-screen .auth-card .auth-submit {min-height:40px}
  .auth-screen .auth-card .auth-inline-actions .text-action {min-height:30px}
 }
+
+/* UX-0004 and UX-0006: explicit desktop auth rhythm and one shared control ramp.
+ * The compact/landscape geometry above retains precedence on short viewports. */
+.auth-screen:not(.auth-screen--standalone) {
+ --auth-primary:#0b57d0;
+ --auth-primary-hover:#0946a7;
+ --auth-primary-disabled:#698ac0;
+ --auth-focus:#0b57d0;
+ --auth-action:var(--auth-primary);
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(a,.text-action,.auth-password-toggle) {color:var(--auth-primary)}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(button,a,input,textarea,select):focus-visible {
+ outline:2px solid var(--auth-focus);outline-offset:2px;
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit:hover:not(:disabled) {background:var(--auth-primary-hover);border-color:var(--auth-primary-hover)}
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit:disabled {background:var(--auth-primary-disabled);border-color:var(--auth-primary-disabled)}
+@media(min-width:601px) and (min-height:620px){
+ .auth-screen:not(.auth-screen--standalone) .auth-card .form-label {margin-top:0;margin-bottom:6px}
+ .auth-screen:not(.auth-screen--standalone) .auth-card #login-email {margin-bottom:18px}
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-recovery-action {margin-top:8px;margin-bottom:0}
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {margin-top:24px}
+}
