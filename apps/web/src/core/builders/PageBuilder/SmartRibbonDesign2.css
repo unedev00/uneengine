@@ -497,31 +497,39 @@
   background:#d8eafa!important;border-color:#5c91cf!important;
 }
 
-/* One stable hand/count field directly beside the existing H/V icon.
- * Keep its dimensions, native spinner and position unchanged in every area. */
+/* Shared compact Appearance selector/value field. The dropdown replaces the
+ * old hand icon; both editors share one border and never add a second row. */
 .office-builder-ribbon .smart-design2-group .smart-design2-workbench{position:relative!important;}
 .office-builder-ribbon .smart-design2-group .smart-design2-count{
  position:relative;grid-column:7;grid-row:1;
- box-sizing:border-box;display:flex;align-items:center;gap:4px;
+ box-sizing:border-box;display:flex;align-items:center;
+ width:110px;min-width:110px;max-width:110px;
  height:26px;min-height:26px;max-height:26px;
  margin:0;padding:0;background:transparent;color:#1d4266;z-index:2;
 }
 .office-builder-ribbon .smart-design2-group .smart-design2-count-field{
- box-sizing:border-box;display:inline-flex;align-items:center;gap:2px;
- flex:0 0 79px;width:79px;min-width:79px;max-width:79px;
+ box-sizing:border-box;display:inline-flex;align-items:center;gap:0;
+ flex:0 0 110px;width:110px;min-width:110px;max-width:110px;
  height:26px;min-height:26px;max-height:26px;
- padding:0 3px;border:1px solid #b7c9df;border-radius:3px;background:#fff;
+ padding:0;border:1px solid #b7c9df;border-radius:3px;background:#fff;
+ overflow:hidden;
 }
-.office-builder-ribbon .smart-design2-group .smart-design2-count-field>svg{
- flex:0 0 16px;width:16px;height:16px;
+.office-builder-ribbon .smart-design2-group .smart-design2-count-choice{
+ box-sizing:border-box!important;position:static!important;
+ flex:0 0 71px!important;width:71px!important;min-width:0!important;max-width:71px!important;
+ height:24px!important;min-height:24px!important;
+ border:0!important;border-right:1px solid #d4dfed!important;
+ border-radius:0!important;background:transparent!important;color:#1d4266!important;
+ font:10px/22px "Segoe UI",Arial,sans-serif!important;
+ padding:0 1px!important;margin:0!important;text-overflow:ellipsis;
 }
 .office-builder-ribbon .smart-design2-group .smart-design2-count-field input.smart-office-number{
- box-sizing:border-box!important;flex:1 1 auto!important;
- width:50px!important;min-width:0!important;max-width:50px!important;
+ box-sizing:border-box!important;flex:1 1 0!important;
+ width:36px!important;min-width:0!important;max-width:37px!important;
  height:24px!important;min-height:24px!important;max-height:24px!important;
- margin:0!important;padding:0 1px!important;
+ margin:0!important;padding:0!important;
  border:0!important;border-radius:0!important;background:transparent!important;
- color:inherit;text-align:center;font:12px/22px "Segoe UI",Arial,sans-serif!important;
+ color:inherit;text-align:center;font:11px/22px "Segoe UI",Arial,sans-serif!important;
  font-variant-numeric:tabular-nums;
  appearance:auto!important;-moz-appearance:auto!important;
 }
@@ -531,14 +539,40 @@
  input.smart-office-number::-webkit-outer-spin-button{
  -webkit-appearance:auto!important;opacity:1!important;margin:0!important;
 }
-.office-builder-ribbon .smart-design2-group .smart-design2-count[data-supported="false"]
- .smart-design2-count-field{
- opacity:.45;cursor:not-allowed;
+.office-builder-ribbon .smart-design2-group
+ :is(.smart-design2-days-trigger,.smart-design2-day-choice){
+ box-sizing:border-box!important;flex:1 1 0!important;min-width:0!important;
+ width:36px!important;height:24px!important;border:0!important;
+ padding:0!important;background:#fff!important;color:#1d4266!important;
+ font:10px "Segoe UI",Arial,sans-serif!important;text-align:center;
 }
-.office-builder-ribbon.smart-design2-group .smart-design2-count-choice{
- box-sizing:border-box;width:74px;height:26px;min-width:74px;max-width:74px;
- border:1px solid #b7c9df;border-radius:3px;background:#fff;color:#1d4266;
- font:11px "Segoe UI",Arial,sans-serif;
+.office-builder-ribbon .smart-design2-group .smart-design2-count[data-supported="false"]
+ .smart-design2-count-field{opacity:.45;cursor:not-allowed;}
+
+/* Row 2, last slot: Card Grid padding uses its original persisted property.
+ * Other areas keep the exact same geometry with disabled editors. */
+.office-builder-ribbon .smart-design2-group .smart-design2-padding{
+ position:relative;grid-column:7;grid-row:1;
+ box-sizing:border-box;display:flex;align-items:center;
+ width:76px;min-width:76px;max-width:76px;height:26px;
+ border:1px solid #b7c9df;border-radius:3px;background:#fff;overflow:hidden;
+}
+.office-builder-ribbon .smart-design2-group .smart-design2-padding>select{
+ flex:0 0 49px;min-width:0;width:49px;max-width:49px;
+ height:24px;border:0;border-right:1px solid #d4dfed;
+ border-radius:0;background:transparent;color:#1d4266;
+ padding:0;font:10px "Segoe UI",Arial,sans-serif;
+}
+.office-builder-ribbon .smart-design2-group .smart-design2-padding input.smart-office-number{
+ box-sizing:border-box!important;flex:1 1 0!important;
+ width:25px!important;min-width:0!important;max-width:25px!important;
+ height:24px!important;min-height:24px!important;max-height:24px!important;
+ margin:0!important;padding:0!important;border:0!important;
+ text-align:center!important;font:10px "Segoe UI",Arial,sans-serif!important;
+ background:transparent!important;appearance:auto!important;
+}
+.office-builder-ribbon .smart-design2-group .smart-design2-padding[data-supported="false"]{
+ opacity:.45;cursor:not-allowed;
 }
 
 .office-builder-ribbon .smart-design2-group .smart-design2-calendar-controls,
