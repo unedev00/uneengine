@@ -31,7 +31,9 @@ test('Extras has Card Gap and Single or Multiple Selection, with no Body duplica
  for(const key of ['extra_cardGap','extra_selectionMode'])
   assert.match(migration,new RegExp("'"+key+"'"));
  assert.match(ribbon,/slot\.area==='Extras'/);
- assert.match(ribbon,/area==='Extras'&&design2SupplementalProperties/);
+ assert.match(ribbon,/area==='Extras'&&<>/);
+  assert.match(ribbon,/design2SupplementalProperties.length>0&&/);
+  assert.match(ribbon,/className="smart-design2-extras-fixed"/);
  assert.match(ribbon,/area!=='Extras'&&<div className="smart-ribbon-items">/);
  assert.match(runtime,/p\.selectionMode==="single"\|\|p\.selectionMode==="multiple"/);
  assert.match(runtime,/number\(p\.gap,12,0,160\)/);
