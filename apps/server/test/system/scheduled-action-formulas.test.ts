@@ -3,6 +3,7 @@ import {test} from 'node:test';
 import {compileActionPlan,executeActionPlan,isActionPlan} from '../../src/expression-engine/ActionFormulas.js';
 import {formulaAllowedInContext,formulaCategory} from '../../src/expression-engine/FormulaCategories.js';
 import {ScheduledActionService} from '../../src/system-support/scheduled-action-service.js';
+import {imagesToPdf} from '../../../web/src/core/pages/PageRuntime/createTemplatePdf.js';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import type {Expression} from '../../src/expression-engine/FormulaParser.js';
 
@@ -84,4 +85,43 @@ test('ScheduledAction schedules through the existing durable SQL worker and reco
  assert(queries.some(sql=>sql.includes('INSERT INTO md_durable_jobs')));
  assert(queries.some(sql=>sql.includes('INSERT INTO md_scheduled_actions')));
  assert(queries.some(sql=>sql.includes('INSERT INTO md_scheduled_action_history')));
+});
+
+test('PDF export writes paged, structurally complete PDF data',()=>{
+ const jpeg=new Uint8Array([255,216,255,217]);
+ const bytes=imagesToPdf([jpeg,jpeg],800,1000);
+ const output=Buffer.from(bytes).toString('latin1');
+ assert(output.startsWith('%PDF-1.4'));
+ assert(output.includes('/Count 2'));
+ assert(output.includes('/MediaBox [0 0 600.00 750.00]'));
+ assert(output.endsWith('%%EOF'));
+ assert(output.includes('/Filter /DCTDecode'));
+});
+test('CREATEPDF returns an asset reference usable by following actions',async()=>{
+ const received:string[]=[];
+ const result=await executeActionPlan(
+  '=ACTIONS(CREATEPDF(CustForm,"11111111-1111-4111-8111-111111111111",AS(pdf)), EMAIL(Brevo,"a@example.com","Attached","See file",pdf.FileId))',
+  {},(node,scope)=>{
+   if(node.kind==='literal')return node.value;
+   if(node.kind==='reference'&&node.value==='pdf.FileId')return (scope.pdf as {FileId:string}).FileId;
+   throw Error('Unexpected expression');
+  },{request:async(path,init)=>{
+   if(path==='/action-formulas/communication'){
+    received.push(...(JSON.parse(init!.body!) as {values:string[]}).values);
+    return {} as never;
+   }throw Error('Unexpected route');
+  },createPdf:async()=>({FileId:'asset:11111111-1111-4111-8111-111111111111'})}
+ );
+ assert.equal(result.recordChanged,false);
+ assert(received.includes('asset:11111111-1111-4111-8111-111111111111'));
+});
+test('IF skips an empty branch and never calls a side effect',async()=>{
+ assert.equal(compileActionPlan('=IF(FALSE,DELETERECORD(Customer,"11111111-1111-4111-8111-111111111111"),"")').length,1);
+ const invoked:string[]=[];
+ await executeActionPlan(
+  '=IF(FALSE,DELETERECORD(Customer,"11111111-1111-4111-8111-111111111111"),"")',
+  {},node=>node.kind==='literal'?node.value:false,
+  {request:async path=>{invoked.push(path);return {} as never;}}
+ );
+ assert.deepEqual(invoked,[]);
 });
