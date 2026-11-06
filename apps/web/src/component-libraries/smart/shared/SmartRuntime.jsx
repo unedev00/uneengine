@@ -546,6 +546,17 @@ function SmartToggle({p,fire}){
    boxShadow:p.shadow==="large"?"0 8px 20px #0003":p.shadow==="medium"?"0 3px 9px #0003":"none"}}>
    <span className="smart-switch-thumb"/></span></label>;
 }
+// An editable Smart Input stays focused while its authorised formula/default
+// value changes asynchronously. Do not key/remount the native input on changes.
+function SmartReactiveInput({value,onValueChange,...props}){
+ const [draft,setDraft]=React.useState(value);
+ React.useEffect(()=>{setDraft(value);},[value]);
+ return <input {...props} value={draft} onChange={event=>{
+  const next=event.target.value;
+  setDraft(next);
+  onValueChange(next);
+ }}/>;
+}
 export default function SmartRuntime(p){
  // Re-render when the tenant brand arrives so $session.tenant.name / .logo show without a reload.
  React.useSyncExternalStore(subscribeTenantBrand,getTenantBrand,getTenantBrand);
@@ -651,14 +662,34 @@ export default function SmartRuntime(p){
   </div>;
  }
  else if(name==="smart_text"||name==="smart_label"){
-  const contentValue=scopedExpression(p,p.textSource?"textSource":"defaultValue",
-   p.textSource??p.defaultValue??p.value??p.label??"",record);
-  // Smart Label is the Smart Input Box's display surface: same binding,
-  // same styling properties, never an editable control.
-  // Keep the existing Smart Input exactly as it was; display mode is an
-  // opt-in metadata property for labels, headings and read-only values.
-  content=name==="smart_label"||p.displayMode==="display"
-   ?<div data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} data-md-bind-titles={p.builderPreview?"Display text":undefined} className="smart-display-text" style={{...style,...shadowStyle,
+  // Keep each Data expression scoped to the property that actually owns it.
+  // A label/value formula must not borrow defaultValue's field-filter rule.
+  const hasValue=key=>p[key]!==undefined&&p[key]!==null&&p[key]!=="";
+  const valueKey=["textSource","defaultValue","value","label"]
+   .find(hasValue)??"label";
+  const inputKey=["textSource","defaultValue","value"]
+   .find(hasValue)??"defaultValue";
+  const contentValue=scopedExpression(p,valueKey,p[valueKey]??"",record);
+  const inputContentValue=scopedExpression(p,inputKey,p[inputKey]??"",record);
+  // A Data formula is a read-only value unless the author attached an actual
+  // input change action (or explicitly requested an editable input).
+  // Rendering it as an uncontrolled input can leave the initial empty value
+  // on screen after an asynchronous formula/record update.
+  // displayMode is recognised only for backwards compatibility with saved pages;
+  // the renderer never requires it for a formula and it is not a ribbon setting.
+  const formulaValue=value=>typeof value==="string"&&(
+   /^\s*=/.test(value)||/@[A-Za-z]/.test(value)||
+   /\$(?:component\.|state\.|session\b|tenant\.)/i.test(value)||
+   /^\s*"/.test(value)||
+   /^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(value)||
+   /^\s*[A-Za-z][A-Za-z0-9_]*\s*\(/.test(value));
+  const dataBound=typeof p.textSource==="string"&&p.textSource.trim().length>0
+   ||["label","defaultValue","value"].some(key=>formulaValue(p[key]));
+  const editable=p.readonly===false||Boolean(p.actionFlows?.change);
+  const displayText=name==="smart_label"||
+   (!editable&&(dataBound||p.displayMode==="display"));
+  content=displayText
+   ?<div data-md-bind={p.builderPreview?valueKey:undefined} data-md-bind-titles={p.builderPreview?"Display text":undefined} className="smart-display-text" style={{...style,...shadowStyle,
      ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
      justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
@@ -668,12 +699,11 @@ export default function SmartRuntime(p){
      background:p.backgroundColor||"transparent",
      borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
      borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
-   :<input data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
+   :<SmartReactiveInput value={inputContentValue} data-md-bind={p.builderPreview?inputKey:undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
     ?"Text Here":label||text(p.placeholder||"")}
-  defaultValue={scopedExpression(p,p.textSource?"textSource":"defaultValue",p.textSource??p.defaultValue??p.value??"",record)}
   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     // Explicit solid border on every side instead of the browser's native inset border.
@@ -683,7 +713,7 @@ export default function SmartRuntime(p){
     borderColor:p.borderColor||"#b8c7d7",padding:"8px 12px",
     background:p.backgroundColor||"#fff",
     textAlign:p.labelAlignment||"left","--smart-placeholder-color":p.labelColor||"#64748b"}}
-  onChange={e=>fire("change",e.target.value)}/>;
+  onValueChange={value=>fire("change",value)}/>;
  }
  else if(name==="smart_lookup")content=<SmartLookup p={p} fire={fire}
    style={{...style,backgroundColor:p.backgroundColor||undefined,borderColor:p.borderColor||undefined,

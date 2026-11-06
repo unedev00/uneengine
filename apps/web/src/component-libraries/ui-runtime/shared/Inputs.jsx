@@ -10,10 +10,13 @@ export function UneInput(p){
  const legacyText=p.text!==undefined&&p.text!==null;
  const initial=p.value!==undefined&&(p.value!==""||!legacyText)?p.value:(legacyText?p.text:p.defaultValue??"");
  const [local,setLocal]=React.useState(initial);
+ // Data formulas may resolve only after page state or an authorised record
+ // arrives. Refresh the display from the new computed default as well as value.
  React.useEffect(()=>{
   if(p.value!==undefined&&(p.value!==""||!legacyText))setLocal(p.value);
   else if(legacyText)setLocal(p.text);
- },[p.value,p.text]);
+  else setLocal(p.defaultValue??"");
+ },[p.value,p.text,p.defaultValue,legacyText]);
  const value=local;
  const editable=p.allowTyping===true||(p.allowTyping!==false&&!legacyText);
  const set=v=>{setLocal(v);fire(p,"change",v)};

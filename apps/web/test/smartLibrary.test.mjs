@@ -355,6 +355,7 @@ test('Smart Tabs, Input Box, Lookup and Toggle edit visible control styles',asyn
  assert.match(tabs,/height:48px/);
  const input=await renderSmart('smart_text',{
    label:'Description',textSource:'@Title',record:{Title:'Hello'},
+   actionFlows:{change:{actionType:'PageState',stateKey:'description'}},
    backgroundColor:'#abc123',labelAlignment:'right',defaultValueColor:'#123abc'
  });
  assert.match(input,/Description/);
@@ -1451,4 +1452,58 @@ test('$tenant.name and $tenant.logo read the signed-in tenant brand in formulas 
  assert.match(server,/app\.get\('\/api\/tenant\/brand',route\(/);
  assert.match(server,/name:text\(values\.tradingName\)\|\|text\(values\.legalName\)\|\|text\(tenant\.rows\[0\]\?\.name\)/);
  assert.match(read('../src/core/branding/tenantBrandLoader.ts'),/apiRequest<\{name\?:unknown;logo\?:unknown\}>\('\/tenant\/brand'\)/);
+});
+
+test('Data formulas display by default across shared UI component families',async()=>{
+ const cases=[
+  ['ui_button',{textSource:'"Formula Button"'},'Formula Button'],
+  ['ui_metric',{textSource:'=6*7',title:'Revenue'},'42'],
+  ['ui_alert',{textSource:'"Ready"'},'Ready'],
+  ['ui_progress',{textSource:'=25+25',max:100},'50%'],
+  ['ui_card',{textSource:'"Account Summary"'},'Account Summary'],
+  ['ui_input',{textSource:'=3+4',allowTyping:false},'7'],
+  ['ui_image',{textSource:'"Product Image"',badgeText:'"NEW"'},'Product Image'],
+  ['ui_navigation',{textSource:'@Name',records:[{Id:'a',Name:'Inventory'}]},'Inventory'],
+  ['ui_repeater',{records:[{Id:'a',Name:'Orders'}]},'Orders'],
+  ['ui_table',{records:[{Id:'a',Name:'Desk'}]},'Desk'],
+  ['smart_button',{label:'=6*7'},'42'],
+  ['smart_text',{textSource:'=6*7'},'42'],
+  ['smart_label',{textSource:'=6*7'},'42'],
+  ['smart_textbox',{textSource:'=6*7'},'42'],
+  ['smart_card_grid',{records:[{Id:'a',Name:'Product'}],
+    textSource:'"Calculated item"',imageHeight:0},'Calculated item'],
+ ];
+ for(const [api,props,value] of cases){
+  const html=await renderSmart(api,props);
+  assert.ok(html.includes(value),api+' must display its Data formula result without displayMode');
+ }
+});
+
+test('Formula-only UI bindings resolve without Object records and respect field rules',async()=>{
+ const metric=await renderSmart('ui_metric',{title:'Totals',value:'=2+5'});
+ assert.match(metric,/>7</);
+ const state=await renderSmart('ui_metric',{textSource:'$state.total',pageState:{total:38}});
+ assert.match(state,/>38</);
+ const field=await renderSmart('ui_metric',{textSource:'@Price',record:{Price:19}});
+ assert.match(field,/>19</);
+ const denied=await renderSmart('ui_metric',{textSource:'@Price',record:{Price:19},
+  fieldAllowed:(key)=>key!=='textSource'});
+ assert.doesNotMatch(denied,/>19</,'field filters must continue to reject hidden values');
+ const fallback=await renderSmart('ui_input',{defaultValue:'=2*3',allowTyping:false});
+ assert.match(fallback,/une-input-display/);
+ assert.match(fallback,/>6</);
+ const email=await renderSmart('ui_metric',{value:'support@example.com'});
+ assert.match(email,/support@example.com/,'literal email text must remain visible');
+});
+
+test('All installed component definitions are independent of displayMode metadata',async()=>{
+ const catalog=await loadComponentCatalog();
+ assert.ok(catalog.components.length>=50,'test must cover the full bundled component catalog');
+ for(const component of catalog.components){
+  assert.ok(!(component.propertyDefinitions??[]).some(p=>p.propertyKey==='displayMode'),
+   component.apiName+' must not require displayMode');
+ }
+ const sql=read('../../server/src/system-support/migrations/20271119-smart-formula-display-runtime.sql');
+ assert.match(sql,/DELETE FROM md_builder_shared_properties/);
+ assert.match(sql,/WHERE property_key='displayMode'/);
 });

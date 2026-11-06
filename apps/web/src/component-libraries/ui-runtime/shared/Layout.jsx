@@ -59,7 +59,11 @@ export function UneNavigation(p){
  const sourceExpression=typeof p.textSource==="string"?p.textSource.trim():"";
  const recordRows=Array.isArray(p.records)?p.records:[];
  const labelFor=row=>sourceField&&/^[A-Za-z][A-Za-z0-9_]*$/.test(sourceField)
-   ?String(row[sourceField]??""):sourceExpression?String(evaluateFieldExpression(sourceExpression,row,{readComponent:p.readComponent})??""):"";
+   ?String(row[sourceField]??""):sourceExpression?String(
+      (typeof p.fieldAllowed==="function"&&!p.fieldAllowed("textSource",row))?""
+        :evaluateFieldExpression(sourceExpression,row,{readComponent:p.readComponent,
+          pageState:p.pageState,sessionId:p.sessionId,rootObjectApiName:p.objectApiName,
+          collectionSources:p.formulaCollectionSources,namedCollections:p.namedCollections})??""):"";
  const navigationItems=(sourceField||sourceExpression)&&recordRows.length
    ?recordRows.map(row=>({label:labelFor(row),value:row.Id??row.id??labelFor(row),record:row}))
      .filter(item=>item.label.trim())
