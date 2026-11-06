@@ -12,13 +12,14 @@ type Props = {
   components: PageComponentMetadata[];
   libraryComponents: LibraryComponentMetadata[];
   selectedId: string;
+  selectedIds: string[];
   pageKey: string;
-  onSelect: (id: string) => void;
+  onSelect: (id: string,mode:'replace'|'toggle'|'range') => void;
   onRename: (id: string, name: string) => void;
 };
 
 export default function PageComponentNavigator({
-  components, libraryComponents, selectedId, pageKey, onSelect, onRename
+  components, libraryComponents, selectedId, selectedIds, pageKey, onSelect, onRename
 }: Props) {
   const [query,setQuery]=React.useState('');
   const [open,setOpen]=React.useState(false);
@@ -82,9 +83,12 @@ export default function PageComponentNavigator({
     };
   },[open]);
 
-  const choose=(item:NavigatorEntry)=>{
-    onSelect(item.id);
-    setOpen(false);setQuery('');setTypeFilter('');setRenamingId('');
+  const choose=(item:NavigatorEntry,mode:'replace'|'toggle'|'range'='replace')=>{
+    onSelect(item.id,mode);
+    // Modifier-clicks keep the Layers navigator open for repeated selection.
+    if(mode==='replace'){
+      setOpen(false);setQuery('');setTypeFilter('');setRenamingId('');
+    }
   };
   const startRename=(item:NavigatorEntry)=>{
     setRenamingId(item.id);
@@ -100,7 +104,7 @@ export default function PageComponentNavigator({
       event.preventDefault();setOpen(true);
       setActiveIndex(current=>Math.max(0,Math.min(matches.length-1,current+(event.key==='ArrowDown'?1:-1))));
     } else if (event.key==='Enter' && open && active) {
-      event.preventDefault();choose(active);
+      event.preventDefault();choose(active,event.shiftKey?'range':event.ctrlKey||event.metaKey?'toggle':'replace');
     }
   };
   React.useEffect(()=>{
@@ -129,12 +133,12 @@ export default function PageComponentNavigator({
         <ChevronDown size={14} aria-hidden="true"/>
       </button>
     </div>
-    <small className="page-navigator-help">{components.length} on this page · browse or search</small>
+    <small className="page-navigator-help">{selectedIds.length?selectedIds.length+' selected · ':''}{components.length} on this page · browse or search</small>
     {open && createPortal(<div ref={panelRef} className="ribbon-view-find-results page-navigator-popup"
       style={{position:'fixed',top:position.top,left:position.left,width:position.width}}
       role="dialog" aria-label="Components on this page">
       <div className="page-navigator-heading">
-        <strong>Components on this page</strong>
+        <strong>Layers · {selectedIds.length} selected</strong>
         <button type="button" aria-label="Close component navigator" onClick={()=>setOpen(false)}><X size={15}/></button>
       </div>
       <div className="page-navigator-filters">
@@ -146,9 +150,9 @@ export default function PageComponentNavigator({
         <span>{matches.length} found</span>
       </div>
       <div id="page-component-navigator-results" ref={listRef}
-        className="page-navigator-list" role="listbox" aria-label="Page component results">
+        className="page-navigator-list" role="listbox" aria-multiselectable="true" aria-label="Page component results">
         {matches.map((item,index)=><div key={item.id} data-navigator-id={item.id}
-          className={'page-navigator-row'+(item.id===selectedId?' is-selected':'')+(active?.id===item.id?' is-active':'')}>
+          className={'page-navigator-row'+(selectedIds.includes(item.id)?' is-selected':'')+(active?.id===item.id?' is-active':'')}>
           {renamingId===item.id ? <div className="page-navigator-rename">
             <input autoFocus aria-label="Component name" maxLength={80}
               value={renameValue} onChange={event=>setRenameValue(event.target.value)}
@@ -160,9 +164,9 @@ export default function PageComponentNavigator({
             <button type="button" onClick={()=>finishRename(false)}>Cancel</button>
           </div> : <>
             <button type="button" id={'page-nav-option-'+item.id} role="option"
-              aria-selected={selectedId===item.id} className="page-navigator-option"
+              aria-selected={selectedIds.includes(item.id)} className="page-navigator-option"
               title={item.id+' · '+item.path} onMouseEnter={()=>setActiveIndex(index)}
-              onClick={()=>choose(item)}>
+              onClick={event=>choose(item,event.shiftKey?'range':event.ctrlKey||event.metaKey?'toggle':'replace')}>
               <Layers3 size={15} aria-hidden="true"/>
               <span className="page-navigator-item-copy">
                 <strong>{item.name}</strong>
@@ -180,8 +184,8 @@ export default function PageComponentNavigator({
         {!matches.length && <div className="page-navigator-empty" role="status">No matching components. Try another name, field or type.</div>}
       </div>
       <div className="page-navigator-footer">
-        <span>{selected?'Selected: '+selected.name:'Select a component to locate it'}</span>
-        <span>↑ ↓ Enter · Esc</span>
+        <span>{selectedIds.length>1?selectedIds.length+' components selected':selected?'Selected: '+selected.name:'Select a component to locate it'}</span>
+        <span>Ctrl/Cmd-click toggle · Shift-click range · Esc</span>
       </div>
     </div>,document.body)}
   </div>;
