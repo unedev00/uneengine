@@ -263,24 +263,23 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    };
   }).sort((a,b)=>a.row-b.row||a.column-b.column));
  const template=await design2GridFingerprint();
- assert.equal(template.length,17,'The approved R1-R3 fixed ribbon must have 17 icon controls');
+ assert.equal(template.length,16,'The compact Design scaffold has 16 fixed controls; Focus is separate');
+ // Count and Padding occupy fixed Extras cells; component applicability still
+ // controls their enabled/disabled states, not their position or existence.
+ await chooseArea('Extras');
  const countBox=page.locator('.smart-design2-count');
  const countInput=countBox.locator('input.smart-office-number');
- assert.equal(await countBox.count(),1,'The Appearance value box must always be mounted');
+ const paddingBox=page.locator('.smart-design2-padding');
+ assert.equal(await countBox.count(),1,'Extras always mounts Count');
+ assert.equal(await paddingBox.count(),1,'Extras always mounts Padding');
  assert.equal(await countBox.locator('.smart-design2-count-choice').count(),1,
-  'The property dropdown and value must share one bordered field');
+  'Count dropdown and value stay together');
  assert.equal(await countBox.locator('.smart-design2-count-field svg').count(),0,
-  'The previous hand icon should be removed');
+  'Count must not reintroduce the retired hand icon');
  assert.equal(await countInput.getAttribute('type'),'number');
- assert.equal(await countInput.getAttribute('step'),'1','Count must have native spinner arrows');
- const firstCount=await countBox.boundingBox();
- const horizontalVertical=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="orientation"]');
- if(await horizontalVertical.count()){
-  const hv=await horizontalVertical.boundingBox();
-  assert.ok(hv&&firstCount&&firstCount.x>=hv.x+hv.width-2&&
-   firstCount.x-(hv.x+hv.width)<16,
-   'Appearance value control must be immediately beside orientation');
- }
+ assert.equal(await countInput.getAttribute('step'),'1');
+ assert.equal(await page.locator('.smart-design2-extras-fixed > .smart-design2-extras-cell').count(),2);
+ await chooseArea('Body');
 
  assert.ok(template.every(item=>item.visible&&item.hasEditor),
   'Every fixed cell must show its real control, even when disabled');
@@ -288,17 +287,14 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   await chooseArea(section);
   if(section==='Extras'){
    assert.equal(await page.locator('.smart-design2-supplemental').count(),0,
-    'Extras for Cart should not display unsupported controls');
-   continue; // This section has two explicit settings, not the 17-icon matrix.
+    'Extras for Cart should not show unsupported supplemental properties');
+   assert.equal(await countBox.count(),1,'Count must remain in Extras');
+   assert.equal(await paddingBox.count(),1,'Padding must remain in Extras');
+   continue;
   }
   assert.deepEqual(await design2GridFingerprint(),template,
-   'Switching to '+section+' changed the R/C icon layout instead of only enable/disable');
-  assert.equal(await countBox.count(),1,'Appearance value box disappeared in '+section);
-  const count=await countBox.boundingBox();
-  assert.ok(count&&firstCount&&Math.abs(count.x-firstCount.x)<1,
-   'Appearance value box moved when selecting '+section);
-  assert.equal(await countInput.isDisabled(),section!=='Body',
-   'Count must be disabled outside a supported Body context');
+   'Switching to '+section+' changed fixed icon placements');
+  assert.equal(await countBox.count(),0,'Count must not appear outside Extras');
  }
  await chooseArea('Table');
  const inactiveShape=page.locator('.smart-design2-group [data-design-row="1"] [data-design-slot="shape"]');
