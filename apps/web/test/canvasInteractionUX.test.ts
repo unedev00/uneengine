@@ -1003,3 +1003,20 @@ test('canvas editor wires multi-click, marquee, group movement and one keyboard 
   assert.match(navigator,/aria-multiselectable="true"/);
   assert.match(navigator,/event\.shiftKey\?'range':event\.ctrlKey\|\|event\.metaKey\?'toggle'/);
 });
+
+test('double-click group editing preserves group metadata and nudges only the chosen member',async()=>{
+  const grouped=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{canvasGroupId:'g',formula:'SUM(1,2)'},position:{x:10,y:10,width:40,height:40}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{canvasGroupId:'g',formula:'COUNTIFS(Products)'},position:{x:80,y:10,width:40,height:40}}
+  ] as PageComponentMetadata[];
+  const isolated=nudgeCanvasSelection(grouped,['a'],1,0,{width:400,height:400},false);
+  assert.equal(isolated[0].position?.x,11);
+  assert.equal(isolated[1].position?.x,80);
+  assert.deepEqual(isolated[0].properties,grouped[0].properties);
+  const atomic=nudgeCanvasSelection(grouped,['a'],1,0,{width:400,height:400});
+  assert.equal(atomic[1].position?.x,81);
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  assert.match(builder,/setEditingGroupId\(canvasGroupKey\(component\)\)/);
+  assert.match(builder,/Exit Group Edit/);
+  assert.match(builder,/!editingGroupId\)/);
+});
