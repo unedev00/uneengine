@@ -103,3 +103,12 @@
 .app-manager-confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .app-manager-confirm-actions .btn { min-height: 44px; }
 .app-manager-confirm-actions .btn-danger { color: #fff; background: #ad2727; border-color: #ad2727; }
+
+/* Setup steps are now a semantic ordered list (UX-0077). */
+.app-manager-stepper { list-style:none;margin:0;padding-inline-start:var(--md-space-3,12px); }
+.app-manager-stepper>.app-manager-step-item { list-style:none;min-width:0; }
+.app-manager-stepper .app-manager-step { display:flex;height:100%; }
+.app-manager-stepper .app-manager-step[aria-current="step"] {
+ background:var(--md-surface-2,#f1f6fd);outline:2px solid var(--md-primary,#1d4ed8);outline-offset:-2px;
+}
+.app-manager-stepper .app-manager-step:focus-visible { outline:2px solid var(--md-primary,#1d4ed8); }
