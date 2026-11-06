@@ -74,6 +74,7 @@ import {OAuthAuthorizationService} from './oauth-authorization-service.js';
 import {GlobalValueSetService} from './global-value-set-service.js';
 import {SystemDefinitionService,definitionKinds,type DefinitionKind} from '../system-files/system-definition-service.js';
 import { RecordEngine } from '../system-files/record-engine.js';
+import {authorizedSavedRecordProjection} from './record-write-projection.js';
 import {ExternalIdUpsert} from '../system-files/external-id-upsert.js';
 import {DuplicateMatchError} from '../system-files/record-matching.js';
 import {registerMatchingRoutes} from './matching-rule-routes.js';
@@ -2666,7 +2667,9 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)) throw new Error('Invalid record values');
     const id=await records.create(actor.tenant_id,actor.user_id,req.params.objectApi,req.body);
-    res.status(201).json({id,record:{Id:id}});
+    const record=await authorizedSavedRecordProjection(records,actor.tenant_id,actor.user_id,
+      req.params.objectApi,id);
+    res.status(201).json({id,record});
   }));
   app.get('/api/records/:objectApi/:id/actions',route(async(req,res)=>{
     res.setHeader('Cache-Control','private, no-store');
@@ -2739,7 +2742,9 @@ export function createSystemServer(db:SqlPersistence) {
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body))throw new Error('Invalid record values');
     await records.update(actor.tenant_id,actor.user_id,req.params.objectApi,req.params.id,
       req.body,req.get('if-unmodified-since'));
-    res.json({record:{Id:req.params.id}});
+    const record=await authorizedSavedRecordProjection(records,actor.tenant_id,actor.user_id,
+      req.params.objectApi,req.params.id);
+    res.json({record});
   });
   app.patch('/api/records/:objectApi/:id',updateRecord);
   app.put('/api/records/:objectApi/:id',updateRecord);
