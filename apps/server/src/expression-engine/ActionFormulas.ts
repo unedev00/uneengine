@@ -11,6 +11,42 @@ function nameOf(node:Expression|undefined,label:string):string {
  return name;
 }
 
+const fieldPath=/^[A-Za-z][A-Za-z0-9_]{0,79}(?:\.[A-Za-z][A-Za-z0-9_]{0,79})?$/;
+/** Field/value criteria for GETRECORD and COUNTIFS: Field or one-level Lookup.Field paths. */
+function recordCriteria(args:readonly Expression[],label:string):Map<string,Expression>{
+ if(!args.length||args.length%2||args.length>40)throw Error(label+' requires field and value pairs');
+ const criteria=new Map<string,Expression>();
+ for(let i=0;i<args.length;i+=2){
+  const node=args[i];
+  const field=node?.kind==='reference'||node?.kind==='literal'?node.value:null;
+  if(typeof field!=='string'||!fieldPath.test(field))throw Error('Invalid '+label+' field '+String(field));
+  if(criteria.has(field))throw Error('Duplicate field '+field);
+  validateFormulaFunctions(args[i+1],'ribbon_binding');
+  criteria.set(field,args[i+1]);
+ }
+ return criteria;
+}
+/** Record API equality filters: blank values match blank fields; booleans and numbers as text. */
+function criteriaFilters(criteria:Map<string,Expression>,evaluate:(node:Expression)=>unknown){
+ return [...criteria].map(([field,node])=>{
+  const value=evaluate(node);
+  if(value===''||value===null||value===undefined)return {field,operator:'isBlank',value:''};
+  if(!['string','number','boolean'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))
+   throw Error('Criteria for '+field+' must be a scalar value');
+  return {field,operator:'eq',value:String(value)};
+ });
+}
+const recordQueryPath=(object:string,filters:unknown[])=>
+ '/records/'+encodeURIComponent(object)+'?limit=1&filters='+encodeURIComponent(JSON.stringify(filters));
+/** True when an expression uses COUNTIFS (a server count resolved before evaluation). */
+export function usesRecordCount(node:Expression|undefined):boolean{
+ if(!node)return false;
+ if(node.kind==='call')return node.name==='COUNTIFS'||node.args.some(usesRecordCount);
+ if(node.kind==='binary')return usesRecordCount(node.left)||usesRecordCount(node.right);
+ if(node.kind==='unary')return usesRecordCount(node.value);
+ return false;
+}
+
 /** Translate authoring syntax in the parsed tree so quoted text is preserved. */
 export function normalizeFlowCalls(node:Expression):Expression {
  if(node.kind==='call'){
@@ -27,7 +63,7 @@ export function normalizeFlowCalls(node:Expression):Expression {
 
 export const actionFunctionNames:readonly string[]=[...actionFormulaFunctions].filter(name=>name!=='AS');
 export const isActionPlan=(source:string):boolean=>{
- if(/^\s*=?\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\s*\(/i.test(source))return true;
+ if(/^\s*=?\s*(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|GETRECORD|STATE|PRINT|CREATEPDF|WAIT|EMAIL|WHATSAPP|SMS)\s*\(/i.test(source))return true;
  if(!/^\s*=?\s*IF\s*\(/i.test(source))return false;
  try{
   const root=new Parser(tokenize(source)).parse();
@@ -68,7 +104,27 @@ export function compileActionPlan(source:string):ActionStep[] {
    steps.push({name:'WAIT',object:'',values:args,fields:new Map(),guards});
    return;
   }
+  if(node.name==='STATE'){
+   if(args.length!==2)throw Error('STATE requires a Page State key and a value');
+   const key=nameOf(args[0],'Page State key');
+   if(key.length>63)throw Error('Invalid Page State key');
+   validateFormulaFunctions(args[1],'ribbon_binding');
+   steps.push({name:'STATE',object:key,values:[args[1]],fields:new Map(),guards});
+   return;
+  }
   const object=nameOf(args.shift(),'object API name');
+  if(node.name==='GETRECORD'){
+   const last=args.at(-1);
+   if(last?.kind!=='call'||last.name!=='AS'||last.args.length!==1)
+    throw Error('GETRECORD requires AS(variable) for the found record');
+   const alias=nameOf(last.args[0],'result variable');
+   if(['state','event','session','constructor','prototype'].includes(alias))throw Error('Reserved result variable '+alias);
+   if(aliases.has(alias))throw Error('Duplicate result variable '+alias);
+   aliases.add(alias);
+   args.pop();
+   steps.push({name:'GETRECORD',object,fields:recordCriteria(args,'GETRECORD'),alias,guards});
+   return;
+  }
   if(['EMAIL','WHATSAPP','SMS','FLOW','SCREEN'].includes(node.name)){
    const bounds:Record<string,[number,number]>={EMAIL:[3,23],WHATSAPP:[2,22],SMS:[2,2],FLOW:[0,0],SCREEN:[0,1]};
    const [min,max]=bounds[node.name];
@@ -135,17 +191,67 @@ export type ActionServices={
  runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>;
 };
 export async function executeActionPlan(formula:string,record:Record<string,unknown>,
- evaluateValue:(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[])=>unknown,
+ evaluateValue:(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[],
+  state?:Readonly<Record<string,unknown>>)=>unknown,
  {request,print,createPdf,runPageAction}:ActionServices){
   const steps=compileActionPlan(formula);
   const variables:Record<string,unknown>=Object.create(null);
+  // STATE results apply to the page when the plan finishes and are visible to later steps.
+  const stateChanges:Record<string,unknown>=Object.create(null);
+  const changes:Array<{key:string;value:unknown}>=[];
   let completed=0;
   let recordChanged=false;
   for(const [index,step] of steps.entries()){
    try{
     const scope={...record,...variables};
-    const evaluate=(node:Expression):unknown=>evaluateValue(node,scope,Object.keys(variables));
+    const evaluateNow=(node:Expression):unknown=>evaluateValue(node,scope,Object.keys(variables),stateChanges);
+    // COUNTIFS counts authorised records through the Record API before the
+    // synchronous formula evaluator runs; its result is substituted as a literal.
+    const counts=new Map<Expression,number>();
+    const resolveCounts=async(node:Expression|undefined):Promise<void>=>{
+     if(!node)return;
+     if(node.kind==='binary'){await resolveCounts(node.left);await resolveCounts(node.right);return;}
+     if(node.kind==='unary'){await resolveCounts(node.value);return;}
+     if(node.kind!=='call')return;
+     for(const arg of node.args)await resolveCounts(arg);
+     if(node.name!=='COUNTIFS'||counts.has(node))return;
+     const [objectNode,...criteriaArgs]=node.args;
+     const object=nameOf(objectNode,'COUNTIFS object API name');
+     const filters=criteriaFilters(recordCriteria(criteriaArgs,'COUNTIFS'),value=>evaluateNow(substitute(value)));
+     const result=await request<{total?:number}>(recordQueryPath(object,filters));
+     if(typeof result.total!=='number'||!Number.isFinite(result.total))throw Error('COUNTIFS count unavailable');
+     counts.set(node,result.total);
+    };
+    const substitute=(node:Expression):Expression=>{
+     const count=counts.get(node);
+     if(count!==undefined)return {kind:'literal',value:count};
+     if(node.kind==='call')return {...node,args:node.args.map(substitute)};
+     if(node.kind==='binary')return {...node,left:substitute(node.left),right:substitute(node.right)};
+     if(node.kind==='unary')return {...node,value:substitute(node.value)};
+     return node;
+    };
+    for(const node of [...(step.guards??[]).map(guard=>guard.condition),...(step.id?[step.id]:[]),
+      ...step.fields.values(),...(step.values??[])])
+     await resolveCounts(node);
+    const evaluate=(node:Expression):unknown=>evaluateNow(substitute(node));
     if(step.guards?.some(guard=>formulaTruth(evaluate(guard.condition))!==guard.expected))continue;
+    if(step.name==='STATE'){
+     const value=evaluate(step.values![0]);
+     if(!['string','number','boolean'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))
+      throw Error('STATE value must be text, a finite number or TRUE/FALSE');
+     stateChanges[step.object]=value;
+     changes.push({key:step.object,value});
+     completed++;
+     continue;
+    }
+    if(step.name==='GETRECORD'){
+     const filters=criteriaFilters(step.fields,evaluate);
+     const result=await request<{records?:Record<string,unknown>[]}>(recordQueryPath(step.object,filters));
+     // No match leaves an empty result so ISBLANK(alias.Id) selects the create branch.
+     variables[step.alias!]=result.records?.[0]??{};
+     completed++;
+     continue;
+    }
     if(step.name==='WAIT'){
      const [minutes,seconds]=(step.values??[]).map(evaluate);
      if(typeof minutes!=='number'||typeof seconds!=='number'||
@@ -158,7 +264,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       scope:record,variables,sessionId:typeof record.sessionId==='string'?record.sessionId:null
      })});
      completed++;
-     return {changes:[],recordChanged};
+     return {changes,recordChanged};
     }
     if(step.name==='FLOW'||step.name==='SCREEN'){
      if(!runPageAction)throw Error('Page runtime unavailable');
@@ -219,5 +325,5 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
     throw Error(step.name+' failed after '+completed+' confirmed action(s). '+(error instanceof Error?error.message:String(error)));
    }
   }
-  return {changes:[],recordChanged};
+  return {changes,recordChanged};
 }

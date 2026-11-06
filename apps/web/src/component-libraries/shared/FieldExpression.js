@@ -724,5 +724,6 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
 /** Explicit action entry point. Ordinary field evaluation remains side-effect free. */
 export function executeActionFormula(formula,record,context,services){
  return executeActionPlan(formula,{...record,sessionId:context?.sessionId??''},
-  (node,scope,aliases)=>evaluateParsedExpression(node,scope,{...context,actionAliases:aliases}),services);
+  (node,scope,aliases,state)=>evaluateParsedExpression(node,scope,{...context,actionAliases:aliases,
+   pageState:state&&Object.keys(state).length?{...(context?.pageState??{}),...state}:context?.pageState}),services);
 }

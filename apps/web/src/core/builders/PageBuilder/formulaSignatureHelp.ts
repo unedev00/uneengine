@@ -25,14 +25,15 @@ export function formulaSignatureAt(source:string,caret:number,actions=false){
    EMAIL:['NamedCredential','To','Subject','Body','Attachment'],WHATSAPP:['NamedCredential','Recipient','Message','Attachment'],
    SMS:['NamedCredential','To','Message'],PRINT:['TemplateApiName','RecordId'],
    CREATEPDF:['TemplateApiName','RecordId','AS(variable)'],WAIT:['Minutes','Seconds'],SCREEN:['PageApiName','Mode'],FLOW:['FlowApiName'],ACTIONS:['Action'],CREATERECORD:['Object','Field','Value'],
-   UPDATERECORD:['Object','RecordId','Field','Value'],DELETERECORD:['Object','RecordId'],AS:['variable']
+   UPDATERECORD:['Object','RecordId','Field','Value'],DELETERECORD:['Object','RecordId'],
+   GETRECORD:['Object','Field','Value'],STATE:['Key','Value'],COUNTIFS:['Object','Field','Value'],AS:['variable']
   };
   const signature=Object.prototype.hasOwnProperty.call(signatures,active.name)?signatures[active.name]:undefined;
   if(signature){
-   const pairs=['CREATERECORD','UPDATERECORD'].includes(active.name);
+   const pairs=['CREATERECORD','UPDATERECORD','GETRECORD','COUNTIFS'].includes(active.name);
    const attachments=['EMAIL','WHATSAPP'].includes(active.name);
    const repeating=pairs||attachments||active.name==='ACTIONS';
-   const minimum=active.name==='SCREEN'||active.name==='CREATERECORD'?1:
+   const minimum=active.name==='SCREEN'||active.name==='CREATERECORD'?1:active.name==='GETRECORD'||active.name==='COUNTIFS'?3:
     active.name==='CREATEPDF'?2:attachments?signature.length-1:signature.length;
    const count=repeating?Math.max(signature.length,active.argument+2):signature.length;
    const parameters=Array.from({length:count},(_,i)=>({

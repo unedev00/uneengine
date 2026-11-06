@@ -31,12 +31,12 @@ const ribbonFunctions=new Set([
   'DATEVALUE','DATETIMEVALUE','TODAY','NOW','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND',
   'WEEKDAY','ISOWEEK','ISOYEAR','ADDDAYS','ADDMONTHS','TIMEVALUE','TIMENOW','SIN','COS',
   'PI','TAN','ASIN','ACOS','ATAN','ATAN2','SINH','COSH','TANH','DEGREES','RADIANS','TZOFFSET',
-  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP'
+  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP','COUNTIFS'
 ]);
 const flowContextOnly=new Set(['ISCHANGED','ISNEW','PRIORVALUE']);
 const formulaAndFlowOnly=new Set(['IMAGE','CURRENCYRATE']);
 const numberFunctions=new Set([
-  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','SUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
+  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','COUNTIFS','SUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
   'ROUNDDOWN','TRUNC','SIGN','MIN','MAX','MOD','SQRT','POWER','CEILING','FLOOR','MCEILING',
   'MFLOOR','EXP','LN','LOG','PI','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND','WEEKDAY',
   'ISOWEEK','ISOYEAR','TZOFFSET','DISTANCE','SIN','COS','TAN','ASIN','ACOS','ATAN','ATAN2',
@@ -101,7 +101,9 @@ const inputs:DefinitionInput[]=[
   ['ADDMONTHS',2,2],['TIMEVALUE',1,1],['TIMENOW',0,0],['PI',0,0],['SIN',1,1],
   ['COS',1,1],['TAN',1,1],['ASIN',1,1],['ACOS',1,1],['ATAN',1,1],['ATAN2',2,2],
   ['SINH',1,1],['COSH',1,1],['TANH',1,1],['DEGREES',1,1],['RADIANS',1,1],
-  ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,['flow_formula','ribbon_binding']]
+  ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,['flow_formula','ribbon_binding']],
+  // Server-side record count; evaluated by the action runtime only (ActionFormulas).
+  ['COUNTIFS',3,41,['ribbon_binding']]
 ];
 
 const definitions=new Map<string,FormulaFunctionDefinition>();

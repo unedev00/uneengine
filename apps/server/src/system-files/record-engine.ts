@@ -32,7 +32,7 @@ import {evaluateFlowFormula,flowFormulaReferences,isFormulaImageResult,validateF
   type FormulaEvaluationContext} from './flow-formula-runtime.js';
 import {decryptFieldValue,encryptFieldValue,maskEncryptedFieldValue} from './encrypted-field.js';
 import {sanitizeRichText} from './rich-text.js';
-import {compileRecordFilters,type RecordCursor,type RecordFilter} from '../object-engine/QueryBuilder.js';
+import {compileRecordFilters,type QueryField,type RecordCursor,type RecordFilter} from '../object-engine/QueryBuilder.js';
 type FieldDefinition={api_name:string;data_type:string;related_object:string|null;relationship_type:string|null;allow_reparenting:boolean;required:boolean;max_length:number|null;precision:number|null;scale:number|null;is_unique:boolean;external_id:boolean;case_sensitive:boolean;default_value:string|null;auto_number_format:string|null;rollup_child_object?:string|null;rollup_relationship_field?:string|null;rollup_operation?:string|null;rollup_source_field?:string|null;rollup_source_data_type?:string|null;formula_expression?:string|null;formula_return_type?:string|null;picklist_restricted?:boolean;controller_field_api_name?:string|null;global_value_set_api?:string|null};
 type EncryptedValueVault={
   encryptOpaque(value:string):{ciphertext:Buffer;keyId:string};
@@ -1088,10 +1088,31 @@ export class RecordEngine {
           AND relation.reference_record_id=${parentParam}::uuid)`);
     }
     if(options.filters?.length){
-      for(const filter of options.filters)
-        if(!await canRead(filter.field))throw new Error('Field is not readable');
-      const equalityFields=[...new Set(options.filters.filter(filter=>filter.operator==='eq')
-        .map(filter=>filter.field))];
+      // One-level lookup paths (e.g. Product.AgeRestricted) are checked against
+      // the lookup field, the related Object and the related Field, and the SQL
+      // predicate re-applies record access to the related record.
+      const filterFields=new Map<string,QueryField>(byApi);
+      for(const filter of options.filters){
+        const path=/^([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)$/.exec(filter.field);
+        if(!path){
+          if(!await canRead(filter.field))throw new Error('Field is not readable');
+          continue;
+        }
+        const lookup=byApi.get(path[1]);
+        if(!lookup||lookup.data_type!=='reference'||!lookup.related_object)
+          throw new Error('Invalid list field');
+        if(!await canRead(lookup.api_name))throw new Error('Field is not readable');
+        const target=lookup.related_object;
+        await this.rbac.require(tenantId,userId,target,'read');
+        if(!await this.rbac.allowed(tenantId,userId,target+'.'+path[2],'read'))
+          throw new Error('Field is not readable');
+        const related=(await this.fields(tenantId,target)).find(field=>field.api_name===path[2]);
+        if(!related)throw new Error('Invalid list field');
+        filterFields.set(filter.field,{...related,
+          via:{lookupField:lookup.api_name,access:"md_record_access($1,$3,rel.id,'read')"}});
+      }
+      const equalityFields=[...new Set(options.filters.filter(filter=>filter.operator==='eq'
+        &&!filter.field.includes('.')).map(filter=>filter.field))];
       // One tenant-scoped preference lookup; published list views and ad hoc
       // filters reuse the same QueryBuilder and OneEngine Field readability.
       const indexed=equalityFields.length
@@ -1099,7 +1120,7 @@ export class RecordEngine {
           WHERE tenant_id=$1 AND object_api=$2 AND enabled
            AND field_api=ANY($3::text[])`,[tenantId,objectApi,equalityFields])
        :{rows:[] as Array<{field_api:string}>};
-      const compiled=compileRecordFilters(options.filters,options.filterLogic,byApi,
+      const compiled=compileRecordFilters(options.filters,options.filterLogic,filterFields,
         4+conditionParams.length,new Set(indexed.rows.map(row=>row.field_api)));
       predicates.push(compiled.predicate);
       conditionParams.push(...compiled.parameters);
