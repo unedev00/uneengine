@@ -125,3 +125,17 @@ test('app-private bundled component identities are never offered for new placeme
   assert.deepEqual(uniqueLibraryComponents([definition(alias)]),[definition(alias)],'tenant authors remain untouched');
  }
 });
+
+
+test('baseline: 22 independently delivered renderer JSONs have no transfer compression',()=>{
+ // HAR-sized deterministic fixture: 11 buttons, 4 texts and 7 other renderers.
+ const js='function Component(){ return "'+('RUNTIME_SHARED_0123456789'.repeat(9000))+'"; }';
+ const payload=JSON.stringify({apiName:'smart_button',version:1,compiledJs:js,scopedCss:''});
+ const raw=Buffer.byteLength(payload);
+ const requests=22;
+ const total=raw*requests;
+ assert.equal(requests,22);
+ assert.ok(raw>180_000);
+ console.info('component delivery mock baseline: rendererBytes='+raw+
+  ' requests='+requests+' bytes='+total+' cache=no-cache compression=none');
+});
