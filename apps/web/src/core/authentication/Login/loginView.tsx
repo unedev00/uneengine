@@ -123,7 +123,10 @@ export function createLoginView(logoUrl: string) {
     };
 
     const loginStyle=branding?{'--standalone-accent':branding.accent} as CSSProperties:undefined;
-    if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card"><LoginRecovery onClose={closeRecovery}/></div></main>;
+    if(recovering)return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}><div className="auth-card">
+      {!branding && <UneBrandLogo className="auth-brand-logo" src={logoUrl} />}
+      <div className="eyebrow">{branding?.eyebrow??'UNEENGINE WORKSPACE'}</div>
+      <LoginRecovery onClose={closeRecovery}/></div></main>;
     return <main className={branding?'auth-screen auth-screen--standalone':'auth-screen'} style={loginStyle}>
       <form className="auth-card" onSubmit={(event) => void signIn(event)}
         onInvalid={(event) => {
