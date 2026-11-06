@@ -651,8 +651,13 @@ export default function SmartRuntime(p){
   </div>;
  }
  else if(name==="smart_text"||name==="smart_label"){
-  const contentValue=scopedExpression(p,p.textSource?"textSource":"defaultValue",
-   p.textSource??p.defaultValue??p.value??p.label??"",record);
+  // Keep each Data expression scoped to the property that actually owns it.
+  // A label/value formula must not borrow defaultValue's field-filter rule.
+  const valueKey=["textSource","defaultValue","value","label"]
+   .find(key=>p[key]!==undefined&&p[key]!==null)??"label";
+  const inputKey=["textSource","defaultValue","value"]
+   .find(key=>p[key]!==undefined&&p[key]!==null)??"defaultValue";
+  const contentValue=scopedExpression(p,valueKey,p[valueKey]??"",record);
   // A Data formula is a read-only value unless the author attached an actual
   // input change action (or explicitly requested an editable input).
   // Rendering it as an uncontrolled input can leave the initial empty value
@@ -671,7 +676,7 @@ export default function SmartRuntime(p){
   const displayText=name==="smart_label"||
    (!editable&&(dataBound||p.displayMode==="display"));
   content=displayText
-   ?<div data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} data-md-bind-titles={p.builderPreview?"Display text":undefined} className="smart-display-text" style={{...style,...shadowStyle,
+   ?<div data-md-bind={p.builderPreview?valueKey:undefined} data-md-bind-titles={p.builderPreview?"Display text":undefined} className="smart-display-text" style={{...style,...shadowStyle,
      ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
      justifyContent:p.labelAlignment==="right"?"flex-end":p.labelAlignment==="center"?"center":"flex-start",
@@ -681,12 +686,12 @@ export default function SmartRuntime(p){
      background:p.backgroundColor||"transparent",
      borderStyle:"solid",borderWidth:p.borderWidth===undefined?(name==="smart_label"&&p.borderColor?1:0):number(p.borderWidth,0,0,24),
      borderColor:p.borderColor||"transparent"}}>{contentValue||(name==="smart_label"&&p.builderPreview?"Label":"")}</div>
-   :<input data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
+   :<input data-md-bind={p.builderPreview?valueKey:undefined} data-md-bind-titles={p.builderPreview?"Input value":undefined} className="smart-input-box" type="text"
   aria-label={label||text(p.placeholder||"Input")}
   placeholder={p.builderPreview===true&&![p.placeholder,p.textSource,p.defaultValue,p.value].some(v=>v!==undefined&&v!==null&&v!=="")
     &&!(p.properties&&Object.prototype.hasOwnProperty.call(p.properties,"label"))
     ?"Text Here":label||text(p.placeholder||"")}
-  defaultValue={scopedExpression(p,p.textSource?"textSource":"defaultValue",p.textSource??p.defaultValue??p.value??"",record)}
+  defaultValue={scopedExpression(p,inputKey,p[inputKey]??"",record)}
   style={{...style,...shadowStyle,...smartShapeAppearance(p.shapeId,number(p.radius,12)),width:"100%",height:"100%",minWidth:0,minHeight:0,
     fontSize:number(p.textSize,16),color:p.defaultValueColor||p.labelColor||undefined,
     // Explicit solid border on every side instead of the browser's native inset border.
