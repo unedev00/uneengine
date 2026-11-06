@@ -202,10 +202,16 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
  // an older cached catalog during rolling deployment.
  const retiredDesign2Areas=new Set(['Tabs','Card Grid',
    'Custom Button 1','Custom Button 2','Calendar']);
- const design2Areas=[...new Map(design2Slots
+ const allDesign2Areas=[...new Map(design2Slots
    .filter(slot=>!retiredDesign2Areas.has(slot.area))
    .map(slot=>[slot.area,slot.areaOrder] as const)).entries()]
    .sort((a,b)=>a[1]-b[1]).map(([area])=>area);
+ // The keypad declares its seven independent editable parts in SQL. Existing
+ // components retain the fixed global inspector inventory unchanged.
+ const design2Areas=api==='smart_numpad'
+   ?allDesign2Areas.filter(area=>design2SlotRules.some(rule=>
+      rule.componentApi===api&&rule.area===area))
+   :allDesign2Areas;
  const activeDesign2Area=expandedInspector&&design2Areas.includes(expandedInspector)?expandedInspector:'Body';
  const approvedMatrixAreas=new Set(design2SlotRules.map(rule=>rule.area));
  // A SINGLE, fixed Design scaffold for all sections and selected components.
@@ -292,6 +298,20 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      const property=definitions.find(item=>item.id===rule?.propertyKey);
      return property?.components.includes(api)?[{...property,
        tab:'Design2' as const,group:'Extras',designRow:slot.row,designOrder:slot.order,
+       designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}]:[];
+   }):[];
+ // Generic SQL-defined controls belonging to a particular Design area.
+ // Do not create component-specific editor widgets or a parallel settings tab.
+ const design2AreaExtraProperties:UneRibbonProperty[]=tab==='Design2'?design2Slots
+   .filter(slot=>slot.area!=='Extras'&&slot.slotKey.startsWith('extra_'))
+   .sort((a,b)=>a.areaOrder-b.areaOrder||a.order-b.order)
+   .flatMap(slot=>{
+     const rule=design2SlotRules.find(item=>item.componentApi===api&&
+       item.area===slot.area&&item.slotKey===slot.slotKey);
+     const property=definitions.find(item=>item.id===rule?.propertyKey);
+     return property?.components.includes(api)?[{...property,
+       tab:'Design2' as const,group:slot.area,
+       designRow:slot.row,designOrder:slot.order,
        designWidth:slot.width,designHeight:slot.height,designCaptionWidth:0}]:[];
    }):[];
  // Physical dock placement only: fixed six/four/six columns use 60px
@@ -473,11 +493,11 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
      (isTextSize||isCorner||isWidth||isHeight||isCanvasAxis);
    const isTabIndex=property.id==='tabIndex';
    let editor;
-   if(property.id==='shapeId'||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
+   if(['shapeId','numpadKeyShape'].includes(property.id)||(tab==='Design2'&&property.id==='footerShape'))editor=<SmartIconGallery value={String(value||'shape:rectangle')}
      disabled={!enabled} allowIcons={property.id==='footerShape'?false:(selectedApis?.length?selectedApis:[api]).every(member=>
        (property.choicesOverrides?.[member]??property.choices??[]).includes('icons'))}
      onChange={write}/>;
-   else if(['cardButtonShape','customButton1Shape','customButton2Shape'].includes(property.id))editor=<SmartIconGallery
+   else if(['cardButtonShape','customButton1Shape','customButton2Shape','customButton3Shape'].includes(property.id))editor=<SmartIconGallery
      value={String(value||'shape:round-rectangle')} disabled={!enabled}
      allowIcons={false} onChange={write}/>;
    else if(property.id==='imageSource'&&supported){
@@ -695,6 +715,15 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
           {sectionRow(area,row).map(controls)}
           </div>)}
       </div>}
+
+      {design2AreaExtraProperties.some(property=>property.group===area)&&
+        <div className="smart-design2-supplemental" role="group" aria-label={area+' settings'}>
+          {design2AreaExtraProperties.filter(property=>property.group===area).map(property=>
+            <div className="smart-design2-supplemental-setting" key={property.id}>
+              <span className="smart-design2-supplemental-label" title={property.label}>{property.label}</span>
+              {controls(property)}
+            </div>)}
+        </div>}
 
       {area==='Extras'&&<>
         <div className="smart-design2-extras-fixed" role="group" aria-label="Additional appearance and spacing controls">
