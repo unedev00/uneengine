@@ -123,7 +123,7 @@ export function createLoginView(logoUrl: string) {
         if (!(failure instanceof DOMException && failure.name==='AbortError') &&
             !(failure instanceof TypeError)) {
           window.requestAnimationFrame(()=>{
-            document.getElementById(challenge?'login-mfa':'login-password')?.focus();
+            document.getElementById(challenge?'login-mfa':'login-email')?.focus();
           });
         }
       } finally {
