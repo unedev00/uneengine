@@ -257,3 +257,44 @@ test('optional off-screen renderer uses intersection visibility and does not def
  assert.match(source,/!editorPreview&&props.printRows!==true/);
  assert.match(source,/deferRenderer&&!enteredViewport/);
 });
+
+test('flagged Smart asset build keeps full default renderer and emits smaller shared variant',async()=>{
+ const {mkdtemp,readFile,rm}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');
+ const path=await import('node:path');
+ const {spawnSync}=await import('node:child_process');
+ const {fileURLToPath}=await import('node:url');
+ const directory=await mkdtemp(path.join(tmpdir(),'metadrive-shared-smart-'));
+ try{
+  const script=fileURLToPath(new URL('../build-component-library.mjs',import.meta.url));
+  const result=spawnSync(process.execPath,[script],{
+   cwd:directory,encoding:'utf8',timeout:180_000,
+   env:{...process.env,METADRIVE_SHARED_SMART_RUNTIME:'1'}
+  });
+  assert.equal(result.status,0,'Shared Smart build must succeed: '+result.stderr?.slice(-1500));
+  const index=JSON.parse(await readFile(path.join(directory,'dist/component-library/catalog-index.json'),'utf8'));
+  const button=index.components.find((item:{apiName:string})=>item.apiName==='smart_button');
+  const text=index.components.find((item:{apiName:string})=>item.apiName==='smart_text');
+  assert.ok(button?.assetPath&&button?.sharedAssetPath);
+  assert.ok(text?.assetPath&&text?.sharedAssetPath);
+  const asset=async(file:string)=>JSON.parse(await readFile(path.join(directory,'dist',file),'utf8'));
+  const [full,slim,textSlim]=await Promise.all([
+   asset(button.assetPath),asset(button.sharedAssetPath),asset(text.sharedAssetPath)
+  ]);
+  assert.ok(full.compiledJs.length>10_000);
+  assert.equal(slim.compiledJs,'');
+  assert.equal(slim.sharedSmartRuntime,true);
+  assert.equal(slim.apiName,'smart_button');
+  assert.equal(textSlim.apiName,'smart_text');
+  assert.equal(slim.sharedRuntimePath,textSlim.sharedRuntimePath);
+  const shared=await asset(slim.sharedRuntimePath);
+  assert.ok(shared.compiledJs.length>10_000);
+  const before=Buffer.byteLength(JSON.stringify(full));
+  const after=Buffer.byteLength(JSON.stringify(slim));
+  assert.ok(after<before);
+  console.info('PR10 actual build smart_button fullBytes='+before+
+   ' slimBytes='+after+' sharedOnceBytes='+Buffer.byteLength(JSON.stringify(shared)));
+ }finally{
+  await rm(directory,{recursive:true,force:true});
+ }
+});
