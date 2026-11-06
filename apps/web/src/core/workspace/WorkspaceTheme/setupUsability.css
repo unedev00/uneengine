@@ -466,7 +466,7 @@ html, body, #root { min-width:0; max-width:100%; }
 .lightning .home-content .welcome-banner { min-height:0; padding:14px 18px; gap:14px; }
 .lightning .home-content .welcome-art { transform:scale(.7); transform-origin:center; }
 .lightning .home-content .welcome-quick { gap:6px; }
-.lightning .home-content .shortcut-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:var(--grid-gutter,12px); }
+.lightning .home-content .shortcut-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:var(--grid-gutter,12px); }
 .lightning .home-content .shortcut-card { min-width:0;box-sizing:border-box;align-content:center; }
 .lightning .home-content .shortcut-title,.lightning .home-content .shortcut-description { width:auto;max-width:100%;min-width:0; }
 .lightning .home-content .shortcut-description { overflow-wrap:anywhere; }
