@@ -56,7 +56,7 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
   height:size(p.numpadKeyHeight,52,28,200),
   width:p.numpadKeyWidth?size(p.numpadKeyWidth,100,20,400)+"px":"100%",maxWidth:"100%",
   justifySelf:"center",minWidth:0,justifyContent:p.numpadKeyAlignment==="left"?"flex-start":p.numpadKeyAlignment==="right"?"flex-end":"center",
-  ...smartShapeAppearance(p.numpadKeyShape||"shape:round-rectangle",size(p.numpadKeyRadius,9,0,128))
+  ...smartShapeAppearance(p.numpadKeyShape||"shape:rectangle",size(p.numpadKeyRadius,9,0,128))
  };
  const focusStyle={
   background:p.numpadFocusedFill||"#dbeafe",
@@ -68,7 +68,7 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
  };
  const sharedButton=(key,label,style,onClick,custom=false)=><button
   key={key} type="button" className="smart-numpad-key"
-  disabled={p.disabled===true||p.readonly===true}
+  disabled={p.disabled===true||p.readonly===true||p.previewOnly===true}
   aria-label={key==="backspace"?"Backspace":key==="C"?"Clear":custom?label:key}
   data-numpad-key={key} data-numpad-custom={custom?"true":undefined}
   onFocus={()=>setFocusedKey(key)} onBlur={()=>setFocusedKey(previous=>previous===key?"":previous)}
@@ -94,7 +94,7 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
    fontWeight:p[prefix+"Bold"]===true?700:400,
    boxShadow:shadow(p[prefix+"Shadow"]),
    justifyContent:p[prefix+"Alignment"]==="left"?"flex-start":p[prefix+"Alignment"]==="right"?"flex-end":"center",
-   ...smartShapeAppearance(p[prefix+"Shape"]||"shape:round-rectangle",size(p[prefix+"Radius"],9,0,128))
+   ...smartShapeAppearance(p[prefix+"Shape"]||"shape:rectangle",size(p[prefix+"Radius"],9,0,128))
   };
  };
  return <div className="smart-numpad" style={bodyStyle} aria-label="Numeric keypad">
@@ -108,7 +108,7 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
     aria-label={isPin?"PIN input":"Numpad input"}
     placeholder={String(p.numpadPlaceholder||"Enter number")}
     value={value}
-    disabled={p.disabled===true||p.readonly===true}
+    disabled={p.disabled===true||p.readonly===true||p.previewOnly===true}
     onChange={event=>update(normalizeNumpadValue(event.target.value,settings))}
     onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();fire("click",valueRef.current);}}}/>
    {p.numpadSuffix&&!isPin&&<span className="smart-numpad-suffix" aria-hidden="true">{p.numpadSuffix}</span>}
