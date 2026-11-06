@@ -1391,7 +1391,15 @@ function PageBuilder({
       startCanvasGroupGesture(event,'move');
       return;
     }
-    if (canvasGroupKey(component) && editingGroupId !== canvasGroupKey(component)) return;
+    if (canvasGroupKey(component) && editingGroupId !== canvasGroupKey(component)) {
+      const members=canvasGroupMembers(page.components,component);
+      if(members.length>1 && members.every(item=>!isCanvasLocked(item))){
+        setEditingGroupId(null);setSelectedId(component.id);
+        setSelectionIds(members.map(item=>item.id));
+        startCanvasGroupGesture(event,'move','se',members);
+      }
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -1469,6 +1477,7 @@ function PageBuilder({
     = useCanvasGroupGestures({
       members:selectedGroupMembers,bounds:selectedGroupBounds,width:page.canvasWidth,height:page.canvasHeight,
       scale:fitCanvas?fitScale:canvasZoom/100,enabled:!previewMode,
+      viewport:pagePreviewAreaRef,
       onCommit:positions=>{suppressCanvasClickRef.current=true;applyPage({...page,components:page.components.map(item=>{
         const position=positions.get(item.id);
         return position?{...item,position}:item;
@@ -2778,12 +2787,12 @@ function PageBuilder({
         onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         {page.layoutMode === 'free-canvas' && !nested && !isCanvasLocked(component) && <button type="button"
           className="canvas-move-grip" aria-label={`Drag to move ${component.label}`}
-          title="Drag to move only this component" draggable={false}
+          title="Drag selected components" draggable={false}
           onPointerDown={event => startCanvasMove(event, component)}
-          onPointerMove={moveCanvasPointer}
-          onPointerUp={event => endCanvasMove(event)}
-          onPointerCancel={event => endCanvasMove(event, true)}
-          onLostPointerCapture={event => endCanvasMove(event, true)}
+          onPointerMove={event=>{moveCanvasPointer(event);moveCanvasGroupGesture(event);}}
+          onPointerUp={event=>{endCanvasMove(event);endCanvasGroupGesture(event);}}
+          onPointerCancel={event=>{endCanvasMove(event,true);endCanvasGroupGesture(event,true);}}
+          onLostPointerCapture={event=>{endCanvasMove(event,true);endCanvasGroupGesture(event,true);}}
           onClick={event => event.stopPropagation()}><Move size={15}/></button>}
         <button type="button" onClick={() => selectRibbonTab('Component Design 2')} title="Edit block"><Pencil size={15}/> Edit</button>
         {page.layoutMode === 'free-canvas' && <button type="button" onClick={() => selectRibbonTab('Component Layout')} title="Position and size"><Maximize2 size={15}/> Position</button>}
