@@ -2,15 +2,16 @@ import type {FlowDefinitionMetadata} from '../../metadata/Definitions/metadata';
 
 type Binding=Record<string,unknown>;
 type Actions=Record<string,unknown>;
-const clickComponents=new Set(['smart_button','smart_toggle','smart_calendar','smart_cart','smart_card_grid']);
-const changeComponents=new Set(['smart_calendar','smart_lookup','smart_tabs','smart_toggle','smart_text','smart_card_grid']);
+const clickComponents=new Set(['smart_button','smart_toggle','smart_calendar','smart_cart','smart_card_grid','smart_numpad']);
+const changeComponents=new Set(['smart_calendar','smart_lookup','smart_tabs','smart_toggle','smart_text','smart_card_grid','smart_numpad']);
 /** Component event applicability is shared by the old property contract and unified catalog. */
 export const supportsSmartActionEvent=(api:string,event:string):boolean=>
  event==='click'?clickComponents.has(api):
  event==='change'?changeComponents.has(api):
  event==='start'?api.startsWith('smart_'):
  ['qtyIcon','qtyIncrease','qtyDecrease'].includes(event)?api==='smart_cart':
- ['customButton1','customButton2'].includes(event)?['smart_cart','smart_card_grid'].includes(api):false;
+ ['customButton1','customButton2'].includes(event)?['smart_cart','smart_card_grid','smart_numpad'].includes(api):
+ event==='customButton3'||event==='clear'||event==='backspace'?api==='smart_numpad':false;
 
 const asObject=(value:unknown):Binding=>
  value&&typeof value==='object'&&!Array.isArray(value)?value as Binding:{};
