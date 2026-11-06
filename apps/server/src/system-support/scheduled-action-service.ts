@@ -8,6 +8,7 @@ import {DurableJobService} from './durable-job-service.js';
 import {compileActionPlan,type ActionStep} from '../expression-engine/ActionFormulas.js';
 import {formulaTruth,type Expression} from '../expression-engine/FormulaParser.js';
 import {evaluateFlowFormula} from '../system-files/flow-formula-runtime.js';
+import {sendActionCommunication} from './action-formula-communication-service.js';
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const reserved=/(?:password|secret|token|cookie|authorization|credentialkey)/i;
@@ -190,37 +191,8 @@ export class ScheduledActionService {
   });
  }
 }
-async function deliverCommunication(row:ScheduledActionRow,step:ActionStep,
- values:unknown[],credentials:NamedCredentialService,stepNumber:number){
- const selected=(await credentials.list(row.tenant_id,row.scheduled_by))
-   .find(item=>item.enabled&&item.name===step.object);
- if(!selected)throw Error('Named Credential unavailable');
- const prefix='public_'+step.name.toLowerCase();
- const path=selected.configuration[prefix+'Path'];
- const body=selected.configuration[prefix+'Body'];
- if(typeof path!=='string'||typeof body!=='string'||!body.trim().startsWith('{'))
-  throw Error('Named Credential delivery mapping unavailable');
- const minimum=step.name==='EMAIL'?3:2;
- if(values.length<minimum||values.length>(step.name==='SMS'?2:minimum+20))
-  throw Error('Invalid communication arguments');
- const strings=values.map((v,i)=>textValue(v,'communication value '+i));
- const variables:Record<string,string>={
-  to:strings[0],recipient:strings[0],body:strings[minimum-1],message:strings[minimum-1]
- };
- if(step.name==='EMAIL')variables.subject=strings[1];
- for(const [index,value] of strings.slice(minimum).entries()){
-  const key='attachment'+(index+1);
-  if(!body.includes('{!'+key+'}'))throw Error('Provider mapping must include '+key);
-  variables[key]=value;
- }
- const response=await credentials.callout(row.tenant_id,row.scheduled_by,
-  {namedCredentialId:selected.id,method:'POST',path,body},variables,
-   'scheduled-action:'+row.id+':'+stepNumber);
- if(response.status<200||response.status>=300)throw Error('Communication provider rejected request');
-}
 export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPersistence,
  rbac:RbacEngine,records:RecordEngine,credentials:NamedCredentialService,flows:FlowRuntime){
- void rbac;
  const service=new ScheduledActionService(db);
  const authorize=async(job:ClaimedJob)=>{
   if(job.job_type!=='scheduled.action'||!job.actor_user_id)return false;
@@ -272,7 +244,10 @@ export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPers
      continue;
     }
     if(['EMAIL','WHATSAPP','SMS'].includes(step.name))
-     await deliverCommunication(row,step,(step.values??[]).map(evalNode),credentials,i);
+     await sendActionCommunication(db,rbac,credentials,
+       row.tenant_id,row.scheduled_by,step.name as 'EMAIL'|'WHATSAPP'|'SMS',
+       step.object,(step.values??[]).map(evalNode),
+       'scheduled-action:'+row.id+':'+i);
     else {
      const id=step.id?savedId(evalNode(step.id)):undefined;
      const data=Object.fromEntries([...step.fields].map(([name,node])=>[name,evalNode(node)]));
