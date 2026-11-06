@@ -660,11 +660,11 @@ export default function SmartRuntime(p){
   // displayMode is recognised only for backwards compatibility with saved pages;
   // the renderer never requires it for a formula and it is not a ribbon setting.
   const formulaValue=value=>typeof value==="string"&&(
-   /^\\s*=/.test(value)||/@[A-Za-z]/.test(value)||
-   /\\$(?:component\\.|state\\.|session\\b|tenant\\.)/i.test(value)||
-   /^\\s*"/.test(value)||
-   /^\\s*-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)\\s*[+\\-*/&]/.test(value)||
-   /^\\s*[A-Za-z][A-Za-z0-9_]*\\s*\\(/.test(value));
+   /^\s*=/.test(value)||/@[A-Za-z]/.test(value)||
+   /\$(?:component\.|state\.|session\b|tenant\.)/i.test(value)||
+   /^\s*"/.test(value)||
+   /^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(value)||
+   /^\s*[A-Za-z][A-Za-z0-9_]*\s*\(/.test(value));
   const dataBound=typeof p.textSource==="string"&&p.textSource.trim().length>0
    ||["label","defaultValue","value"].some(key=>formulaValue(p[key]));
   const editable=p.readonly===false||Boolean(p.actionFlows?.change);
