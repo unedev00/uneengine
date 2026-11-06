@@ -1,7 +1,7 @@
 /** Read-only data source/record-context functions. The existing
  * Record Engine and FormulaFunctionRegistry enforce permissions and validity. */
 export const DATA_FORMULA_FUNCTIONS:ReadonlySet<string>=new Set([
- 'TABLE','COLLECTION','COLLECTIONCOUNT','COLLECTIONSUM','VLOOKUP','COUNTIFS',
+ 'TABLE','COLLECTION','COLLECTIONCOUNT','COLLECTIONSUM','VLOOKUP','COUNTIFS','SUMIFS','AVERAGEIFS','MINIFS','MAXIFS','VERIFYPIN',
  'IMAGE','CURRENCYRATE','ISCHANGED','ISNEW','ISCLONE','PRIORVALUE'
 ]);
 export type FormulaDataScope={

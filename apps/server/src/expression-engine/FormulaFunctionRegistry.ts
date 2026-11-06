@@ -31,12 +31,13 @@ const ribbonFunctions=new Set([
   'DATEVALUE','DATETIMEVALUE','TODAY','NOW','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND',
   'WEEKDAY','ISOWEEK','ISOYEAR','ADDDAYS','ADDMONTHS','TIMEVALUE','TIMENOW','SIN','COS',
   'PI','TAN','ASIN','ACOS','ATAN','ATAN2','SINH','COSH','TANH','DEGREES','RADIANS','TZOFFSET',
-  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP','COUNTIFS'
+  'GEOLOCATION','DISTANCE','COLLECTIONCOUNT','COLLECTIONSUM','COLLECTION','SUM','TABLE','VLOOKUP','COUNTIFS',
+  'SUMIFS','AVERAGEIFS','MINIFS','MAXIFS','VERIFYPIN'
 ]);
 const flowContextOnly=new Set(['ISCHANGED','ISNEW','PRIORVALUE']);
 const formulaAndFlowOnly=new Set(['IMAGE','CURRENCYRATE']);
 const numberFunctions=new Set([
-  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','COUNTIFS','SUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
+  'VALUE','LEN','ASCII','COLLECTIONCOUNT','COLLECTIONSUM','COUNTIFS','SUMIFS','AVERAGEIFS','MINIFS','MAXIFS','SUM','CURRENCYRATE','ABS','ROUND','ROUNDUP',
   'ROUNDDOWN','TRUNC','SIGN','MIN','MAX','MOD','SQRT','POWER','CEILING','FLOOR','MCEILING',
   'MFLOOR','EXP','LN','LOG','PI','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND','WEEKDAY',
   'ISOWEEK','ISOYEAR','TZOFFSET','DISTANCE','SIN','COS','TAN','ASIN','ACOS','ATAN','ATAN2',
@@ -49,7 +50,7 @@ const textFunctions=new Set([
 ]);
 const checkboxFunctions=new Set([
   'AND','OR','NOT','XOR','ISBLANK','ISNULL','ISNUMBER','ISCHANGED','ISNEW','ISCLONE','EXACT',
-  'CONTAINS','BEGINS','ISPICKVAL','INCLUDES'
+  'CONTAINS','BEGINS','ISPICKVAL','INCLUDES','VERIFYPIN'
 ]);
 const explicitParameters=new Map<string,FormulaValueKind[]>([
   ['COLLECTION',['Text','Any']],['TABLE',['Collection','Any']],['SUM',['Collection']],['IF',['Checkbox','Any','Any']],['IFERROR',['Any','Any']],['NOT',['Checkbox']],
@@ -103,7 +104,12 @@ const inputs:DefinitionInput[]=[
   ['SINH',1,1],['COSH',1,1],['TANH',1,1],['DEGREES',1,1],['RADIANS',1,1],
   ['TZOFFSET',1,1],['GEOLOCATION',2,2],['DISTANCE',3,3],['VLOOKUP',4,4,['flow_formula','ribbon_binding']],
   // Server-side record count; evaluated by the action runtime only (ActionFormulas).
-  ['COUNTIFS',3,41,['ribbon_binding']]
+  ['COUNTIFS',3,41,['ribbon_binding']],
+  // Record aggregates: (Object, ValueField, Field1, Value1, ...); action runtime only.
+  ['SUMIFS',2,42,['ribbon_binding']],['AVERAGEIFS',2,42,['ribbon_binding']],
+  ['MINIFS',2,42,['ribbon_binding']],['MAXIFS',2,42,['ribbon_binding']],
+  // Server-side hashed PIN comparison: VERIFYPIN(Pin) or VERIFYPIN(UserId, Pin).
+  ['VERIFYPIN',1,2,['ribbon_binding']]
 ];
 
 const definitions=new Map<string,FormulaFunctionDefinition>();

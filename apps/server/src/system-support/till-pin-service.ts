@@ -14,7 +14,9 @@ export class TillPinService {
   await this.db.query(`UPDATE md_users SET till_pin_hash=$3,till_pin_failures=0,till_pin_locked_until=NULL
     WHERE tenant_id=$1 AND id=$2 AND enabled=true`,[tenantId,userId,`scrypt:${salt}:${digest.toString('hex')}`]);
  }
- async verify(tenantId:string,userId:string,pin:unknown):Promise<boolean>{
+ /** Verifies a user's PIN against its scrypt hash; the hash is never decrypted or returned.
+  * actorUserId is who asked (e.g. a cashier requesting a manager override). */
+ async verify(tenantId:string,userId:string,pin:unknown,actorUserId:string=userId):Promise<boolean>{
   // All checks and counters are serialized per user; lockout survives reloads.
   return this.db.transaction(async client=>{
    const {rows}=await client.query<{till_pin_hash:string|null;till_pin_failures:number;till_pin_locked_until:Date|null}>(
@@ -32,8 +34,8 @@ export class TillPinService {
    await client.query(`UPDATE md_users SET till_pin_failures=$3,
     till_pin_locked_until=CASE WHEN $3>=5 THEN now()+interval '15 minutes' ELSE NULL END
     WHERE tenant_id=$1 AND id=$2`,[tenantId,userId,failed]);
-   await client.query(`INSERT INTO md_security_events(tenant_id,actor_user_id,subject_user_id,action) VALUES($1,$2,$2,$3)`,
-    [tenantId,userId,verified?'TillPinVerified':'TillPinRejected']);
+   await client.query(`INSERT INTO md_security_events(tenant_id,actor_user_id,subject_user_id,action) VALUES($1,$2,$3,$4)`,
+    [tenantId,actorUserId,userId,verified?'TillPinVerified':'TillPinRejected']);
    return verified;
   });
  }

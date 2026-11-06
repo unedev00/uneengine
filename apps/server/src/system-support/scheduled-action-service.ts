@@ -90,13 +90,13 @@ export class ScheduledActionService {
   // Browser actions cannot execute after the initiating user closes their tab.
   // Reject at scheduling time rather than silently failing many hours later.
   const interactive=steps.slice(options.nextStep).find(step=>
-   ['SCREEN','PRINT','STATE','GETRECORD'].includes(step.name));
+   ['SCREEN','PRINT','STATE','GETRECORD','FOREACH','CLOSESCREEN'].includes(step.name));
   if(interactive)throw Error(interactive.name+
    ' must run before WAIT; delayed actions require server execution');
   const counted=steps.slice(options.nextStep).find(step=>
    [...(step.guards??[]).map(guard=>guard.condition),...(step.id?[step.id]:[]),
     ...step.fields.values(),...(step.values??[])].some(usesRecordCount));
-  if(counted)throw Error('COUNTIFS must run before WAIT; delayed actions require server execution');
+  if(counted)throw Error('Record aggregates and VERIFYPIN must run before WAIT; delayed actions require server execution');
   const scope=safeSnapshot(options.scope),variables=safeSnapshot(options.variables);
   const wait=steps[options.nextStep-1];
   const values={...scope,...variables};
@@ -252,7 +252,7 @@ export function registerScheduledActionWorker(worker:DurableJobWorker,db:SqlPers
      await service.progress(row,i+1,variables,step.name);
      break;
     }
-    if(['SCREEN','PRINT','STATE','GETRECORD'].includes(step.name))
+    if(['SCREEN','PRINT','STATE','GETRECORD','FOREACH','CLOSESCREEN'].includes(step.name))
      throw Error('Interactive navigation, printing, Page State and record lookups are unavailable after WAIT');
     if(step.name==='CREATEPDF'){
      const recordId=savedId(evalNode(step.id!));

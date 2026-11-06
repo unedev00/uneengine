@@ -1899,6 +1899,16 @@ export function createSystemServer(db:SqlPersistence) {
     res.setHeader('Cache-Control','private, no-store');
     res.json(credentials.filter(item=>item.enabled).map(({name,label})=>({apiName:name,label})));
   }));
+  app.post('/api/action-formulas/verify-pin',route(async(req,res)=>{
+    const actor=req.actor!;
+    const {userId,pin}=req.body??{};
+    if(userId!==undefined&&(typeof userId!=='string'||!/^[0-9a-f-]{36}$/i.test(userId)))
+      throw Error('VERIFYPIN requires a valid user ID');
+    // Compares against the stored scrypt hash with per-user lockout; the PIN is never stored or echoed.
+    const valid=await new TillPinService(db).verify(actor.tenant_id,userId??actor.user_id,pin,actor.user_id);
+    res.setHeader('Cache-Control','private, no-store');
+    res.json({valid});
+  }));
   app.post('/api/action-formulas/communication',route(async(req,res)=>{
     const actor=req.actor!;
     const {channel,credential,values}=req.body??{};
