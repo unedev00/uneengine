@@ -532,6 +532,21 @@ function PageBuilder({
     return()=>window.cancelAnimationFrame(frame);
   },[page.components,page.layoutMode]);
   const [createPageOpen, setCreatePageOpen] = useState(false);
+  const createPageTriggerRef=useRef<HTMLButtonElement>(null);
+  const createPageDialogRef=useRef<HTMLElement>(null);
+  const wasCreatingPage=useRef(false);
+  useEffect(()=>{
+    if(createPageOpen){wasCreatingPage.current=true;return;}
+    if(wasCreatingPage.current){wasCreatingPage.current=false;requestAnimationFrame(()=>createPageTriggerRef.current?.focus());}
+  },[createPageOpen]);
+  const handleCreatePageDialogKey=(event:React.KeyboardEvent<HTMLElement>)=>{
+    if(event.key==='Escape'){event.preventDefault();setCreatePageOpen(false);return;}
+    if(event.key!=='Tab')return;
+    const controls=Array.from(createPageDialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]')??[]);
+    if(!controls.length)return;
+    if(event.shiftKey&&document.activeElement===controls[0]){event.preventDefault();controls[controls.length-1].focus();}
+    if(!event.shiftKey&&document.activeElement===controls[controls.length-1]){event.preventDefault();controls[0].focus();}
+  };
   const [routeDirectoryOpen, setRouteDirectoryOpen] = useState(false);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
   const [newPageLabel, setNewPageLabel] = useState('');
@@ -3588,7 +3603,7 @@ function PageBuilder({
       {!editorMode && <section className="page-manager-view" aria-label="Page management">
         <header className="page-manager-header"><div><h1>{recordPageContext ? 'Record Page Editor' : 'Page Builder'}</h1><p>{recordPageContext ? 'Object-owned record pages: view, edit, activate and publish device layouts.' : 'Manage Home and App Pages. Record Pages are managed inside Object Manager.'}</p></div>
           <div className="page-manager-header-actions">
-            <button className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
+            <button ref={createPageTriggerRef} className="btn btn-brand" type="button" onClick={openCreatePage}><Plus size={16}/> New Page</button>
             <button className="btn" type="button" disabled={saving} onClick={()=>setInventoryUploadOpen(true)}><Upload size={16}/> Upload CSV</button>
             <select className="form-control" aria-label="Inventory CSV device layout" title="Layout used by page inventory downloads"
               style={{width:172}} value={inventoryExportVariant} onChange={event=>setInventoryExportVariant(event.target.value as PageLayoutVariant|'Auto')}>
@@ -4569,7 +4584,7 @@ function PageBuilder({
         onNotify={onNotify} onClose={() => setRouteDirectoryOpen(false)} />}
       {createPageOpen && <div className="modal-backdrop" role="presentation"
         onMouseDown={event => { if (event.target === event.currentTarget) setCreatePageOpen(false); }}>
-        <section className="modal builder-create-page-dialog" role="dialog" aria-modal="true" aria-labelledby="create-lightning-page-title">
+        <section ref={createPageDialogRef} onKeyDown={handleCreatePageDialogKey} className="modal builder-create-page-dialog" role="dialog" aria-modal="true" aria-labelledby="create-lightning-page-title">
           <div className="modal-header">
             <h2 id="create-lightning-page-title">Create a page</h2>
             <button className="icon-button dark" type="button" onClick={() => setCreatePageOpen(false)} aria-label="Close"><X size={18} /></button>
