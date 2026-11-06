@@ -767,7 +767,7 @@ export default function SmartRibbon({tab,api,definitions,properties,onChange,obj
             disabled={!enabled} value="cardPadding" onChange={()=>{}}>
             <option value="cardPadding">Padding</option>
           </select>
-          <BuilderNumberInput key={componentId+':cardPadding}
+          <BuilderNumberInput key={componentId+':cardPadding'}
             className="smart-office-number" aria-label="Card Padding"
             title="Card Padding" min={property?.min??0} max={property?.max??160}
             disabled={!enabled} value={enabled?value:''}
