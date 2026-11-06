@@ -604,7 +604,12 @@ export default function SmartRuntime(p){
    }}/>}
    {label&&<span className="smart-button-label">{label}</span>}
  </button>;
- else if(name==="smart_numpad")content=<SmartNumpad p={p} fire={fire}
+ else if(name==="smart_numpad")content=<SmartNumpad
+   p={{...p,
+     numpadPlaceholder:scopedExpression(p,"numpadPlaceholder",p.numpadPlaceholder??"Enter number",record),
+     numpadPrefix:scopedExpression(p,"numpadPrefix",p.numpadPrefix??"",record),
+     numpadSuffix:scopedExpression(p,"numpadSuffix",p.numpadSuffix??"",record)}}
+   fire={fire}
    sourceValue={scopedExpression(p,"textSource",p.textSource??p.defaultValue??"",record)}
    buttonLabels={[1,2,3].map(index=>scopedExpression(p,
      "customButton"+index+"Label",p["customButton"+index+"Label"]??
