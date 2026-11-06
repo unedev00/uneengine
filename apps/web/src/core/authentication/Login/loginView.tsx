@@ -198,7 +198,12 @@ export function createLoginView(logoUrl: string) {
         <button className="btn btn-brand auth-submit" disabled={submitting}>
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
-        {!branding && <div className="auth-signin-footer"><a href="mailto:support@unesolutions.co.uk">Contact support</a></div>}
+        {!branding && <nav className="auth-signin-footer" aria-label="Sign-in help and legal">
+          <a href="mailto:support@unesolutions.co.uk">Contact support</a>
+          {import.meta.env.VITE_PRIVACY_POLICY_URL?.startsWith('https://')&&<a href={import.meta.env.VITE_PRIVACY_POLICY_URL} rel="noopener noreferrer">Privacy Policy</a>}
+          {import.meta.env.VITE_TERMS_URL?.startsWith('https://')&&<a href={import.meta.env.VITE_TERMS_URL} rel="noopener noreferrer">Terms</a>}
+          {import.meta.env.VITE_APP_VERSION&&<small>Version {import.meta.env.VITE_APP_VERSION}</small>}
+        </nav>}
         {branding && <div className="auth-product-powered"><UneBrandLogo className="auth-product-powered-logo" src={logoUrl}/>Securely powered by MetaDrive</div>}
       </form>
     </main>;
