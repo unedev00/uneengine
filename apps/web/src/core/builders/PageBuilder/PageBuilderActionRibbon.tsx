@@ -44,7 +44,8 @@ const legacyFormula=(binding:Binding,eventName:string,field:string):string=>{
    const expression=original==='$session'?'@session.id':
      original==='$event'?'@event.value':
      original.startsWith('$event.')?'@event.'+original.slice(7):
-     original.startsWith('$state.')?'@state.'+original.slice(7):quoted(original);
+     original.startsWith('$state.')?'@state.'+original.slice(7):
+     original.startsWith('$session.')?original:quoted(original);
    return /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)
      ?'@state.'+key+' := '+expression:'';
  }

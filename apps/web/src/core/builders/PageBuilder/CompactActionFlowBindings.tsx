@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {FlowDefinitionMetadata,FieldMetadata} from '../../metadata/Definitions/metadata';
-import {decodeInputSource,encodeInputSource,declaredFlowInputs,declaredFlowOutputs,mappedInputNames,
+import {decodeInputSource,encodeInputSource,declaredFlowInputs,declaredFlowOutputs,mappedInputNames,sessionInputFields,
  type InputSourceKind} from '../../automation/FlowScreen/flowInputBindings';
 
 const kinds:Array<{value:Exclude<InputSourceKind,'Legacy'>;label:string}>=[
@@ -52,7 +52,8 @@ export default function CompactActionFlowBindings({
  };
  const changeKind=(next:InputSourceKind)=>{
    if(next==='Legacy')return;
-   if(next==='Unmapped'||next==='Session'||next==='Event'){
+   if(next==='Session'){write(next,'id');return;}
+    if(next==='Unmapped'||next==='Event'){
      write(next,'');return;
    }
    if(next==='Record Field'&&fields.length){write(next,fields[0].apiName);return;}
@@ -89,6 +90,12 @@ export default function CompactActionFlowBindings({
            onChange={event=>write('Record Field',event.target.value)}>
            <option value="">Choose field…</option>
            {fields.map(field=><option key={field.apiName} value={field.apiName}>{field.label}</option>)}
+         </select>:
+         kind==='Session'?<select aria-label="Flow input session field"
+           disabled={!enabled||!chosenInput}
+           value={selected.kind==='Session'?selected.detail||'id':'id'}
+           onChange={event=>write('Session',event.target.value)}>
+           {sessionInputFields.map(item=><option value={item.key} key={item.key}>{item.label}</option>)}
          </select>:
          <input aria-label="Flow input value" type="text" disabled={!enabled||!chosenInput||
            ['Unmapped','Session','Event','Legacy'].includes(kind)}

@@ -119,3 +119,25 @@ test('registered formula bindings aggregate only complete authorised row sets',(
  });
  assert.equal(partial.subtotalValue,'=SUM(@LineTotal)');
 });
+
+
+test('Page Builder text bindings use the login session, not a User Object row',()=>{
+ const login={id:'session-user-id',displayName:'Current Cashier',
+  email:'cashier@example.test',timeZone:'Europe/London',locale:'en-GB',
+  tenantId:'session-tenant-id',tenantName:'UNE'};
+ setAuthenticatedFormulaBindingContext(login);
+ try{
+  const props={text:'=$session.user.email & " / " & $session.user.id',
+   subtitle:'=$session.tenant.id',sessionId:'page-session-id',
+   record:{User:{Id:'unrelated-record-id'},Email:'unrelated@example.test'}};
+  const result=resolveRegisteredTextProperties([
+   {propertyKey:'text',kind:'TEXT'}, {propertyKey:'subtitle',kind:'TEXT'}
+  ],props);
+  assert.equal(result.text,'cashier@example.test / session-user-id');
+  assert.equal(result.subtitle,'session-tenant-id');
+  assert.equal(resolveFieldText('=$session.id',{}, {sessionId:'page-session-id'}),'page-session-id');
+ }finally{
+  setAuthenticatedFormulaBindingContext(null);
+ }
+ assert.throws(()=>resolveFieldText('=$session.user.id',{}),/Authenticated user is unavailable/);
+});

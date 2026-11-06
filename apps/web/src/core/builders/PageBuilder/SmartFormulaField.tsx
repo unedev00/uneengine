@@ -18,7 +18,7 @@ import type {MentionKind} from '../../../component-libraries/shared/primitives/S
  */
 export function splitSmartFormula(value:string){
  const parts:{value:string;kind:'field'|'string'|'operator'|'text'}[]=[];
- const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$component(?:\.[A-Za-z_][A-Za-z0-9_]*){1,2}|\$state\.[A-Za-z][A-Za-z0-9_]*|\$flow\.[A-Za-z][A-Za-z0-9_]*|\$session|[+*\/&-])/g;
+ const token=/("(?:[^"]|"")*"|@[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*|\$component(?:\.[A-Za-z_][A-Za-z0-9_]*){1,2}|\$state\.[A-Za-z][A-Za-z0-9_]*|\$flow\.[A-Za-z][A-Za-z0-9_]*|\$session(?:\.[A-Za-z][A-Za-z0-9_]*){0,2}|[+*\/&-])/g;
  let cursor=0;let match:RegExpExecArray|null;
  while((match=token.exec(value))){
   if(match.index>cursor)parts.push({value:value.slice(cursor,match.index),kind:'text'});

@@ -101,7 +101,7 @@ const selectedCard=(selection,record)=>{
 function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=false}){
  const image=boundImage(p,record);
  // Distinguish an unset tenant brand from an unbound image in Builder previews.
- const tenantLogoReference=/^=?\s*\$tenant\.logo$/i.test(String(p.imageSource??p.src??"").trim());
+ const tenantLogoReference=/^=?\s*(?:\$session\.tenant\.logo|\$tenant\.logo)$/i.test(String(p.imageSource??p.src??"").trim());
  const missingImageLabel=tenantLogoReference
   ?"Tenant logo unavailable — Company Settings › Branding":"Image Here";
  const preview=p.previewOnly===true||p.builderPreview===true||p.preview===true;
@@ -546,7 +546,7 @@ function SmartToggle({p,fire}){
    <span className="smart-switch-thumb"/></span></label>;
 }
 export default function SmartRuntime(p){
- // Re-render when the tenant brand arrives so $tenant.name / $tenant.logo show without a reload.
+ // Re-render when the tenant brand arrives so $session.tenant.name / .logo show without a reload.
  React.useSyncExternalStore(subscribeTenantBrand,getTenantBrand,getTenantBrand);
  const name=p.kind||"smart_text",record=recordOf(p),label=scopedExpression(p,"label",p.label||"",record);
  const style={fontSize:number(p.textSize,16),color:p.labelColor||undefined,textAlign:p.labelAlignment||"left",borderRadius:number(p.radius,12)};

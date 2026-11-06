@@ -30,7 +30,8 @@ test('tenant detail tabs remain fully visible without horizontal overflow', () =
 test('tenant logo formula provides a setup hint only for missing builder images', () => {
   const smart = read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
   const settings = read('../src/core/settings/SettingsWorkspace/settingsWorkspaceViews.tsx');
-  assert.match(smart, /tenantLogoReference=\/\^=\?\\s\*\\\$tenant\\\.logo\$\/i/);
+  assert.ok(smart.includes('tenantLogoReference=/^=?\\s*(?:\\$session\\.tenant\\.logo|\\$tenant\\.logo)$/i'),
+    'Legacy and nested session tenant logo bindings keep the missing-image hint');
   assert.match(smart, /Tenant logo unavailable — Company Settings › Branding/);
   assert.match(smart, /single&&p\.builderPreview&&!image/);
   assert.match(settings, /id="company-logo-upload"/);

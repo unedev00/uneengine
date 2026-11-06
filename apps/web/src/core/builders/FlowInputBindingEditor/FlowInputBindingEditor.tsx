@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FieldMetadata, FlowDefinitionMetadata } from '../../metadata/Definitions/metadata';
-import { decodeInputSource, declaredFlowInputs, declaredFlowOutputs, encodeInputSource, mappedInputNames, type InputSourceKind } from '../../automation/FlowScreen/flowInputBindings';
+import { decodeInputSource, declaredFlowInputs, declaredFlowOutputs, encodeInputSource, mappedInputNames, sessionInputFields, type InputSourceKind } from '../../automation/FlowScreen/flowInputBindings';
 
 /** Shared typed property control; stores the existing Flow input mapping shape. */
 export default function FlowInputBindingEditor({
@@ -53,7 +53,8 @@ export default function FlowInputBindingEditor({
           <select className="form-control" aria-label={name + ' source'} value={selectedKind} onChange={event => {
             const kind = event.target.value as InputSourceKind;
             if (kind === 'Legacy') return;
-            if (kind === 'Unmapped' || kind === 'Session' || kind === 'Event') {
+            if (kind === 'Session') { update(name, kind, 'id'); return; }
+            if (kind === 'Unmapped' || kind === 'Event') {
               update(name, kind, '');
               return;
             }
@@ -104,6 +105,13 @@ export default function FlowInputBindingEditor({
             value={source.kind==='Record Collection'?source.detail:''}
             onChange={event=>update(name,'Record Collection',event.target.value)} />
           <small>Choose Page State and the Fields passed to the Flow. Record Id and undeclared fields are excluded.</small>
+        </label>}
+        {selectedKind === 'Session' && <label className="form-label">Session field
+          <select className="form-control" aria-label={name + ' session field'}
+            value={source.kind === 'Session'?source.detail||'id':'id'}
+            onChange={event=>update(name,'Session',event.target.value)}>
+            {sessionInputFields.map(item=><option key={item.key} value={item.key}>{item.label}</option>)}
+          </select>
         </label>}
         {selectedKind === 'Record Field' && <label className="form-label">Record field
           <select className="form-control" aria-label={name + ' record field'} value={source.detail}
