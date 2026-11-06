@@ -113,6 +113,7 @@ export async function createTemplatePdf(template:string,id:string,request:Reques
   .find(item=>!before.has(item))??[...document.querySelectorAll<HTMLDialogElement>('dialog.formula-print-preview')].at(-1);
  if(!dialog||dialog.getAttribute('aria-label')!==template)
   throw Error('Print Template did not render');
+ try{
  const root=dialog.querySelector('.free-canvas-runtime')??dialog.querySelector('main')??dialog;
  const clone=root.cloneNode(true) as HTMLElement;
  copyStyles(root,clone);
