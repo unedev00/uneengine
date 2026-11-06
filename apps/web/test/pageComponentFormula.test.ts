@@ -2,7 +2,8 @@ import {visiblePageCollectionResult} from '../src/core/pages/PageRuntime/pageCol
 import assert from 'node:assert/strict';
 import {loadBoundedCollectionSource} from '../src/core/pages/PageRuntime/loadBoundedCollectionSource';
 import test from 'node:test';
-import {componentReaderKey,evaluateFieldExpressionDetailed} from '../src/component-libraries/shared/FieldExpression.js';
+import {sameFormulaSnapshot} from '../src/core/components/RegisteredComponent/pageFormulaSnapshot';
+import {componentReaderKey,evaluateFieldExpressionDetailed,formulaSyntaxCacheStats} from '../src/component-libraries/shared/FieldExpression.js';
 import {resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
 import {compileRecordFilterFormula} from '../src/core/pages/PageRuntime/recordFilterFormula';
 import {formulaSignatureAt} from '../src/core/builders/PageBuilder/formulaSignatureHelp';
@@ -78,4 +79,31 @@ test('invalid COLLECTION or filter does not retain a previously successful aggre
 test('failed source authorization clears a collection, never reporting a stale success',()=>{
  const previous={collection:{name:'Authorized',items:[5]},error:'Permission denied',loading:false};
  assert.deepEqual(visiblePageCollectionResult(previous),{collection:null,error:'Permission denied',loading:false});
+});
+
+test('same syntax reuses bounded parse cache while values stay current per record',()=>{
+ const formula='=@Quantity + 7';
+ const before=formulaSyntaxCacheStats();
+ const first=evaluateFieldExpressionDetailed(formula,{Quantity:2});
+ const afterFirst=formulaSyntaxCacheStats();
+ const second=evaluateFieldExpressionDetailed(formula,{Quantity:5});
+ const afterSecond=formulaSyntaxCacheStats();
+ assert.equal(first.value,'9');
+ assert.equal(second.value,'12');
+ assert.equal(afterSecond.parses,afterFirst.parses);
+ assert.ok(afterFirst.parses>=before.parses);
+ assert.ok(afterSecond.size<=256);
+});
+test('component publication suppresses identical snapshots without hiding changed values',()=>{
+ assert.equal(sameFormulaSnapshot({value:5,text:'A'},{text:'A',value:5}),true);
+ assert.equal(sameFormulaSnapshot({value:5},{value:6}),false);
+ assert.equal(sameFormulaSnapshot({value:5},{value:5,extra:false}),false);
+ assert.equal(sameFormulaSnapshot(undefined,{}),false);
+});
+test('cached syntax still evaluates volatile NOW with each supplied clock',()=>{
+ const formula='=YEAR(NOW())';
+ const first=evaluateFieldExpressionDetailed(formula,{}, {now:new Date('2025-02-01T10:00:00Z')});
+ const second=evaluateFieldExpressionDetailed(formula,{}, {now:new Date('2026-02-01T10:00:00Z')});
+ assert.equal(first.value,'2025');
+ assert.equal(second.value,'2026');
 });
