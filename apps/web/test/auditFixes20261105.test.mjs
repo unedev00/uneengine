@@ -89,3 +89,14 @@ test('Sign-in reveal state and autofill maintain accessible light controls',()=>
  assert.match(styles,/input:-webkit-autofill/);
  assert.match(styles,/color-scheme:light/);
 });
+
+test('Cramped desktop admin widths render cards with every action still available',()=>{
+ const responsive=source('src/core/records/ResponsiveDataList/ResponsiveDataList.tsx');
+ const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const apps=source('src/core/applications/AppManagerList/AppManagerList.tsx');
+ const styles=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(responsive,/includeNarrowDesktop/);
+ assert.match(page,/<ResponsiveDataList rows=\{paginatedPages\} includeTablet includeNarrowDesktop/);
+ assert.match(apps,/<ResponsiveDataList rows=\{filtered\} includeTablet includeNarrowDesktop/);
+ assert.match(styles,/@media\(min-width:1024px\) and \(max-width:1199px\)/);
+});
