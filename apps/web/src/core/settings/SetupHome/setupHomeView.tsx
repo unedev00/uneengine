@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { RefreshCw, ArrowRight, AlertCircle, ExternalLink, CircleHelp, Command } from 'lucide-react';
+import { RefreshCw, ArrowRight, ChevronRight, AlertCircle, ExternalLink, CircleHelp, Command } from 'lucide-react';
 import { setupShortcuts, type WorkspaceId } from '../../metadata/Definitions/metadata';
 type HeadingProps = { eyebrow?: string; title: string; description?: string; actions?: ReactNode };
 export function createSetupHome(Heading: (props: HeadingProps) => ReactNode) {
