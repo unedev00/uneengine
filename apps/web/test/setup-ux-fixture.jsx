@@ -29,6 +29,8 @@ import TenantFederationControls from '../src/core/settings/SettingsWorkspace/Ten
 import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorkspace/CompanySettingsWorkspace';
 import {createSettingsViews} from '../src/core/settings/SettingsWorkspace/settingsWorkspaceViews';
 import {createSetupHome} from '../src/core/settings/SetupHome/setupHomeView';
+import AppManager from '../src/core/applications/AppManager/AppManager';
+import UniversalDataLoaderWorkspace from '../src/core/workspace/SetupShell/UniversalDataLoaderWorkspace';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
 import '../src/core/workspace/WorkspaceTheme/appleTheme.css';
@@ -206,6 +208,16 @@ function Fixture(){
  if(view==='till')return <AcetillTerminal/>;
  let content;
  if(view==='setup-home')content=<SetupHome onNavigate={noop} request={uxRequest} onShowShortcuts={noop}/>;
+ else if(view==='data-loader')content=<UniversalDataLoaderWorkspace
+    objects={[object]} apiRequest={async(path)=>path==='/metadata/objects'?{objects:[object]}:{}}/>;
+ else if(view==='app-manager')content=<AppManager
+    apps={[
+      {apiName:'AceAssist',label:'Ace Assist',description:'Assisted workspace',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#1d4ed8'},
+      {apiName:'Sales',label:'Sales Workspace',description:'Sales records',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#147d74'}
+    ]}
+    objects={[object]} pages={[]}
+    onSave={async app=>{window.savedAuditApp=app;}}
+    onDelete={async id=>{window.deletedAuditApp=id;}}/>;
  else if(view==='schema')content=<SchemaBuilder objects={[object,{...object,apiName:'Invoice',label:'Invoice',kind:'Custom Object'}]} selectedObjectApiName="Account" onOpenObject={noop} onOpenField={noop} onCreateObject={noop} onNewField={noop}/>;
  else if(view==='mfa')content=<TenantMfaControls request={uxRequest} canManage onReauthenticate={noop}/>;
   else if(view==='oauth')content=<TenantConnectedApps request={uxRequest}/>;
@@ -233,6 +245,6 @@ function Fixture(){
  else if(view==='credentials'||view==='credentials-view'||view==='credentials-edit')content=<NamedCredentials credentials={credentials} canManage encryptionReady onTest={async()=>({connected:true,message:'Test available'})} onSave={noop} onDelete={noop}/>;
  else if(view==='flows')content=<FlowBuilder landing flow={defaultFlow} flows={[{...defaultFlow,apiName:'Long_Test_Flow',label:'A long automation name to verify the existing list remains readable',status:'Active'}]} libraryComponents={[]} objects={[]} users={[]} platformEvents={[]} namedCredentials={[]} emailAlerts={[]} connectorProviders={[]} integrationConnections={[]} approvalProcesses={[]} validation={{errors:[],warnings:[]}} onLoadCapabilities={async()=>({registryVersion:1,elements:[],flowTypes:[{type:'Screen Flow',description:'Guide users through a process',createEnabled:true,validateEnabled:true}]})} onLoadExternalServices={async()=>({services:[]})} onCreateFlow={(label,type)=>{window.createdFlow={label,type};}} />;
  else content=<FlowLogs logs={[{id:'run-id-with-a-very-long-identifier',flowLabel:'A long running automation with diagnostic details',flowApiName:'Long_Flow',status:'completed',flowType:'Record-Triggered Flow',startedAt:'2026-10-28T10:00:00Z',finishedAt:'2026-10-28T10:01:00Z',userId:'test-user'}]} loading={false} onOpenFlow={noop}/>;
- return <div className="lightning"><div className="setup-layout"><aside className="setup-sidebar"><button className="tree-item"><span>Tenant Management</span></button></aside><main className="workspace" style={{minWidth:0,padding:20}}>{content}</main></div></div>;
+ return <div className={view==='setup-home'?'lightning md-setup-light':'lightning'}><div className="setup-layout"><aside className="setup-sidebar" style={view==='data-loader'&&window.innerWidth<1024?{display:'none'}:undefined}><button className="tree-item"><span>Tenant Management</span></button></aside><main className="workspace" style={{minWidth:0,padding:20}}>{content}</main></div></div>;
 }
 createRoot(document.getElementById('root')).render(<Fixture/>);

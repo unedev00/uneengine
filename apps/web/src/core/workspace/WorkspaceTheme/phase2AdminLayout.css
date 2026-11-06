@@ -170,7 +170,7 @@
   }
   .lightning.md-setup-light:not(.page-builder-editing) .shortcut-grid {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 208px), 1fr));
-    gap: 10px;
+    gap: var(--grid-gutter, 12px);
   }
   .lightning.md-setup-light:not(.page-builder-editing) .shortcut-card {
     min-height: 106px;
@@ -179,8 +179,8 @@
     column-gap: 9px;
   }
   .lightning.md-setup-light:not(.page-builder-editing) .shortcut-icon {
-    width: 38px;
-    height: 38px;
+    width: var(--icon-tile, 36px);
+    height: var(--icon-tile, 36px);
     border-radius: 10px;
   }
   .lightning.md-setup-light:not(.page-builder-editing) .shortcut-title {

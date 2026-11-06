@@ -6,6 +6,10 @@ on:
     paths:
       - 'apps/web/**'
       - 'scripts/setup-ux-browser-smoke.mjs'
+      - 'scripts/ui-84-auth-responsive-browser.mjs'
+      - 'scripts/ui-84-setup-home-browser.mjs'
+      - 'scripts/ui-84-app-manager-browser.mjs'
+      - 'scripts/ui-84-data-loader-browser.mjs'
       - 'scripts/all-apps-ui-100pct-audit.mjs'
       - '.github/workflows/ui-foundation-browser.yml'
       - 'package.json'
@@ -60,8 +64,31 @@ jobs:
         env:
           PHASE1_SCREENSHOT_DIR: artifacts/phase1-ui
         run: node scripts/setup-ux-browser-smoke.mjs
-      - name: Audit every available React fixture at native 100% browser zoom
+      - name: Check login and password recovery at 19 original audit viewport sizes
+        env:
+          UI_84_AUTH_SCREENSHOT_DIR: artifacts/ui-84-auth
+          UI_84_AUTH_SCREENSHOTS: '1'
+        run: node scripts/ui-84-auth-responsive-browser.mjs
+      - name: Check Setup Home at 19 original audit viewport sizes
         if: always()
+        env:
+          UI_84_SETUP_SCREENSHOT_DIR: artifacts/ui-84-setup-home
+          UI_84_SETUP_SCREENSHOTS: '1'
+        run: node scripts/ui-84-setup-home-browser.mjs
+      - name: Check App Manager responsive registry, clone, and discard at 19 viewports
+        if: always()
+        env:
+          UI_84_APPS_SCREENSHOT_DIR: artifacts/ui-84-app-manager
+          UI_84_APPS_SCREENSHOTS: '1'
+        run: node scripts/ui-84-app-manager-browser.mjs
+      - name: Check Data Loader mouse/keyboard tabs at 19 original audit viewport sizes
+        if: always()
+        env:
+          UI_84_LOADER_SCREENSHOT_DIR: artifacts/ui-84-loader
+          UI_84_LOADER_SCREENSHOTS: '1'
+        run: node scripts/ui-84-data-loader-browser.mjs
+      - name: Audit every available React fixture at native 100% browser zoom
+        if: success()
         env:
           ALL_APPS_UI_AUDIT_DIR: artifacts/all-apps-ui
         run: node scripts/all-apps-ui-100pct-audit.mjs
@@ -71,7 +98,35 @@ jobs:
         with:
           name: all-apps-100pct-visual-audit
           path: artifacts/all-apps-ui/
-          if-no-files-found: error
+          if-no-files-found: ignore
+      - name: Upload Data Loader viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-data-loader-19-viewports
+          path: artifacts/ui-84-loader/
+          if-no-files-found: ignore
+      - name: Upload App Manager viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-app-manager-19-viewports
+          path: artifacts/ui-84-app-manager/
+          if-no-files-found: ignore
+      - name: Upload Setup Home viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-setup-home-19-viewports
+          path: artifacts/ui-84-setup-home/
+          if-no-files-found: ignore
+      - name: Upload login/recovery viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-auth-19-viewports
+          path: artifacts/ui-84-auth/
+          if-no-files-found: ignore
       - name: Upload before-review responsive evidence
         if: always()
         uses: actions/upload-artifact@v4

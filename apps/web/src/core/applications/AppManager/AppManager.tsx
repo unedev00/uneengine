@@ -102,9 +102,9 @@ export default function AppManager({
   const [confirmDiscard,setConfirmDiscard]=useState(false);
   const deleteTrigger=useRef<HTMLButtonElement>(null);
   const confirmDialog=useRef<HTMLElement>(null);
-  const dismissDialog=()=>{setConfirmDelete(false);setConfirmDiscard(false);requestAnimationFrame(()=>deleteTrigger.current?.focus());};
+  const dismissDialog=()=>{setConfirmDelete(false);setConfirmDiscard(false);requestAnimationFrame(()=>{const focusTarget=deleteTrigger.current??document.querySelector<HTMLButtonElement>('.app-manager-top button');focusTarget?.focus();});};
   const dialogKeyboard=(event:ReactKeyboardEvent<HTMLElement>)=>{
-    if(event.key==='Escape'){event.preventDefault();dismissDialog();return;}
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();dismissDialog();return;}
     if(event.key!=='Tab')return;
     const focusables=Array.from(confirmDialog.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')??[]);
     if(!focusables.length)return;
@@ -283,7 +283,8 @@ export default function AppManager({
     setNotice('Review the copied settings and select Create App to save this clone.');
   };
   useEffect(()=>{
-    if(embedded||view!=='form'||busy||confirmDelete)return;
+    // The alertdialog owns Escape while either confirmation is visible.
+    if(embedded||view!=='form'||busy||confirmDelete||confirmDiscard)return;
     const dismiss=(event:KeyboardEvent)=>{
       if(event.key!=='Escape'||document.querySelector('[role="dialog"]'))return;
       event.preventDefault();
@@ -291,12 +292,13 @@ export default function AppManager({
       const dirty=creating
         ?Boolean(draft.label||draft.apiName||draft.navigationItems.length||draft.navigationPageApiNames.length)
         :Boolean(original&&JSON.stringify(appDraftFromMetadata(original))!==JSON.stringify(draft));
-      if(dirty)setError('Unsaved changes. Choose Cancel to discard or Save Changes to keep them.');
+      // Escape leaves a clean editor immediately and gives dirty drafts an actionable choice.
+      if(dirty)setConfirmDiscard(true);
       else cancel();
     };
     document.addEventListener('keydown',dismiss);
     return ()=>document.removeEventListener('keydown',dismiss);
-  },[embedded,view,busy,confirmDelete,creating,draft,selectedApiName,apps]);
+  },[embedded,view,busy,confirmDelete,confirmDiscard,creating,draft,selectedApiName,apps]);
   const openSetupWorkspace = (destination: SetupDestination) => {
     const original = apps.find(app => app.apiName === selectedApiName);
     const unsaved = creating || (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft));

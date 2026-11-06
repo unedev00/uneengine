@@ -775,3 +775,20 @@ html, body, #root { min-width:0; max-width:100%; }
 }
 .lightning .home-content .shortcut-card .shortcut-title {align-self:start}
 .lightning .home-content .shortcut-card .shortcut-description {align-self:start}
+
+
+/* UX-0027: consume the existing Setup Home density tokens consistently. */
+.lightning .setup-layout .home-content .page-heading h1 {
+  font-size: var(--text-h1, 28px);
+  line-height: 1.2;
+}
+.lightning .home-content .home-lower-grid {
+  gap: var(--grid-gutter, 12px);
+}
+.lightning.md-setup-light:not(.page-builder-editing) .home-content .shortcut-icon {
+  width: var(--icon-tile, 36px);
+  height: var(--icon-tile, 36px);
+}
+@media (max-width: 599px) {
+  .lightning .setup-layout .home-content { --text-h1: 20px; }
+}

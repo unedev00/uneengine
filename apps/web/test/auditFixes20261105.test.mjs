@@ -43,7 +43,7 @@ test('Page Builder list actions and editor dialogs have accessible controls',()=
   assert.match(builder,/aria-label=\{"Download component inventory for "/);
   assert.match(builder,/handleCreatePageDialogKey/);
   assert.match(details,/dialogKeyDown/);
-  assert.match(details,/aria-current=\{activeSection/);
+  assert.match(details,/aria-selected=\{activeSection/);
   assert.doesNotMatch(builder,/aria-pressed=\{item.status==='Active'\}/);
 });
 
@@ -281,4 +281,52 @@ test('UX-0008 failed sign-in focuses email while MFA failures return to code',()
  const login=source('src/core/authentication/Login/loginView.tsx');
  assert.match(login,/getElementById\(challenge\?'login-mfa':'login-email'\)\?\.focus\(\)/);
  assert.doesNotMatch(login,/getElementById\(challenge\?'login-mfa':'login-password'\)\?\.focus\(\)/);
+});
+
+test('App Manager responsive sorting exposes ascending and descending control',()=>{
+  const list=source('src/core/applications/AppManagerList/AppManagerList.tsx');
+  const css=source('src/core/applications/AppManagerList/AppManagerList.css');
+  assert.match(list,/id="app-manager-sort-field"/);
+  assert.match(list,/className="app-manager-sort-direction"/);
+  assert.match(list,/aria-pressed=\{descending\}/);
+  assert.match(list,/setDescending\(value=>!value\)/);
+  assert.match(css,/\.app-manager-sort-direction:focus-visible/);
+  assert.match(css,/@media\(max-width:1199px\)\s*\{\s*\.app-manager-mobile-sort/);
+});
+
+test('UX-0023 desktop sidebar preference survives compact resize without persisting drawer state',()=>{
+  const shell=source('src/core/workspace/SetupShell/setupAppShell.tsx');
+  assert.match(shell,/md\.setup\.sidebar\.collapsed/);
+  assert.match(shell,/setSidebarCollapsedState\(event\.matches \? true : readDesktopSidebarPreference\(\)\)/);
+  assert.match(shell,/setSidebarCollapsedState\(true\)/);
+  assert.match(shell,/window\.localStorage\.setItem/);
+});
+
+test('UX-0027 Setup Home consumes declared typography, icon and shared grid spacing tokens',()=>{
+  const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+  assert.match(css,/\.home-content \.page-heading h1\s*\{\s*font-size:\s*var\(--text-h1,\s*28px\)/);
+  assert.match(css,/\.home-content \.home-lower-grid\s*\{\s*gap:\s*var\(--grid-gutter,\s*12px\)/);
+  assert.match(css,/\.home-content \.shortcut-icon\s*\{\s*width:\s*var\(--icon-tile,\s*36px\)/);
+  assert.match(css,/@media \(max-width: 599px\)\s*\{\s*\.lightning \.setup-layout \.home-content \{ --text-h1: 20px;/);
+});
+
+test('UX-0070 Page Builder metadata loading shows a toolbar, six rows and retry instead of a blank canvas',()=>{
+  const shell=source('src/core/workspace/SetupShell/setupShellPresentation.tsx');
+  const loader=source('src/core/workspace/SetupShell/SetupLoadingState.tsx');
+  const css=source('src/core/workspace/SetupShell/SetupLoadingState.css');
+  assert.match(shell,/<SetupLoadingState label="Page Builder definitions"/);
+  assert.match(loader,/label\.startsWith\('Page Builder'\)/);
+  assert.match(loader,/md-page-list-loading-toolbar/);
+  assert.match(loader,/Array\.from\(\{length:6\}/);
+  assert.match(loader,/Retry loading \{label\}/);
+  assert.match(css,/\.md-page-list-loading-row/);
+  assert.match(css,/prefers-reduced-motion:reduce/);
+});
+
+test('UX-0073 Escape in a dirty App Manager edit offers an accessible discard decision',()=>{
+  const manager=source('src/core/applications/AppManager/AppManager.tsx');
+  assert.match(manager,/if\(dirty\)setConfirmDiscard\(true\);\s*else cancel\(\);/);
+  assert.match(manager,/role="alertdialog"/);
+  assert.match(manager,/Discard unsaved changes\?/);
+  assert.match(manager,/if\(event\.key==='Escape'\)/);
 });

@@ -9,9 +9,13 @@ export default function SetupLoadingState({label}:{label:string}) {
  return <section className="setup-card md-setup-loading-state" role="status" aria-live="polite">
   <h2>Loading {label}…</h2>
   <p>{slow?'This is taking longer than expected. Your data has not been changed.':'Loading the latest authorised information.'}</p>
-  <div className="md-setup-loading-skeleton" aria-hidden="true">
-   <span/><span/><span/><span/>
-  </div>
+  {label.startsWith('Page Builder') ? <div className="md-page-list-loading" aria-hidden="true">
+    <div className="md-page-list-loading-toolbar"><span/><span/><span/></div>
+    <div className="md-page-list-loading-head"><span/><span/><span/></div>
+    {Array.from({length:6},(_,index)=><div className="md-page-list-loading-row" key={index}><span/><span/><span/></div>)}
+  </div> : <div className="md-setup-loading-skeleton" aria-hidden="true">
+    <span/><span/><span/><span/>
+  </div>}
   {slow&&<button type="button" className="btn" onClick={()=>window.location.reload()}>Retry loading {label}</button>}
  </section>;
 }
