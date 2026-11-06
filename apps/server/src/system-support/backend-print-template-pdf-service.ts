@@ -94,7 +94,8 @@ type PdfElement={html:string;text:string;x:number;y:number;width:number;height:n
  image?:{contentType:string;contentBase64:string}};
 const dataAsset=/^asset:([0-9a-f-]{36})$/i;
 export async function buildPrintDocument(page:PrintPage,record:Record<string,unknown>,
- loadImage?:(assetId:string)=>Promise<{contentType:string;contentBase64:string}>){
+ loadImage?:(assetId:string)=>Promise<{contentType:string;contentBase64:string}>,
+ loadRows?:(component:PrintComponent)=>Promise<Record<string,unknown>[]>){
  if(!Number.isFinite(page.canvasWidth)||!Number.isFinite(page.canvasHeight)||
   page.canvasWidth<100||page.canvasWidth>10000||page.canvasHeight<100||page.canvasHeight>10000)
   throw Error('Invalid published Print Template size');
@@ -114,6 +115,7 @@ export async function buildPrintDocument(page:PrintPage,record:Record<string,unk
    resolvePrintValue(imageSource,record,page.targetObject):'';
   let content=escapeHtml(value).replace(/\r?\n/g,'<br>');
   let embeddedImage:PdfElement['image'];
+  let contentRows:Record<string,unknown>[]|null=null;
   if(/image|logo|avatar/.test(kind)&&image){
    const match=dataAsset.exec(image);
    if(!match||!loadImage)throw Error('Print images must use permitted tenant media assets');
@@ -124,10 +126,29 @@ export async function buildPrintDocument(page:PrintPage,record:Record<string,unk
    content='<img alt="" style="max-width:100%;max-height:100%;object-fit:contain" src="data:'+
      asset.contentType+';base64,'+asset.contentBase64+'">';
   }
+  if(/table|related_list|relatedlist/.test(kind)){
+   if(!loadRows)throw Error('Print Table data loader unavailable');
+   contentRows=await loadRows(component);
+   if(contentRows.length>5000)throw Error('Print table exceeds 5000 records');
+   const columns=Array.isArray(object(p.dataCollection).columns)
+    ?(object(p.dataCollection).columns as unknown[])
+    :Array.isArray(p.columns)?p.columns:[];
+   const names=columns.filter((entry):entry is string=>typeof entry==='string'
+    &&identifier.test(entry)).slice(0,24);
+   const fields=names.length?names:Object.keys(contentRows[0]??record).filter(key=>
+    identifier.test(key)&&!['Id','RecordTypeId','OwnerId'].includes(key)&&!key.startsWith('__')).slice(0,24);
+   const headerColor=cssColor(p.headerBodyColor,'#f3f6fb');
+   const rowsHtml=contentRows.map(row=>'<tr>'+
+    fields.map(name=>'<td>'+escapeHtml(recordValue(row[name]))+'</td>').join('')+'</tr>').join('');
+   content='<table style="width:100%;border-collapse:collapse;table-layout:fixed;font:inherit">'+
+    '<thead><tr>'+fields.map(name=>'<th style="background:'+headerColor+
+     ';padding:6px;border:1px solid #d0d5dd;text-align:left">'+escapeHtml(name)+'</th>').join('')+
+    '</tr></thead><tbody>'+rowsHtml+'</tbody></table>';
+  }
   const left=page.layoutMode==='free-canvas'?style.x:20;
   const top=page.layoutMode==='free-canvas'?style.y:20+index*style.height;
   const width=page.layoutMode==='free-canvas'?style.width:Math.max(100,page.canvasWidth-40);
-  const height=style.height;
+  const height=contentRows?Math.max(style.height,28*(contentRows.length+1)):style.height;
   maxBottom=Math.max(maxBottom,top+height);
   const css='position:absolute;box-sizing:border-box;overflow-wrap:anywhere;white-space:normal;'+
    'left:'+left+'px;top:'+top+'px;width:'+width+'px;min-height:'+height+'px;'+
@@ -135,7 +156,13 @@ export async function buildPrintDocument(page:PrintPage,record:Record<string,unk
    'border:'+style.borderWidth+'px solid '+style.border+';'+
    'font: '+style.weight+' '+style.fontSize+'px Arial,sans-serif;'+
    'text-align:'+style.align+';';
-  elements.push({...style,text:value,x:left,y:top,width,height,
+  const tableText=contentRows?[
+    (Array.isArray(object(p.dataCollection).columns)
+      ?object(p.dataCollection).columns:[]).join('  |  '),
+    ...contentRows.map(row=>Object.entries(row).filter(([key])=>key!=='Id'&&
+      !key.startsWith('__')).slice(0,12).map(([,item])=>recordValue(item)).join('  |  '))
+  ].join('\n'):value;
+  elements.push({...style,text:tableText,x:left,y:top,width,height,
    html:'<div style="'+css+'">'+content+'</div>',image:embeddedImage});
  }
  const pages=Math.ceil(maxBottom/page.canvasHeight);
@@ -367,6 +394,26 @@ export class BackendPrintTemplatePdfService {
   const doc=await buildPrintDocument(page,record,async id=>{
    const result=await media.read(tenantId,userId,id);
    return {contentType:result.contentType,contentBase64:result.contentBase64};
+  },async component=>{
+   const props=object(component.properties);
+   const collection=object(props.dataCollection);
+   const source=typeof collection.objectApiName==='string'&&collection.objectApiName?
+    collection.objectApiName:typeof props.objectApiName==='string'&&props.objectApiName?
+    props.objectApiName:page.targetObject;
+   if(!identifier.test(source))throw Error('Invalid Print Table source');
+   if(source===page.targetObject)return [record];
+   const relation=props.relatedFieldApiName;
+   if(typeof relation!=='string'||!identifier.test(relation))
+    throw Error('Print Table requires a scoped parent-record relationship');
+   const rows:Record<string,unknown>[]=[];
+   for(let offset=0;offset<5000;offset+=100){
+    const result=await this.records.list(tenantId,userId,source,100,offset,{
+     filterField:relation,filterValue:recordId,filterOperator:'Equals'
+    });
+    rows.push(...result.records);
+    if(rows.length>=result.total)return rows;
+   }
+   throw Error('Print Table exceeds 5000 records');
   });
   const binary=await chromiumPdf(doc.html)??vectorPdf(doc);
   if(binary.length>5*1024*1024)throw Error('Generated PDF exceeds file size limit');
