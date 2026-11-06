@@ -123,3 +123,16 @@ test('record filters accept one-level lookup paths through the related record',(
  assert.throws(()=>compileRecordFilters([{field:'Product.Name',operator:'eq',value:'x'}],undefined,
   new Map([['Cart',{api_name:'Cart',data_type:'reference'}]]),4),/Invalid list field/);
 });
+
+
+test('baseline: two data steps run as two distinct browser-network requests',async()=>{
+ const calls:string[]=[];
+ await executeActionPlan('=ACTIONS(GETRECORD(Cart, SessionKey, "s", AS(cart)), '+
+  'UPDATERECORD(Cart, cart.Id, Total, 3), STATE(done, TRUE))',
+  {},evaluator,{request:async(path,init)=>{
+   calls.push((init?.method??'GET')+' '+path.split('?')[0]);
+   return (init?{record:{Id:cartId}}:{records:[{Id:cartId}],total:1}) as never;
+  }});
+ assert.deepEqual(calls,['GET /records/Cart','PUT /records/Cart/'+cartId]);
+ console.info('server-plan baseline: data step API requests=2, serialized GET>PUT');
+});
