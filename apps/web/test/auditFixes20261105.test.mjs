@@ -259,3 +259,20 @@ test('UX-0021 title baselines stay aligned and UX-0024 search has a fixed width 
  assert.match(css,/home-content \.shortcut-card \.shortcut-title \{align-self:start\}/);
  assert.match(css,/header-searches \{ min-width:0;max-width:min\(360px,40vw\); \}/);
 });
+
+test('UX-0034 paging resets the actual workspace scroll and announces the range',()=>{
+ const sourceCode=source('src/core/builders/ObjectManager/objectManagerView.tsx');
+ assert.match(sourceCode,/const resetObjectListScroll=/);
+ assert.match(sourceCode,/closest<HTMLElement>\('\.workspace'\)/);
+ assert.match(sourceCode,/if\(workspace\)workspace\.scrollTop=0/);
+ assert.match(sourceCode,/changeObjectPage=\(page:number\)=>\{setObjectListPage\(page\);resetObjectListScroll\(\);\}/);
+ assert.match(sourceCode,/role="status" aria-live="polite"/);
+});
+test('UX-0037 Create Object is first in DOM and tab order, before secondary toolbar actions',()=>{
+ const sourceCode=source('src/core/builders/ObjectManager/objectManagerView.tsx');
+ const start=sourceCode.indexOf('if (selectedSetting === \'Objects\') return');
+ const toolbar=sourceCode.slice(start,sourceCode.indexOf('</div></div>',start));
+ assert.ok(start!==-1 && toolbar.indexOf('aria-label="Create new object"') !== -1);
+ assert.ok(toolbar.indexOf('aria-label="Create new object"')<toolbar.indexOf('showDeletedObjects()'));
+ assert.ok(toolbar.indexOf('aria-label="Create new object"')<toolbar.indexOf('aria-label="Universal Data Loader"'));
+});
