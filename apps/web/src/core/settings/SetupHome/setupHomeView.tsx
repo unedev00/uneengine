@@ -14,16 +14,16 @@ function SetupHome({ onNavigate, request, onShowShortcuts, onOpenAuditTrail }: {
     let active = true;
     setLoading(true);setError('');
     void request<{events:SecurityEvent[]}>('/auth/security-events?limit=3')
-      .then(result => {if(active)setEvents(result.events ?? []);})
+      .then(result => {if(active){setEvents(result.events ?? []);setLastUpdated(Date.now());}})
       .catch(() => {if(active){setError('Security activity unavailable for this user.');setEvents([]);}})
-      .finally(() => {if(active){setLoading(false);setLastUpdated(Date.now());}});
+      .finally(() => {if(active)setLoading(false);});
     return () => {active=false;};
   },[request]);
   useEffect(() => reload(), [reload]);
   return (
     <div className="home-content">
       <Heading title="Setup Home" description="Configure objects, pages, flows and access permissions for your organisation."
-        actions={<div className="setup-home-refresh"><button type="button" className="btn" onClick={reload} disabled={loading} aria-busy={loading}><RefreshCw size={14} />{loading?'Refreshing…':'Refresh'}</button>
+        actions={<div className="setup-home-refresh"><button type="button" className="btn" onClick={reload} disabled={loading} aria-busy={loading}><RefreshCw size={14} className={loading?'setup-refresh-spinning':undefined} aria-hidden="true" />{loading?'Refreshing…':'Refresh'}</button>
           {lastUpdated&&<small role="status">Updated {new Date(lastUpdated).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}</small>}</div>} />
       <div className="welcome-banner setup-home-summary">
         <div className="welcome-copy">
