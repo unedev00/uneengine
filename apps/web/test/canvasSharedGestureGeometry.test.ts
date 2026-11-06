@@ -78,7 +78,7 @@ test('Smart Cart and other Smart components fill the actual resized frame in edi
  assert.match(binding,/canvasFrameSized:true/);
  assert.match(published,/canvasFrameSized:true/);
  const cart=read('component-libraries/smart_cart/SmartComponent.css');
- assert.match(cart,/width:100%;height:100%;min-height:0;padding:8px;overflow:auto/);
+ assert.match(cart,/width:100%;height:100%;min-height:0;padding:8px 8px 3px;overflow:auto/);
  const overlay=read('core/builders/PageBuilder/CanvasFloatingResizeHandles.tsx');
  assert.match(overlay,/clipPath:/);
  assert.doesNotMatch(overlay,/data-offscreen-bottom/);
