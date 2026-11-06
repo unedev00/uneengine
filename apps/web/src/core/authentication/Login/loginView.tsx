@@ -180,7 +180,7 @@ export function createLoginView(logoUrl: string) {
           onChange={(event) => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}} autoComplete="current-password" required
           aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password?'login-password-error':undefined}/>
          <button className="text-action auth-password-toggle" type="button" aria-controls="login-password"
-          aria-label={passwordVisible?'Hide password':'Show password'} onClick={()=>setPasswordVisible(value=>!value)}>{passwordVisible?'Hide':'Show'}</button>
+          aria-label={passwordVisible?'Hide password':'Show password'} aria-pressed={passwordVisible} onClick={()=>setPasswordVisible(value=>!value)}>{passwordVisible?'Hide':'Show'}</button>
         </div>
         {fieldErrors.password&&<small id="login-password-error" className="auth-field-error">{fieldErrors.password}</small>}
         <div className="auth-inline-actions auth-recovery-action">
