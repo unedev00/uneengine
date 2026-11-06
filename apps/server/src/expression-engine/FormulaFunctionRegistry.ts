@@ -21,7 +21,6 @@ type DefinitionInput=[name:string,min:number,max:number,contexts?:readonly Formu
 const serverContexts:readonly FormulaExpressionContext[]=['formula_field','validation_rule','flow_formula'];
 const formulaAndFlow:readonly FormulaExpressionContext[]=['formula_field','flow_formula'];
 const validationAndFlow:readonly FormulaExpressionContext[]=['validation_rule','flow_formula'];
-const flowOnly:readonly FormulaExpressionContext[]=['flow_formula'];
 const ribbonFunctions=new Set([
   'IF','IFERROR','AND','OR','NOT','XOR','ISBLANK','ISNULL','ISNUMBER','BLANKVALUE','NULLVALUE',
   'TEXT','VALUE','LEN','ASCII','LOWER','UPPER','PROPER','TRIM','LEFT','RIGHT','MID','FIND',
