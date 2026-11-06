@@ -26,7 +26,8 @@ test('Focused is migration-only and uses existing Card Grid keys',()=>{
 });
 
 test('Extras has Card Gap and Single or Multiple Selection, with no Body duplicates',()=>{
- assert.match(migration,/SET area='Extras'/);
+ assert.match(migration,/SELECT component_api,'Extras',slot_key,property_key/);
+ assert.match(migration,/ON CONFLICT\(area,slot_key\) DO UPDATE SET/);
  for(const key of ['extra_cardGap','extra_selectionMode'])
   assert.match(migration,new RegExp("'"+key+"'"));
  assert.match(ribbon,/slot\.area==='Extras'/);
@@ -44,7 +45,8 @@ test('Appearance and Position reuse persisted keys, compact widths and one box',
  assert.match(ribbon,/smart-design2-padding/);
  assert.match(ribbon,/properties\.cardPadding/);
  assert.match(migration,/'imageBorderColor'/);
- assert.match(migration,/SET area='Extras'/);
+ assert.match(migration,/SELECT component_api,'Extras',slot_key,property_key/);
+ assert.match(migration,/ON CONFLICT\(area,slot_key\) DO UPDATE SET/);
  assert.doesNotMatch(ribbon,/className="smart-design2-image-border"/);
  assert.doesNotMatch(ribbon,/<Hand size=/);
  assert.match(designCss,/width:110px;min-width:110px;max-width:110px/);
