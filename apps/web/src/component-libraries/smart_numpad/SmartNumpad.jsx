@@ -73,6 +73,8 @@ export default function SmartNumpad({p,fire,sourceValue,buttonLabels}){
   disabled={p.disabled===true||p.readonly===true||p.previewOnly===true}
   aria-label={key==="backspace"?"Backspace":key==="C"?"Clear":custom?label:key}
   data-numpad-key={key} data-numpad-custom={custom?"true":undefined}
+  data-md-bind={p.builderPreview&&custom?key+"Label":undefined}
+  data-md-bind-titles={p.builderPreview&&custom?"Custom button label":undefined}
   onFocus={()=>setFocusedKey(key)} onBlur={()=>setFocusedKey(previous=>previous===key?"":previous)}
   onPointerDown={()=>setFocusedKey(key)} onPointerLeave={()=>setFocusedKey(previous=>previous===key?"":previous)}
   onClick={onClick}
