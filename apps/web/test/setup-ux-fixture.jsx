@@ -30,6 +30,7 @@ import CompanySettingsWorkspace from '../src/core/settings/CompanySettingsWorksp
 import {createSettingsViews} from '../src/core/settings/SettingsWorkspace/settingsWorkspaceViews';
 import {createSetupHome} from '../src/core/settings/SetupHome/setupHomeView';
 import AppManager from '../src/core/applications/AppManager/AppManager';
+import UniversalDataLoaderWorkspace from '../src/core/workspace/SetupShell/UniversalDataLoaderWorkspace';
 import '../src/core/workspace/WorkspaceTheme/design-system.css';
 import '../src/core/workspace/WorkspaceTheme/styles.css';
 import '../src/core/workspace/WorkspaceTheme/appleTheme.css';
@@ -207,6 +208,8 @@ function Fixture(){
  if(view==='till')return <AcetillTerminal/>;
  let content;
  if(view==='setup-home')content=<SetupHome onNavigate={noop} request={uxRequest} onShowShortcuts={noop}/>;
+ else if(view==='data-loader')content=<UniversalDataLoaderWorkspace
+    objects={[object]} apiRequest={async(path)=>path==='/metadata/objects'?{objects:[object]}:{}}/>;
  else if(view==='app-manager')content=<AppManager
     apps={[
       {apiName:'AceAssist',label:'Ace Assist',description:'Assisted workspace',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#1d4ed8'},
