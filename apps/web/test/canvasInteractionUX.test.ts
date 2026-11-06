@@ -574,19 +574,24 @@ test('each Smart component is explicitly mapped for Page Runtime appearance',()=
   assert.equal(pageAppearanceTarget('Custom:'+api),target,api);
 });
 
-test('PowerPoint-style canvas gestures target one component and keep resize grips visible', async () => {
+test('PowerPoint-style canvas gestures move selected shapes together and keep resize grips visible', async () => {
   const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
   const handles = await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css', import.meta.url), 'utf8');
   const move = builder.slice(builder.indexOf('  const startCanvasMove = '), builder.indexOf('  const reorderLayer = '));
   const resize = builder.slice(builder.indexOf('  const startCanvasResize = '), builder.indexOf('  const hasOverlappingPageAssignment = '));
-  assert.ok(move.includes('setSelectionIds([component.id])'), 'pointerdown must select only the dragged component');
-  assert.ok(!move.includes('selectionIds.includes(item.id)') && !move.includes('start.group'),
-    'the drag must not include previously selected siblings');
-  assert.ok(move.includes("hit.closest('[data-component-id]') !== element"),
+  assert.ok(move.includes('setSelectionIds(memberIds)'), 'pointerdown keeps the complete drag selection');
+  assert.ok(move.includes('const memberIds=selectionIds.includes(component.id)?selectionIds:'),
+    'dragging a selected shape must retain previously selected siblings');
+  assert.ok(move.includes('canvasGroupMembers(page.components,component).map(item=>item.id)'),
+    'dragging an unselected grouped shape must include its persisted members');
+  assert.ok(move.includes('!isCanvasLocked(item)'),
+    'locked shapes must never be moved as part of a selection');
+  assert.ok(move.includes("hit.closest('[data-component-id]')!==element"),
     'nested targets must not move a parent');
-  assert.ok(move.includes('start.element.style.translate ='),
-    'independent translation preserves author-defined component transforms');
-  assert.ok(move.includes('start.element.style.left ='), 'release must not jump to the original position');
+  assert.ok(move.includes('member.element.style.translate='),
+    'each selected shape must translate independently without overwriting authored transforms');
+  assert.ok(move.includes('member.element.style.left='),
+    'all selected shapes must retain their new position on pointer release');
   assert.ok(builder.includes('className="canvas-move-grip"'), 'the selection toolbar needs a move icon');
   assert.ok(builder.includes('onLostPointerCapture={!previewMode && !libraryPreview'),
     'a lost pointer must not leave movement stuck');
@@ -719,7 +724,10 @@ test('placement controls, component finder and full-width workspace are builder-
   assert.ok(builder.includes('design2Arrange={canvasArrangeProps}'));
   assert.ok(navigator.includes('aria-label="Find a component"'));
   assert.match(builder,/borderWidth:1,borderColor:'#000000'/);
-  assert.match(builder,/canvasGroupKey\(component\) \|\| previewMode/, 'grouped components move through the shared group gesture');
+  assert.match(builder,/canvasGroupMembers\(page\.components,component\)\.map\(item=>item\.id\)/,
+    'a normal drag includes the persisted group members');
+  assert.match(builder,/moving\.some\(item=>canvasGroupKey\(item\)/,
+    'incomplete or locked groups are not dragged as a partial selection');
   assert.match(css,/\.page-stage/);
   assert.match(css,/canvas-group-outline/);
 });
