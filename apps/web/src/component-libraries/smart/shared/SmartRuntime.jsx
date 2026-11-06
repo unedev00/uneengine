@@ -653,11 +653,24 @@ export default function SmartRuntime(p){
  else if(name==="smart_text"||name==="smart_label"){
   const contentValue=scopedExpression(p,p.textSource?"textSource":"defaultValue",
    p.textSource??p.defaultValue??p.value??p.label??"",record);
-  // Smart Label is the Smart Input Box's display surface: same binding,
-  // same styling properties, never an editable control.
-  // Keep the existing Smart Input exactly as it was; display mode is an
-  // opt-in metadata property for labels, headings and read-only values.
-  content=name==="smart_label"||p.displayMode==="display"
+  // A Data formula is a read-only value unless the author attached an actual
+  // input change action (or explicitly requested an editable input).
+  // Rendering it as an uncontrolled input can leave the initial empty value
+  // on screen after an asynchronous formula/record update.
+  // displayMode is recognised only for backwards compatibility with saved pages;
+  // the renderer never requires it for a formula and it is not a ribbon setting.
+  const formulaValue=value=>typeof value==="string"&&(
+   /^\\s*=/.test(value)||/@[A-Za-z]/.test(value)||
+   /\\$(?:component\\.|state\\.|session\\b|tenant\\.)/i.test(value)||
+   /^\\s*"/.test(value)||
+   /^\\s*-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)\\s*[+\\-*/&]/.test(value)||
+   /^\\s*[A-Za-z][A-Za-z0-9_]*\\s*\\(/.test(value));
+  const dataBound=typeof p.textSource==="string"&&p.textSource.trim().length>0
+   ||["label","defaultValue","value"].some(key=>formulaValue(p[key]));
+  const editable=p.readonly===false||Boolean(p.actionFlows?.change);
+  const displayText=name==="smart_label"||
+   (!editable&&(dataBound||p.displayMode==="display"));
+  content=displayText
    ?<div data-md-bind={p.builderPreview?(p.textSource?"textSource":p.defaultValue!==undefined?"defaultValue":"label"):undefined} data-md-bind-titles={p.builderPreview?"Display text":undefined} className="smart-display-text" style={{...style,...shadowStyle,
      ...(name==="smart_label"?smartShapeAppearance(p.shapeId,number(p.radius,12)):{}),
      width:"100%",height:"100%",minWidth:0,minHeight:0,display:"flex",alignItems:"center",
