@@ -1,3 +1,4 @@
+import {dispatchComponentEvent} from './componentEventDispatch.js';
 import {componentAppearance} from './componentAppearance.js';
 export function css(p) { return componentAppearance(p, 'data'); }
 export const records = (p) =>
@@ -12,9 +13,7 @@ export const view = (v) =>
   v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
 export const title = (r) =>
   view(r?.label ?? r?.title ?? r?.Name ?? r?.name ?? r?.id ?? "Record");
-export function fire(p, event, value) {
-  if (typeof p.onAction === "function") return p.onAction({ event, value });
-}
+export const fire = dispatchComponentEvent;
 export function columns(p, rows) {
   const choices = Array.isArray(p.columns)
     ? p.columns

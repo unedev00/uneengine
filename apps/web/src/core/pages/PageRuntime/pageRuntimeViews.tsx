@@ -383,6 +383,7 @@ function MetadataBoundPageComponent({
   const [dataError, setDataError] = useState('');
   const [dataErrorForQueryKey, setDataErrorForQueryKey] = useState('');
   const [actionError, setActionError] = useState('');
+  const [actionPending,setActionPending]=useState(0);
   const [dataLoading, setDataLoading] = useState(false);
   const [revision, setRevision] = useState(0);
   const [channelAccess, setChannelAccess] = useState<{userId: string;viewAll: boolean;grants: ChannelGrant[];eligibleAssignees: {id: string;name: string;channelAccountId: string}[]}>({
@@ -626,7 +627,7 @@ function MetadataBoundPageComponent({
     }
     return source;
   };
-  const onAction = async (action: { event: string; value?: unknown }) => {
+  const executeAction = async (action: { event: string; value?: unknown }) => {
     if (disableActions) throw new Error('Page Builder preview is read-only. Open the assigned app to test actions.');
     if(behaviorAction(properties,action.event,{formFactor})!=='enabled')
       throw new Error('This action is unavailable under the published Page rules.');
@@ -873,6 +874,19 @@ function MetadataBoundPageComponent({
       throw error;
     }
   };
+  const onAction = async (action: {event:string;value?:unknown}) => {
+    setActionPending(count=>count+1);
+    try {
+      const result=await executeAction(action);
+      setActionError('');
+      return result;
+    } catch(error) {
+      setActionError(error instanceof Error?error.message:'Action failed');
+      throw error;
+    } finally {
+      setActionPending(count=>Math.max(0,count-1));
+    }
+  };
   // Opt-in, generic Flow-output polling: never creates a second workflow engine or
   // queries unscoped business records. The normal Flow action path enforces RBAC.
   const liveFlowActionRef = useRef(onAction);
@@ -936,13 +950,13 @@ function MetadataBoundPageComponent({
       disabled:behaviorAction(properties,'click',{formFactor})!=='enabled',
       loadAsset: loadPageMediaAsset, viewRevision: revision,
       loadCompanySettings: () => apiRequest('/metadata/currencies'),
-      onChange: (value: unknown) => {
+      onChange: (value: unknown, dispatch?:{actionHandled?:boolean}) => {
         publishComponentInput(component.id,value);
-        if (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
-          &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
-          void onAction({ event: 'change', value }).catch(() => {});
+        if (!dispatch?.actionHandled && (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
+          &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change'))))
+          void onAction({ event: 'change', value }).catch(() => {/* Error displayed by action boundary. */});
       },
-      loading: dataLoading && recordsForQueryKey !== recordDataKey, sessionId, stateChannel,
+      loading: actionPending>0 || (dataLoading && recordsForQueryKey !== recordDataKey), sessionId, stateChannel,
       // Page Builder only: the same builder flags the unbound canvas render passes, so a
       // component bound to an object still shows its Data Source icons on the canvas.
       ...(builderPreview===true&&disableActions?{previewOnly:true,builderPreview:true}:{}),

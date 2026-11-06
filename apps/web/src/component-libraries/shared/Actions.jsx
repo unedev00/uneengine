@@ -1,3 +1,4 @@
+import {dispatchComponentEvent} from './componentEventDispatch.js';
 import {componentAppearance} from './componentAppearance.js';
 export function css(p) { return componentAppearance(p, 'actions'); }
 export const arr = (v) =>
@@ -19,12 +20,7 @@ export function value(o) {
     ? (o.value ?? o.id ?? o.apiName ?? label(o))
     : o;
 }
-export function fire(p, event, v) {
-  if (event === "change" && p.actionFlows?.change && typeof p.onAction === "function")
-    return p.onAction({ event, value: v });
-  if (typeof p.onAction === "function") p.onAction({ event, value: v });
-  if (event === "change" && typeof p.onChange === "function") return p.onChange(v);
-}
+export const fire = dispatchComponentEvent;
 export function useOneActions(p) {
   const kind = p.kind || "Button",
     root = css(p);
