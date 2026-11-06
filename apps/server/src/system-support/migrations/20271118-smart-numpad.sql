@@ -30,7 +30,7 @@ WITH specs(property_key,label,section_group,control_kind,default_json,choices,mi
  ('numpadKeyTextSize','Key text size','Button','number','20'::jsonb,'[]'::jsonb,10,96),
  ('numpadKeyBold','Key bold','Button','boolean','false'::jsonb,'[]'::jsonb,NULL::integer,NULL::integer),
  ('numpadKeyAlignment','Key alignment','Button','align','"center"'::jsonb,'["left","center","right"]'::jsonb,NULL::integer,NULL::integer),
- ('numpadKeyShape','Key shape','Button','choice','"shape:round-rectangle"'::jsonb,'["shape:rectangle","shape:round-rectangle","shape:oval"]'::jsonb,NULL::integer,NULL::integer),
+ ('numpadKeyShape','Key shape','Button','choice','"shape:rectangle"'::jsonb,'["shape:rectangle","shape:round-rectangle","shape:oval"]'::jsonb,NULL::integer,NULL::integer),
  ('numpadFocusedFill','Focused background','Focused','color','"#dbeafe"'::jsonb,'[]'::jsonb,NULL::integer,NULL::integer),
  ('numpadFocusedBorderColor','Focused border','Focused','color','"#2563eb"'::jsonb,'[]'::jsonb,NULL::integer,NULL::integer),
  ('numpadFocusedTextColor','Focused text','Focused','color','"#1d4ed8"'::jsonb,'[]'::jsonb,NULL::integer,NULL::integer),
@@ -48,7 +48,7 @@ WITH specs(property_key,label,section_group,control_kind,default_json,choices,mi
  ('customButton3TextSize','Custom 3 text size','Button 4','number','16'::jsonb,'[]'::jsonb,10,96),
  ('customButton3Alignment','Custom 3 alignment','Button 4','align','"center"'::jsonb,'["left","center","right"]'::jsonb,NULL::integer,NULL::integer),
  ('customButton3Bold','Custom 3 bold','Button 4','boolean','false'::jsonb,'[]'::jsonb,NULL::integer,NULL::integer),
- ('customButton3Shape','Custom 3 shape','Button 4','choice','"shape:round-rectangle"'::jsonb,'["shape:rectangle","shape:round-rectangle","shape:oval"]'::jsonb,NULL::integer,NULL::integer),
+ ('customButton3Shape','Custom 3 shape','Button 4','choice','"shape:rectangle"'::jsonb,'["shape:rectangle","shape:round-rectangle","shape:oval"]'::jsonb,NULL::integer,NULL::integer),
  ('customButton3Shadow','Custom 3 shadow','Button 4','shadow','"none"'::jsonb,'["none","medium","large"]'::jsonb,NULL::integer,NULL::integer),
  ('customButton1Shadow','Custom 1 shadow','Button 2','shadow','"none"'::jsonb,'["none","medium","large"]'::jsonb,NULL::integer,NULL::integer),
  ('customButton2Shadow','Custom 2 shadow','Button 3','shadow','"none"'::jsonb,'["none","medium","large"]'::jsonb,NULL::integer,NULL::integer)
