@@ -392,9 +392,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const firstImageCell=row.locator('[data-design-row="1"] [data-design-slot="fill"]');
  const firstRect=await firstImageCell.boundingBox();
  assert.ok(firstRect&&placementRect.x>firstRect.x+150,
-   'Image R2C5 appears at C1 instead of the fixed C5 position');
+   'Image placement must not collapse into C1 from its fixed C4 position');
  assert.ok(firstRect&&fillRect.x>firstRect.x+150,
-   'Image R3C6 appears at C1 instead of the fixed C6 position');
+   'Image fill must not collapse into C1 from its fixed C5 position');
  for(const index of [1,2,3]){
   assert.equal(await row.locator('[data-design-row="'+index+'"]').evaluate(
     element=>getComputedStyle(element).display),'grid',
@@ -538,11 +538,12 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
    'Selected Tab colour palette must be enabled');
  await page.locator('[data-component-id="browser-design2-cart"]').first().click({position:{x:18,y:18}});
  await chooseArea('Row');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]').count(),1,
-   'Row Focus must remain visible, even when not approved');
- assert.equal(await row.locator('[data-design-row="2"] [data-design-slot="focused"]')
-   .getAttribute('data-supported'),'false',
-   'Unsupported Row Focus must remain disabled');
+ assert.equal(await row.locator('[data-design-slot="focused"]').count(),0,
+  'Row Focus shortcut must be omitted; focus remains in the Focused accordion');
+ await chooseArea('Focused');
+ assert.equal(await row.locator('[data-design-row="1"] [data-design-slot="fill"]').count(),1,
+  'Focused section must retain its editable shared fill slot');
+ await chooseArea('Row');
  const {mkdir}=await import('node:fs/promises');
  await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../artifacts/design2-contextual-ribbon.png',import.meta.url).pathname});
@@ -884,7 +885,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const navBlock=await selectFour('four-nav','Image');
  const navFit=fourRibbon.locator('[data-design-row="3"] [data-design-slot="imageFill"]');
  assert.equal(await navFit.getAttribute('data-property'),'imageFill');
- assert.equal(await navFit.getAttribute('data-design-column'),'6');
+ assert.equal(await navFit.getAttribute('data-design-column'),'5');
  assert.equal(await navFit.getAttribute('data-supported'),'true');
  const navFitTrigger=navFit.locator('.design2-icon-trigger');
  assert.equal(await navFitTrigger.isDisabled(),false,'Navigation image fit icon disabled');
