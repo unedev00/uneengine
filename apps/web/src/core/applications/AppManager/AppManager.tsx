@@ -469,8 +469,8 @@ export default function AppManager({
               <PlatformPageSlot slotKey="utility"><fieldset className="app-manager-fieldset">
                 <legend>Utility Bar</legend>
                 <div className="app-manager-checks">
-                  {(['Notes','History'] as const).map(item => <label key={item}>
-                    <input type="checkbox" checked={draft.utilityItems.includes(item)}
+                  {(['Notes','History'] as const).map(item => <label key={item} htmlFor={'app-utility-'+item.toLowerCase()}>
+                    <input id={'app-utility-'+item.toLowerCase()} name="app-utility-items" type="checkbox" checked={draft.utilityItems.includes(item)}
                       onChange={event => update('utilityItems',event.target.checked
                         ? [...draft.utilityItems,item]
                         : draft.utilityItems.filter(utility => utility !== item))}/>{item}

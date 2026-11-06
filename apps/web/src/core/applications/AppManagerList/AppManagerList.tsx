@@ -48,11 +48,11 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
     <div className="app-manager-list-scroll md-mobile-table-replaced md-tablet-table-replaced">
       <table className="app-manager-list-table">
         <thead><tr>
-          <th scope="col" aria-sort={sort==="label"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("label")}>App</button></th>
-          <th scope="col" aria-sort={sort==="apiName"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("apiName")}>Developer Name</button></th>
+          <th scope="col" aria-sort={sort==="label"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("label")}>App {sort==='label'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
+          <th scope="col" aria-sort={sort==="apiName"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("apiName")}>Developer Name {sort==='apiName'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
           <th scope="col">Description</th>
-          <th scope="col" aria-sort={sort==="navigation"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("navigation")}>Navigation Items</button></th>
-          <th scope="col" aria-sort={sort==="pages"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("pages")}>App Pages</button></th>
+          <th scope="col" aria-sort={sort==="navigation"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("navigation")}>Navigation Items {sort==='navigation'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
+          <th scope="col" aria-sort={sort==="pages"?(descending?"descending":"ascending"):undefined}><button type="button" onClick={()=>changeSort("pages")}>App Pages {sort==='pages'&&<span className="md-sort-indicator" aria-hidden="true">{descending?'↓':'↑'}</span>}</button></th>
           <th scope="col">Actions</th>
         </tr></thead>
         <tbody>{filtered.map(app => <tr key={app.apiName}>
