@@ -1056,8 +1056,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const arrangeDock=page.locator('.page-builder-design-dock');
  const dockBounds=await arrangeDock.boundingBox();
  const selectorRect=await arrangeDock.locator('.smart-design2-area-section[data-design-area="Body"] > button').boundingBox();
- assert.ok(dockBounds&&selectorRect&&selectorRect.width>=400,
-  'The collapsible Design section heading must fill the left inspector width');
+ assert.ok(dockBounds&&selectorRect&&
+   selectorRect.width>=dockBounds.width-26&&selectorRect.width<=dockBounds.width,
+  'The collapsible section heading must fill the compact inspector content area');
  const rects=[];
  for(let i=0;i<15;i++){
   const button=buttons.nth(i);
@@ -1078,8 +1079,11 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
     a.y+a.height<=b.y+1||b.y+b.height<=a.y+1,
    'R0 actions must not overlap in wrapped dock sections: C'+(i+7)+' and C'+(j+7));
  }
- assert.ok(rects.slice(0,6).every(rect=>Math.abs(rect.y-rects[0].y)<2),
-  'Six alignment actions must form one orderly line inside the dock');
+ assert.ok(rects.slice(0,4).every(rect=>Math.abs(rect.y-rects[0].y)<2),
+  'The first four alignment actions must share one row in the compact inspector');
+ assert.ok(rects.slice(4,6).every(rect=>Math.abs(rect.y-rects[4].y)<2)&&
+   rects[4].y>rects[0].y+3,
+  'The remaining two alignment actions must wrap together onto the next row');
  assert.equal(await buttons.nth(0).isDisabled(),false,'Align left must work for a single component');
  assert.equal(await buttons.nth(6).isDisabled(),true,'Distribute needs three selected components');
  assert.equal(await buttons.nth(10).isDisabled(),true,'Group needs multiple selected components');
