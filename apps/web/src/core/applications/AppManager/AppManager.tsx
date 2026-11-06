@@ -70,12 +70,30 @@ export default function AppManager({
   initialSelectedApiName?: string;
   onSelectedAppChange?: (apiName: string) => void;
 }) {
-  const initialApp = apps.find((app) => app.apiName === initialSelectedApiName) ?? apps[0];
+  const linkedAppApiName=embedded?'':new URLSearchParams(window.location.search).get('editApp')??'';
+  const initialApp=apps.find(app=>app.apiName===(initialSelectedApiName||linkedAppApiName))??apps[0];
   const [selectedApiName, setSelectedApiName] = useState(initialApp?.apiName ?? '');
   const [draft, setDraft] = useState<AppDraft>(initialApp ? appDraftFromMetadata(initialApp) : emptyApp());
   const [creating, setCreating] = useState(false);
-  const [view, setView] = useState<'list' | 'form'>(embedded ? 'form' : 'list');
+  const [view, setView] = useState<'list' | 'form'>(embedded||Boolean(linkedAppApiName)?'form':'list');
   const [activeStep,setActiveStep] = useState('app-basics');
+  const updateEditorRoute=(apiName:string|null,push=false)=>{
+    if(embedded)return;
+    const url=new URL(window.location.href);
+    if(apiName)url.searchParams.set('editApp',apiName);else url.searchParams.delete('editApp');
+    window.history[push?'pushState':'replaceState'](window.history.state,'',url.pathname+url.search+url.hash);
+  };
+  useEffect(()=>{
+    if(embedded)return;
+    const sync=()=>{
+      const selected=new URLSearchParams(window.location.search).get('editApp');
+      const app=selected?apps.find(item=>item.apiName===selected):null;
+      if(app){setSelectedApiName(app.apiName);setDraft(appDraftFromMetadata(app));setCreating(false);setView('form');}
+      else if(!selected){setCreating(false);setView('list');}
+    };
+    window.addEventListener('popstate',sync);
+    return ()=>window.removeEventListener('popstate',sync);
+  },[embedded,apps]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -189,7 +207,7 @@ export default function AppManager({
       await onSave({ ...draft, apiName, label, navigationOrder }, !creating);
       setCreating(false);
       setSelectedApiName(apiName);
-      if (!embedded) setView('list');
+      if (!embedded) {setView('list');updateEditorRoute(null);}
       setNotice('App saved.');
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Unable to save app.');
@@ -208,7 +226,7 @@ export default function AppManager({
       await onDelete(selectedApiName);
       const remaining = apps.find((app) => app.apiName !== selectedApiName);
       setCreating(false);
-      if (!embedded) setView('list');
+      if (!embedded) {setView('list');updateEditorRoute(null);}
       setSelectedApiName(remaining?.apiName ?? '');
       setDraft(remaining ? appDraftFromMetadata(remaining) : emptyApp());
       setNotice('App deleted.');
@@ -221,7 +239,7 @@ export default function AppManager({
 
   const cancel = () => {
     setCreating(false);
-    if (!embedded) setView('list');
+    if (!embedded) {setView('list');updateEditorRoute(null);}
     const previous = apps.find(app => app.apiName === selectedApiName) ?? apps[0];
     setSelectedApiName(previous?.apiName ?? '');
     setDraft(previous ? appDraftFromMetadata(previous) : emptyApp());
@@ -231,6 +249,7 @@ export default function AppManager({
     const original = apps.find(app => app.apiName === selectedApiName);
     if (original && JSON.stringify(appDraftFromMetadata(original)) !== JSON.stringify(draft)) {setConfirmDiscard(true);return;}
     setCreating(true); setView('form'); setSelectedApiName(''); setDraft(emptyApp());setActiveStep('app-basics');
+    updateEditorRoute('new',true);
     setError(''); setNotice('');
   };
   const editApp = (app: AppDraft) => {
@@ -238,6 +257,7 @@ export default function AppManager({
     setSelectedApiName(app.apiName);
     setDraft(appDraftFromMetadata(app));
     setView('form');setActiveStep('app-basics');
+    updateEditorRoute(app.apiName,true);
     setError(''); setNotice('');
   };
   const returnToList = () => {
@@ -257,6 +277,7 @@ export default function AppManager({
     setSelectedApiName('');
     setCreating(true);
     setView('form');setActiveStep('app-basics');
+    updateEditorRoute('new',true);
     setError('');
     setNotice('Review the copied settings and select Create App to save this clone.');
   };
