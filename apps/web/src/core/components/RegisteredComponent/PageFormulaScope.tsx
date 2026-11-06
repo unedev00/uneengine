@@ -1,4 +1,5 @@
 import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
+import {sameFormulaSnapshot} from './pageFormulaSnapshot';
 import {componentInstanceNames,type NamedComponent} from '../../../../../server/src/system-support/page-component-names';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
 import {resolveFieldText,getAuthenticatedFormulaBindingContext} from './fieldExpressionRuntime';
@@ -81,6 +82,7 @@ export function PageFormulaScope({components,catalog,children}:{
  const publish=useMemo(()=>((id:string,next:Record<string,Scalar>|null)=>{
   setValues(old=>{
    if(next===null&&!old.has(id))return old;
+   if(next!==null&&sameFormulaSnapshot(old.get(id),next))return old;
    const updated=new Map(old);
    if(next===null)updated.delete(id);else updated.set(id,next);
    return updated;
@@ -95,7 +97,10 @@ export function PageFormulaScope({components,catalog,children}:{
    const value=detail.value;
    const scalar:Scalar=typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value)
     ?value:value==null?'':String(value);
-   setInputs(old=>{const next=new Map(old);next.set(detail.componentId as string,scalar);return next;});
+   setInputs(old=>{
+    if(old.has(detail.componentId as string)&&Object.is(old.get(detail.componentId as string),scalar))return old;
+    const next=new Map(old);next.set(detail.componentId as string,scalar);return next;
+   });
   };
   window.addEventListener(componentInputEvent,changed);
   return ()=>window.removeEventListener(componentInputEvent,changed);
