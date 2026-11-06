@@ -47,6 +47,7 @@ export function compileActionPlan(source:string):ActionStep[] {
  const steps:ActionStep[]=[];
  const aliases=new Set<string>();
  function add(node:Expression,guards:ActionStep['guards']=[]){
+  if(node.kind==='literal'&&(node.value===''||node.value===null))return;
   if(node.kind==='call'&&node.name==='IF'){
    if(node.args.length!==3)throw Error('IF requires condition, true action and false action');
    validateFormulaFunctions(node.args[0],'ribbon_binding');
