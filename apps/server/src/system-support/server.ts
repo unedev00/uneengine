@@ -2791,7 +2791,7 @@ export function createSystemServer(db:SqlPersistence) {
   registerPackageApiController(app,metadataPackages);
   registerOpenApiExternalServiceRoutes(app,externalServices);
   registerDurableJobAdminRoutes(app,db,rbac);
-  registerScheduledActionRoutes(app,db,rbac);
+  registerScheduledActionRoutes(app,db,rbac,records);
   registerSeederManagerRoutes(app,db,platformTenants);
   registerPlatformDeploymentRoutes(app,db,rbac);
   registerDeclarativeRuleRoutes(app,db,rbac);
