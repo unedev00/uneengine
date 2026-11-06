@@ -62,6 +62,32 @@ export default function RegisteredComponent({ definition, props, formulaInstance
   const formulaScope=usePageFormulaScope();
   const [asset, setAsset] = useState<{apiName:string;version:number;compiledJs:string;scopedCss:string;defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string}|null>(null);
   const [assetError, setAssetError] = useState('');
+  // Optional off-screen lazy hydration. Printing, editor previews and ordinary
+  // pages keep their pre-existing eager behavior unless explicitly opted in.
+  let lazyOptIn=false;
+  if(typeof window!=='undefined'){
+   try{lazyOptIn=window.sessionStorage.getItem('metadrive:lazy-smart-renderers')==='1';}
+   catch{/* Protected browser storage: preserve eager loading. */}
+  }
+  const deferRenderer=lazyOptIn&&definition.trustedBundled===true
+    &&!editorPreview&&props.printRows!==true&&props.builderPreview!==true
+    &&props.previewOnly!==true;
+  const [enteredViewport,setEnteredViewport]=useState(false);
+  const placeholderRef=React.useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+   if(!deferRenderer||enteredViewport)return;
+   if(typeof IntersectionObserver==='undefined'){setEnteredViewport(true);return;}
+   const target=placeholderRef.current;
+   if(!target){setEnteredViewport(true);return;}
+   const observer=new IntersectionObserver(entries=>{
+    if(entries.some(entry=>entry.isIntersecting)){
+     setEnteredViewport(true);
+     observer.disconnect();
+    }
+   },{rootMargin:'250px'});
+   observer.observe(target);
+   return()=>observer.disconnect();
+  },[deferRenderer,enteredViewport]);
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
   // Session storage is origin/tenant-domain scoped. Shared runtime pilots are
   // explicitly OFF until the tenant operator opts in on that tenant origin.
@@ -74,7 +100,9 @@ export default function RegisteredComponent({ definition, props, formulaInstance
   const selectedPath=sharedOptIn&&typeof sharedPath==='string'&&assetApiName.startsWith('smart_')
     ?sharedPath:(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
   useEffect(() => {
-    if (!definition.trustedBundled || definition.compiledJs) { setAsset(null); setAssetError(''); return; }
+    if (!definition.trustedBundled || definition.compiledJs || deferRenderer&&!enteredViewport) {
+      setAsset(null); setAssetError(''); return;
+    }
     const controller = new AbortController();
     setAsset(null);
     setAssetError('');
@@ -112,8 +140,11 @@ export default function RegisteredComponent({ definition, props, formulaInstance
       });
     return () => controller.abort();
   }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,
-    definition.compiledJs,selectedPath]);
+    definition.compiledJs,selectedPath,deferRenderer,enteredViewport]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;
+  if(deferRenderer&&!enteredViewport)return <div ref={placeholderRef}
+    className="registered-component-lazy-placeholder"
+    style={{width:'100%',height:'100%',minHeight:32}} aria-hidden="true"/>;
   if (definition.trustedBundled && !definition.compiledJs && assetError)
     return <div role="alert" className="registered-component-error">{assetError}</div>;
   if (definition.trustedBundled && !definition.compiledJs && (!asset || asset.apiName!==assetApiName || asset.version!==definition.version))

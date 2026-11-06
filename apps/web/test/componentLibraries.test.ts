@@ -220,3 +220,40 @@ test('shared component metadata preserves original Smart kinds while reducing 20
  assert.ok(after<before);
  console.info('PR10 lightweight fixture: bytes='+before+'->'+after+' requests=20 component assets+1 shared');
 });
+
+test('real Smart bundle compilation shows reduced shared-runtime payload on 20-instance page',async()=>{
+ const {loadComponentCatalog,buildBundledComponent}=await import('../../../scripts/component-catalog.mjs');
+ const catalog=await loadComponentCatalog();
+ const names=['smart_button','smart_text','smart_card_grid','smart_icon'] as const;
+ const descriptors=names.map(name=>catalog.components.find((item:{apiName:string})=>item.apiName===name));
+ assert.ok(descriptors.every(Boolean));
+ const [button,txt,grid,icon,shared]=await Promise.all([
+  ...descriptors.map(item=>buildBundledComponent(item!)),
+  buildBundledComponent({apiName:'smart_runtime',
+    jsxFile:'component-libraries/smart/shared/SmartRuntime.jsx',
+    cssFile:'component-libraries/smart_button/SmartComponent.css'})
+ ]);
+ const versions=[11,4,3,2];
+ const legacy=[button,txt,grid,icon].reduce((sum,item,i)=>
+  sum+versions[i]*Buffer.byteLength(JSON.stringify({compiledJs:item.compiledJs,scopedCss:item.cssSource})),0);
+ const sharedFile=Buffer.byteLength(JSON.stringify({compiledJs:shared.compiledJs}));
+ const slim=[button,txt,grid,icon].reduce((sum,item,i)=>
+  sum+versions[i]*Buffer.byteLength(JSON.stringify({
+   compiledJs:'',sharedSmartRuntime:true,
+   sharedRuntimePath:'component-library/components/smart_runtime.0123456789abcdef.json',
+   scopedCss:item.cssSource
+  })),0);
+ const after=slim+sharedFile;
+ assert.ok(after<legacy,'one shared Smart Runtime must weigh less than 20 standalone copies');
+ console.info('PR10 real compiled asset estimate 20 Smart components bytes='+legacy+'->'+after+
+  ' savings='+((1-after/legacy)*100).toFixed(1)+'%; requests=20 renderer JSON +1 shared runtime');
+});
+test('optional off-screen renderer uses intersection visibility and does not defer print/editor paths',async()=>{
+ const source=await (await import('node:fs/promises')).readFile(
+  new URL('../src/core/components/RegisteredComponent/RegisteredComponent.tsx',import.meta.url),'utf8');
+ assert.match(source,/metadrive:lazy-smart-renderers/);
+ assert.match(source,/IntersectionObserver/);
+ assert.match(source,/rootMargin:'250px'/);
+ assert.match(source,/!editorPreview&&props.printRows!==true/);
+ assert.match(source,/deferRenderer&&!enteredViewport/);
+});
