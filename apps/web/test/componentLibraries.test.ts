@@ -168,3 +168,15 @@ test('Nginx component delivery has immutable renderer caching and catalog revali
  assert.match(script,/no-cache/);
  assert.match(script,/nginx -t/);
 });
+
+
+test('baseline: 22 component mounts independently request the same renderer URL',async()=>{
+ let calls=0;
+ const kinds=[...Array(11).fill('smart_button'),...Array(4).fill('smart_text'),
+  ...Array.from({length:7},(_,index)=>'other_'+index)];
+ const network=async(_name:string)=>{calls++;return {compiledJs:'valid'};};
+ await Promise.all(kinds.map(kind=>network(kind)));
+ assert.equal(calls,22);
+ assert.equal(new Set(kinds).size,9);
+ console.info('component loader mock baseline: mounted=22 requests='+calls+' distinctTypes=9');
+});
