@@ -66,8 +66,17 @@ export default function RegisteredComponent({ definition, props, formulaInstance
     const controller = new AbortController();
     setAsset(null);
     setAssetError('');
-    void fetch(`${import.meta.env.BASE_URL}component-library/components/${encodeURIComponent(assetApiName)}.json`,
-      { signal:controller.signal, cache:'no-cache' })
+    // Only release-indexed, content-hashed renderer paths qualify for immutable caching.
+    // Older catalogs retain the original no-cache path for backward compatibility.
+    const publishedPath=(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
+    const match=typeof publishedPath==='string'
+      ?/^component-library\/components\/([A-Za-z][A-Za-z0-9_]*)\.([0-9a-f]{16})\.json$/.exec(publishedPath)
+      :null;
+    const trustedHashed=match?.[1]===assetApiName;
+    const assetPath=trustedHashed?publishedPath:
+      'component-library/components/'+encodeURIComponent(assetApiName)+'.json';
+    void fetch(`${import.meta.env.BASE_URL}${assetPath}`,
+      { signal:controller.signal, cache:trustedHashed?'force-cache':'no-cache' })
       .then(async response => {
         if (!response.ok) throw Error('Bundled renderer is unavailable');
         return response.json();
@@ -85,7 +94,8 @@ export default function RegisteredComponent({ definition, props, formulaInstance
         if (!controller.signal.aborted) setAssetError(error instanceof Error?error.message:'Renderer load failed');
       });
     return () => controller.abort();
-  }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,definition.compiledJs]);
+  }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,
+    definition.compiledJs,(definition as LibraryComponentMetadata & {assetPath?:string}).assetPath]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;
   if (definition.trustedBundled && !definition.compiledJs && assetError)
     return <div role="alert" className="registered-component-error">{assetError}</div>;
