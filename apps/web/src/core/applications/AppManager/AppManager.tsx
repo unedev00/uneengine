@@ -89,7 +89,8 @@ export default function AppManager({
       const selected=new URLSearchParams(window.location.search).get('editApp');
       const app=selected?apps.find(item=>item.apiName===selected):null;
       if(app){setSelectedApiName(app.apiName);setDraft(appDraftFromMetadata(app));setCreating(false);setView('form');}
-      else if(!selected){setCreating(false);setView('list');}
+      else if(selected==='new'){setSelectedApiName('');setDraft(emptyApp());setCreating(true);setView('form');}
+      else {setCreating(false);setView('list');}
     };
     window.addEventListener('popstate',sync);
     return ()=>window.removeEventListener('popstate',sync);
