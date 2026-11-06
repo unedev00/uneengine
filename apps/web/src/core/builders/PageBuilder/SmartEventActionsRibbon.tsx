@@ -80,7 +80,7 @@ export default function SmartEventActionsRibbon({api,actions,flows,onChange,sele
      <div className="smart-event-rows">{picker(qtySlot)}</div>
      <span className="office-ribbon-group-heading">Cart</span>
    </section>
-   {['smart_cart','smart_card_grid','smart_numpad'].includes(api)&&<section className="office-ribbon-mini-group smart-event-group" aria-label="Component Custom">
+   {(['smart_cart','smart_card_grid'].includes(api)||api==='smart_numpad')&&<section className="office-ribbon-mini-group smart-event-group" aria-label="Component Custom">
      <div className="smart-event-rows">{customSlots.map(picker)}</div>
      <span className="office-ribbon-group-heading">Component Custom</span>
    </section>}
