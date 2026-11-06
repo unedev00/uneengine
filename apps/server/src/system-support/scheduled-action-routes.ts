@@ -2,6 +2,8 @@ import type {Express,Request,Response,NextFunction} from 'express';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import {ScheduledActionService} from './scheduled-action-service.js';
+import {BackendPrintTemplatePdfService} from './backend-print-template-pdf-service.js';
+import type {RecordEngine} from '../system-files/record-engine.js';
 
 type Actor={tenant_id:string;user_id:string};
 type Req=Request<Record<string,string>>&{actor?:Actor};
@@ -10,8 +12,9 @@ const wrap=(fn:(req:Req,res:Response)=>Promise<void>)=>
 
 /** ScheduledAction is a tenant-scoped system object: owners can view or close
  * their own pending jobs; tenant administrators can manage all jobs. */
-export function registerScheduledActionRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine){
+export function registerScheduledActionRoutes(app:Express,db:SqlPersistence,rbac:RbacEngine,records:RecordEngine){
  const actions=new ScheduledActionService(db);
+ const pdf=new BackendPrintTemplatePdfService(db,rbac,records);
  const actor=(req:Req)=>{
   if(!req.actor?.tenant_id||!req.actor.user_id)throw Error('Authentication required');
   return req.actor;
@@ -20,6 +23,13 @@ export function registerScheduledActionRoutes(app:Express,db:SqlPersistence,rbac
   rbac.allowed(user.tenant_id,user.user_id,'Tenant','manage');
  const noStore=(res:Response)=>res.setHeader('Cache-Control','private, no-store');
 
+ app.post('/api/action-formulas/create-pdf',wrap(async(req,res)=>{
+  const user=actor(req),body=req.body??{};
+  if(typeof body.template!=='string'||typeof body.recordId!=='string')
+   throw Error('Template API name and record ID are required');
+  noStore(res);
+  res.status(201).json(await pdf.create(user.tenant_id,user.user_id,body.template,body.recordId));
+ }));
  app.post('/api/action-formulas/schedule',wrap(async(req,res)=>{
   const user=actor(req),data=req.body??{};
   const scheduled=await actions.schedule(user.tenant_id,user.user_id,{
