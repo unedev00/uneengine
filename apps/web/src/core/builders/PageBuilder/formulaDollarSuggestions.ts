@@ -2,8 +2,8 @@ import type {PageStateChoice} from './pageStateChoices';
 
 /** Shared Formula Bar references use the existing runtime contract:
  * @Field = Object data, $state.key = declared page state,
- * $session = current page session ID, $tenant.name / $tenant.logo = the
- * signed-in tenant's Company Settings brand. No credentials or global storage.
+ * $session.id = page session ID, $session.user.* = authenticated identity,
+ * $session.tenant.* = authenticated tenant/brand. No credentials exposed.
  */
 export type DollarFormulaSuggestion={reference:string;label:string};
 export function formulaDollarSuggestions(
