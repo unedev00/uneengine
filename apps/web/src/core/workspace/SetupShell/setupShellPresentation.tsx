@@ -70,11 +70,8 @@ export function renderSetupShell(ctx: any) {
           onClick={() => setSetupSidebarCollapsed((collapsed: boolean) => !collapsed)}>
           {setupSidebarCollapsed ? <ChevronRight size={20} aria-hidden="true" /> : <ChevronLeft size={20} aria-hidden="true" />}
         </button>}
-        {runtimeFormFactor !== 'Phone' && <nav className="md-toolbar-history" aria-label="Page history">
-          <button type="button" className="icon-button" aria-label="Back" title="Back (⌘[)" onClick={()=>window.history.back()}><ChevronLeft size={17}/></button>
-          <button type="button" className="icon-button" aria-label="Forward" title="Forward (⌘])" onClick={()=>window.history.forward()}><ChevronRight size={17}/></button>
-        </nav>}
-        <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /></button>
+
+        <button type="button" className="brand brand-home-button" aria-label="Go to home" title="Home" onClick={() => openSetupWorkspace('home')}><UneBrandLogo className="brand-logo" src={uneSolutionsLogoUrl} decorative /><span className="brand-home-label">Home</span></button>
         <label className="header-installed-apps">
           <span>Apps</span>
           <select aria-label="Open installed app" value={installedAppValue} onChange={(event) => openInstalledApp(event.target.value)}>
