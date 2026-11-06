@@ -28,6 +28,8 @@ export default function ChecklistMultiSelect({
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const close = () => {setOpen(false);window.requestAnimationFrame(()=>trigger.current?.focus());};
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -37,7 +39,7 @@ export default function ChecklistMultiSelect({
       if (root.current && !root.current.contains(event.target as Node)) setOpen(false);
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {event.preventDefault();close();}
     };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', escape);
@@ -65,8 +67,8 @@ export default function ChecklistMultiSelect({
           <button type="button" disabled={disabled} aria-label={`Remove ${optionsByValue.get(value)?.label ?? value} from ${label}`}
             onClick={() => toggle(value)}><X size={12}/></button>
         </span>)}
-        <button className="md-checklist-trigger" type="button" disabled={disabled} aria-expanded={open}
-          aria-haspopup="listbox" aria-controls={id + '-options'}
+        <button ref={trigger} className="md-checklist-trigger" type="button" disabled={disabled} aria-expanded={open}
+          aria-haspopup="dialog" aria-controls={id + '-options'}
           aria-label={label + (values.length ? ` (${values.length} selected)` : '')}
           onClick={() => { setQuery(''); setOpen(state => !state); }}>
           {!values.length && <span>{placeholder}</span>}
@@ -77,7 +79,7 @@ export default function ChecklistMultiSelect({
         disabled={disabled} onClick={() => onChange([])}
         aria-label={'Clear ' + label} title="Clear selection"><X size={14}/></button>}
     </div>
-    {open && <div className="md-checklist-popover" id={id + '-options'}>
+    {open && <div className="md-checklist-popover" id={id + '-options'} role="dialog" aria-modal="false" aria-label={label + " selection"}>
       <div className="md-checklist-search"><Search size={15}/>
         <input ref={searchInput} type="search" value={query} aria-label={'Search ' + label}
           onChange={event => setQuery(event.target.value)} placeholder={searchPlaceholder}/>
@@ -94,7 +96,7 @@ export default function ChecklistMultiSelect({
         {!filtered.length && <p className="md-checklist-empty">{emptyText}</p>}
       </div>
       <div className="md-checklist-footer"><span>{values.length} selected</span>
-        <button type="button" onClick={() => setOpen(false)}><Check size={13}/> Done</button>
+        <button type="button" onClick={close} style={{minHeight:40,minWidth:72}}><Check size={13}/> Done</button>
       </div>
     </div>}
   </div>;
