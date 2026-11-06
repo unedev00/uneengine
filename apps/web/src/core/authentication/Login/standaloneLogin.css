@@ -296,3 +296,12 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
   width:64px;max-width:65%;height:auto;max-height:none;
  }
 }
+
+/* In 320–375px-tall landscape, keep the credential action in the first viewport. */
+@media(max-height:375px) and (orientation:landscape){
+ .auth-screen .auth-card .une-brand-logo.auth-brand-logo,
+ .auth-screen .auth-card .auth-signin-footer {display:none!important}
+ .auth-screen .auth-card .form-control {min-height:38px}
+ .auth-screen .auth-card .auth-submit {min-height:40px}
+ .auth-screen .auth-card .auth-inline-actions .text-action {min-height:30px}
+}
