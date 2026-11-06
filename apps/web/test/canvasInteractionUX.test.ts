@@ -28,6 +28,7 @@ import {canvasGroupKey, canvasGroupBounds, canvasGroupMembers, groupCanvasSelect
 import type {PageComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 import type {UneRibbonProperty} from '../src/core/builders/PageBuilder/uneBuilderPropertyInventory';
 import {isSharedCanvasProperty,mixedCanvasPropertyIds,updateSharedCanvasProperties,updateSharedCanvasPositions} from '../src/core/builders/PageBuilder/canvasSharedRibbonProperties';
+import {expandCanvasSelection,selectCanvasIds,selectCanvasInRect,nudgeCanvasSelection} from '../src/core/builders/PageBuilder/canvasSelectionInteractions';
 
 test('canvas movement aligns with adjacent element edges and returns visible guide flags', () => {
   const result = snapCanvasPosition(
@@ -942,4 +943,63 @@ test('Page Builder bulk delete preserves unselected nested children and repairs 
   assert.equal(childOnly.components.find(item=>item.id==='selected')?.properties.layoutParentId,'root');
   assert.deepEqual(childOnly.components.find(item=>item.id==='selected')?.position,
     {x:25,y:37,width:80,height:80});
+});
+
+test('Office-style selection toggles components, expands saved groups, and ranges across siblings', () => {
+  const components=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{},position:{x:0,y:0,width:40,height:40}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{},position:{x:55,y:0,width:40,height:40}},
+    {id:'c',type:'Card',label:'C',visible:true,properties:{},position:{x:110,y:0,width:40,height:40}},
+    {id:'d',type:'Card',label:'D',visible:true,properties:{canvasGroupId:'group1'},position:{x:165,y:0,width:40,height:40}},
+    {id:'e',type:'Card',label:'E',visible:true,properties:{canvasGroupId:'group1'},position:{x:220,y:0,width:40,height:40}}
+  ] as PageComponentMetadata[];
+  assert.deepEqual(selectCanvasIds(components,['a'],'b','toggle'),['a','b']);
+  assert.deepEqual(selectCanvasIds(components,['a','b'],'b','toggle'),['a']);
+  assert.deepEqual(selectCanvasIds(components,['a'],'c','range','a'),['a','b','c']);
+  assert.deepEqual(selectCanvasIds(components,['a'],'c','add'),['a','c']);
+  assert.deepEqual(selectCanvasIds(components,[],'d','replace'),['d','e']);
+  assert.deepEqual(selectCanvasIds(components,['d','e'],'e','toggle'),[]);
+  assert.deepEqual(expandCanvasSelection(components,['e','a']),['a','d','e']);
+});
+
+test('marquee selects intersecting top-level components, adds selections and excludes nested layouts',()=>{
+  const components=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{},position:{x:10,y:10,width:60,height:60}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{},position:{x:80,y:80,width:60,height:60}},
+    {id:'c',type:'Card',label:'C',visible:true,properties:{},position:{x:180,y:180,width:30,height:30}},
+    {id:'nested',type:'Card',label:'Child',visible:true,parentId:'a',properties:{layoutParentId:'a'},position:{x:20,y:20,width:30,height:30}}
+  ] as PageComponentMetadata[];
+  assert.deepEqual(selectCanvasInRect(components,{x:0,y:0,width:100,height:100}),['a','b']);
+  assert.deepEqual(selectCanvasInRect(components,{x:0,y:0,width:100,height:100},['c']),['a','b','c']);
+});
+
+test('nudge keeps relative offsets, clamps entire selection and rejects mixed locked changes',()=>{
+  const components=[
+    {id:'a',type:'Card',label:'A',visible:true,properties:{},position:{x:5,y:4,width:20,height:20}},
+    {id:'b',type:'Card',label:'B',visible:true,properties:{},position:{x:100,y:40,width:40,height:30}},
+    {id:'other',type:'Card',label:'Other',visible:true,properties:{},position:{x:20,y:20,width:20,height:20}}
+  ] as PageComponentMetadata[];
+  const moved=nudgeCanvasSelection(components,['a','b'],190,100,{width:300,height:200});
+  assert.equal(moved[0].position?.x,165);
+  assert.equal(moved[1].position?.x,260);
+  assert.equal(moved[0].position?.y,104);
+  assert.equal(moved[1].position?.y,140);
+  assert.equal(moved[2],components[2]);
+  const locked=components.map(item=>item.id==='b'
+    ?{...item,properties:{...item.properties,editorLocked:true}}:item);
+  assert.deepEqual(nudgeCanvasSelection(locked,['a','b'],10,0,{width:300,height:200}),locked);
+});
+
+test('canvas editor wires multi-click, marquee, group movement and one keyboard nudge handler',async()=>{
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
+  const hook=await readFile(new URL('../src/core/builders/PageBuilder/useCanvasGroupGestures.ts',import.meta.url),'utf8');
+  assert.match(builder,/selectCanvasIds\(page\.components,selectionIds,component\.id/);
+  assert.match(builder,/event\.ctrlKey\|\|event\.metaKey/);
+  assert.match(builder,/onPointerDown=\{canvasMarquee\.down\}/);
+  assert.match(builder,/nudgeCanvasSelection\(page\.components,ids,dx,dy/);
+  assert.match(builder,/moveCanvasPointer\(event\);moveCanvasGroupGesture\(event\)/);
+  assert.match(hook,/querySelector<HTMLElement>\('\.canvas-group-outline'\)/);
+  assert.match(navigator,/aria-multiselectable="true"/);
+  assert.match(navigator,/event\.shiftKey\?'range':event\.ctrlKey\|\|event\.metaKey\?'toggle'/);
 });
