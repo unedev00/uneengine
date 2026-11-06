@@ -1,4 +1,6 @@
 export const componentReaderKey:unique symbol;
+/** Replaces/clears the authenticated in-memory formula identity snapshot. */
+export function setAuthenticatedFormulaSession(context:FormulaBindingContext|null):void;
 export type FormulaBindingContext={
   flowReferences?:readonly string[];
   readComponent?:(name:string,key:string)=>string|number|boolean;
@@ -6,9 +8,9 @@ export type FormulaBindingContext={
   now?:Date|string;
   /** Already-authorised page-local scalar state values. */
   pageState?:Readonly<Record<string,unknown>>;
-  /** Tenant brand for $tenant.name / $tenant.logo; defaults to the signed-in tenant. */
+  /** Tenant brand for $session.tenant.name / $session.tenant.logo; defaults to the signed-in tenant. */
   tenant?:{readonly name:string;readonly logo:string};
-  /** Active Page Runtime session identifier. */
+  /** Active Page Runtime session identifier ($session.id). */
   sessionId?:string;
   locale?:string;
   currencyIsoCode?:string|null;
