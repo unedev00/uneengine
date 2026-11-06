@@ -143,11 +143,12 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
   const [launcherOpen, setLauncherOpen] = useState(false);
   // UX-0023: distinguish the user's desktop preference from forced compact-drawer state.
   const readDesktopSidebarPreference = () => {
-    try { return window.localStorage.getItem('md.setup.sidebar.collapsed') === 'true'; }
+    try { return typeof window !== 'undefined' && window.localStorage.getItem('md.setup.sidebar.collapsed') === 'true'; }
     catch { return false; }
   };
   const [setupSidebarCollapsed, setSidebarCollapsedState] = useState(() =>
-    window.matchMedia('(max-width: 1024px)').matches || readDesktopSidebarPreference()
+    typeof window !== 'undefined' &&
+      (window.matchMedia('(max-width: 1024px)').matches || readDesktopSidebarPreference())
   );
   const setSetupSidebarCollapsed = (value: React.SetStateAction<boolean>) => {
     const next = typeof value === 'function' ? value(setupSidebarCollapsed) : value;
