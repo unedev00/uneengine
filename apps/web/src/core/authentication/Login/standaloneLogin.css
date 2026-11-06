@@ -342,3 +342,9 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  .auth-screen:not(.auth-screen--standalone) .auth-card {padding:4px 12px}
  .auth-screen:not(.auth-screen--standalone) .auth-card .form-label {margin:0 0 1px}
 }
+
+/* UX-0003: measured 568×320 native-zoom residual 3.7px overhang. Do not reduce 40px submit hit target. */
+@media(max-height:375px) and (orientation:landscape) {
+ .auth-screen:not(.auth-screen--standalone) .auth-card {padding-block:0}
+ .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {margin-top:0}
+}
