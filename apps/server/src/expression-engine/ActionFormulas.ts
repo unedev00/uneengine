@@ -135,7 +135,7 @@ export type ActionServices={
  runPageAction?:(name:string,target:string,mode?:string)=>Promise<unknown>;
 };
 export async function executeActionPlan(formula:string,record:Record<string,unknown>,
- evaluateValue:(node:Expression,scope:Record<string,unknown>)=>unknown,
+ evaluateValue:(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[])=>unknown,
  {request,print,createPdf,runPageAction}:ActionServices){
   const steps=compileActionPlan(formula);
   const variables:Record<string,unknown>=Object.create(null);
@@ -144,7 +144,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   for(const [index,step] of steps.entries()){
    try{
     const scope={...record,...variables};
-    const evaluate=(node:Expression):unknown=>evaluateValue(node,scope);
+    const evaluate=(node:Expression):unknown=>evaluateValue(node,scope,Object.keys(variables));
     if(step.guards?.some(guard=>formulaTruth(evaluate(guard.condition))!==guard.expected))continue;
     if(step.name==='WAIT'){
      const [minutes,seconds]=(step.values??[]).map(evaluate);
