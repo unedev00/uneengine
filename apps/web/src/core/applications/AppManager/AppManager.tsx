@@ -291,7 +291,8 @@ export default function AppManager({
       const dirty=creating
         ?Boolean(draft.label||draft.apiName||draft.navigationItems.length||draft.navigationPageApiNames.length)
         :Boolean(original&&JSON.stringify(appDraftFromMetadata(original))!==JSON.stringify(draft));
-      if(dirty)setError('Unsaved changes. Choose Cancel to discard or Save Changes to keep them.');
+      // Escape leaves a clean editor immediately and gives dirty drafts an actionable choice.
+      if(dirty)setConfirmDiscard(true);
       else cancel();
     };
     document.addEventListener('keydown',dismiss);
