@@ -451,7 +451,7 @@ test('confirmed creates survive later print or navigation failures as partial co
  for(const failure of ['PRINT','SCREEN']){
   let writes=0;
   const formula=failure==='PRINT'
-   ?'ACTIONS(CREATERECORD(Item, Name, "ok"), PRINT(Receipt, "id"))'
+   ?'ACTIONS(CREATERECORD(Item, Name, "ok"), PRINT(Receipt, "11111111-1111-4111-8111-111111111111"))'
    :'ACTIONS(CREATERECORD(Item, Name, "ok"), SCREEN(Home))';
   const run=executePageFormulaAction(async<T>()=>{writes++;return {record:{Id:rowId}} as T;},
    {formula},{},{},[],'','',
