@@ -309,3 +309,16 @@ test('UX-0027 Setup Home consumes declared typography, icon and shared grid spac
   assert.match(css,/\.home-content \.shortcut-icon\s*\{\s*width:\s*var\(--icon-tile,\s*36px\)/);
   assert.match(css,/@media \(max-width: 599px\)\s*\{\s*\.lightning \.setup-layout \.home-content \{ --text-h1: 20px;/);
 });
+
+test('UX-0070 Page Builder metadata loading shows a toolbar, six rows and retry instead of a blank canvas',()=>{
+  const shell=source('src/core/workspace/SetupShell/setupShellPresentation.tsx');
+  const loader=source('src/core/workspace/SetupShell/SetupLoadingState.tsx');
+  const css=source('src/core/workspace/SetupShell/SetupLoadingState.css');
+  assert.match(shell,/<SetupLoadingState label="Page Builder definitions"/);
+  assert.match(loader,/label\.startsWith\('Page Builder'\)/);
+  assert.match(loader,/md-page-list-loading-toolbar/);
+  assert.match(loader,/Array\.from\(\{length:6\}/);
+  assert.match(loader,/Retry loading \{label\}/);
+  assert.match(css,/\.md-page-list-loading-row/);
+  assert.match(css,/prefers-reduced-motion:reduce/);
+});
