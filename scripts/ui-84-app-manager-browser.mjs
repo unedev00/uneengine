@@ -50,6 +50,10 @@ try{
     assert.match(await page.locator('input[aria-label="App Label"]').inputValue(),/Ace Assist/);
     await page.keyboard.press('Escape');
     await page.getByRole('alertdialog',{name:'Discard unsaved changes?'}).waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('alertdialog',{name:'Discard unsaved changes?'}).waitFor({state:'hidden'});
+    await page.keyboard.press('Escape');
+    await page.getByRole('alertdialog',{name:'Discard unsaved changes?'}).waitFor();
     await page.getByRole('button',{name:'Discard changes'}).click();
     await page.getByRole('heading',{name:'Existing Apps',exact:false}).waitFor();
     await page.getByRole('button',{name:'Edit Ace Assist',exact:true}).click();
