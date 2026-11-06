@@ -2,7 +2,7 @@
  * server filters before pagination. This intentionally accepts only expressions
  * that can be represented exactly by the existing Record API; there is NO
  * client-side filtering of a partial page and NO eval or arbitrary scripts. */
-import {componentReaderKey,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
+import {componentReaderKey,evaluateFieldExpressionDetailed,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
 import {Parser,type Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 import {hasExcelWildcardCriteria,parseExcelWildcardPattern} from '../../../../../server/src/expression-engine/FormulaWildcard.js';
@@ -17,8 +17,13 @@ const blank=(value:unknown)=>value===null||value===undefined||value==='';
 const stateName=(node:Expression):string|null=>
  node.kind==='reference'&&/^\$state\.[A-Za-z][A-Za-z0-9_]{0,63}$/.test(node.value)
   ?node.value.slice(7):null;
-const asState=(node:Expression,state:Readonly<Record<string,unknown>>):unknown=>{
+const asState=(node:Expression,state:Readonly<Record<string,unknown>>,sessionId=''):unknown=>{
  if(node.kind==='literal')return node.value;
+ if(node.kind==='reference'&&node.value.startsWith('$session.')){
+  const result=evaluateFieldExpressionDetailed(node.value,{},{sessionId});
+  if(result.error)throw Error(result.error);
+  return result.value;
+ }
  if(node.kind==='reference'&&node.value.startsWith('$component.')){
   const parts=node.value.split('.');
   const reader=(state as {[componentReaderKey]?:FormulaBindingContext['readComponent']})[componentReaderKey];
@@ -31,12 +36,12 @@ const asState=(node:Expression,state:Readonly<Record<string,unknown>>):unknown=>
   throw Error('Page State formula value must be a scalar');
  }
  if(node.kind==='call'&&node.name==='ISBLANK'&&node.args.length===1)
-  return blank(asState(node.args[0],state));
+  return blank(asState(node.args[0],state,sessionId));
  if(node.kind==='call'&&node.name==='NOT'&&node.args.length===1)
-  return !Boolean(asState(node.args[0],state));
- if(node.kind==='unary'&&node.operator==='NOT')return !Boolean(asState(node.value,state));
+  return !Boolean(asState(node.args[0],state,sessionId));
+ if(node.kind==='unary'&&node.operator==='NOT')return !Boolean(asState(node.value,state,sessionId));
  if(node.kind==='binary'){
-  const left=asState(node.left,state),right=asState(node.right,state);
+  const left=asState(node.left,state,sessionId),right=asState(node.right,state,sessionId);
   switch(node.operator){
    case '=':case '==':return left===right;
    case '!=':case '<>':return left!==right;
@@ -71,19 +76,19 @@ const opNames:Record<string,string>={
  '=':'eq','==':'eq','>':'gt','>=':'gte','<':'lt','<=':'lte'
 };
 const flip:Record<string,string>={'<':'>','<=':'>=','>':'<','>=':'<=','=':'=','==':'=='};
-function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Readonly<Record<string,unknown>>):Plan{
+function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Readonly<Record<string,unknown>>,sessionId=''):Plan{
  if(node.kind==='literal'&&typeof node.value==='boolean')
   return {truth:node.value,filters:[],logic:''};
  if(node.kind==='call'&&node.name==='IF'&&node.args.length===3){
-  const condition=asState(node.args[0],state);
+  const condition=asState(node.args[0],state,sessionId);
   if(typeof condition!=='boolean')throw Error('IF condition must return TRUE or FALSE');
-  return compile(condition?node.args[1]:node.args[2],fields,state);
+  return compile(condition?node.args[1]:node.args[2],fields,state,sessionId);
  }
  if(node.kind==='binary'&&(node.operator==='AND'||node.operator==='OR'))
-  return both(node.operator,compile(node.left,fields,state),compile(node.right,fields,state));
+  return both(node.operator,compile(node.left,fields,state,sessionId),compile(node.right,fields,state,sessionId));
  if(node.kind==='call'&&(node.name==='AND'||node.name==='OR')&&node.args.length>=2
    &&node.args.length<=20)
-  return node.args.map(arg=>compile(arg,fields,state))
+  return node.args.map(arg=>compile(arg,fields,state,sessionId))
    .reduce((a,b)=>both(node.name as 'AND'|'OR',a,b));
  if(node.kind==='binary'&&Object.hasOwn(opNames,node.operator)){
   let field=simpleField(node.left,fields);
@@ -98,7 +103,7 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
   if(/^Formula\(/i.test(field.dataType)||/^(Geolocation|Address|EncryptedText)/i.test(field.dataType))
    throw Error('This field cannot be filtered reliably by the server');
   if(field.apiName.startsWith('@'))throw Error('Related formula fields are not directly server-filterable');
-  const value=asState(valueNode,state);
+  const value=asState(valueNode,state,sessionId);
   if(value===undefined||value===null||value==='')throw Error('Selected formula state value is empty');
   if(!['string','boolean','number'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value))
    throw Error('Formula comparison requires a scalar');
@@ -120,12 +125,12 @@ function compile(node:Expression,fields:ReadonlyArray<FieldMetadata>,state:Reado
  throw Error('Filter formula must use IF, ISBLANK, AND/OR and supported @Field comparisons');
 }
 export function compileRecordFilterFormula(formula:unknown,fields:ReadonlyArray<FieldMetadata>,
- state:Readonly<Record<string,unknown>>={}):CompiledFilterFormula{
+ state:Readonly<Record<string,unknown>>={},sessionId=''):CompiledFilterFormula{
  if(formula===undefined||formula===null||formula==='')return {blocked:false,filters:[]};
  if(typeof formula!=='string')return {blocked:true,filters:[],error:'Invalid filter formula'};
  try{
   const parsed=new Parser(tokenize(formula)).parse();
-  const plan=compile(parsed,fields,state);
+  const plan=compile(parsed,fields,state,sessionId);
   return plan.truth===false?{blocked:true,filters:[]}
    :{blocked:false,filters:plan.filters,filterLogic:plan.logic||undefined};
  }catch(error){return {blocked:true,filters:[],error:error instanceof Error?error.message:'Invalid filter formula'};}
