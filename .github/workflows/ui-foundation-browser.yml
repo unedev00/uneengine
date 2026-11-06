@@ -6,6 +6,7 @@ on:
     paths:
       - 'apps/web/**'
       - 'scripts/setup-ux-browser-smoke.mjs'
+      - 'scripts/ui-84-auth-responsive-browser.mjs'
       - 'scripts/all-apps-ui-100pct-audit.mjs'
       - '.github/workflows/ui-foundation-browser.yml'
       - 'package.json'
@@ -60,6 +61,11 @@ jobs:
         env:
           PHASE1_SCREENSHOT_DIR: artifacts/phase1-ui
         run: node scripts/setup-ux-browser-smoke.mjs
+      - name: Check login and password recovery at 19 original audit viewport sizes
+        env:
+          UI_84_AUTH_SCREENSHOT_DIR: artifacts/ui-84-auth
+          UI_84_AUTH_SCREENSHOTS: '1'
+        run: node scripts/ui-84-auth-responsive-browser.mjs
       - name: Audit every available React fixture at native 100% browser zoom
         if: always()
         env:
@@ -72,6 +78,13 @@ jobs:
           name: all-apps-100pct-visual-audit
           path: artifacts/all-apps-ui/
           if-no-files-found: error
+      - name: Upload login/recovery viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-auth-19-viewports
+          path: artifacts/ui-84-auth/
+          if-no-files-found: ignore
       - name: Upload before-review responsive evidence
         if: always()
         uses: actions/upload-artifact@v4
