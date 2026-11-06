@@ -48,10 +48,13 @@ export async function executePageFormulaAction(
  if(isActionPlan(formula)){
   // Production diagnostics are disabled by default and scoped to this browser session.
   // Enable in DevTools: sessionStorage.setItem('metadrive:formula-timings','1')
-  let timingEnabled=false;
+  let timingEnabled=false,aggregateEnabled=false;
   if(typeof window!=='undefined'){
-   try{timingEnabled=window.sessionStorage.getItem('metadrive:formula-timings')==='1';}
-   catch{/* Session storage may be disabled by the browser. */}
+   try{
+    timingEnabled=window.sessionStorage.getItem('metadrive:formula-timings')==='1';
+    // Opt-in is origin/tenant browser session scoped; default OFF for all.
+    aggregateEnabled=window.sessionStorage.getItem('metadrive:sql-aggregates')==='1';
+   }catch{/* Session storage may be disabled by the browser. */}
   }
   const timing=timingEnabled?{
    formulaName:formulaContext.timingName,
@@ -59,7 +62,7 @@ export async function executePageFormulaAction(
   }:{};
   return executeActionFormula(formula,{...payload,state:pageState,event:payload},
    {...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()},
-   {request,print,runPageAction,createPdf,...timing});
+   {request,print,runPageAction,createPdf,...timing,useSqlAggregates:aggregateEnabled});
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');

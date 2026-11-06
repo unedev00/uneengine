@@ -259,11 +259,13 @@ export type ActionServices={
  onTiming?:(timing:ActionPlanTiming)=>void;
  /** Stable metadata identifier, not the authored formula text or a field value. */
  formulaName?:string;
+ /** Explicit opt-in while SQL aggregate parity is validated per tenant. */
+ useSqlAggregates?:boolean;
 };
 type EvaluateValue=(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[],
  state?:Readonly<Record<string,unknown>>)=>unknown;
 export async function executeActionPlan(formula:string,record:Record<string,unknown>,
- evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName}:ActionServices){
+ evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName,useSqlAggregates}:ActionServices){
   const trace=typeof onTiming==='function';
   const started=trace?performance.now():0;
   const steps=compileActionPlan(formula);
@@ -383,6 +385,29 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       }
       const field=nameOf(rest.shift(),node.name+' value field');
       const filters=rest.length?criteriaFilters(recordCriteria(rest,node.name),value=>evaluateNow(substitute(value))):[];
+      if(useSqlAggregates===true){
+       const route='/records/'+encodeURIComponent(object)+'/aggregate?field='+encodeURIComponent(field)+
+        '&filters='+encodeURIComponent(JSON.stringify(filters));
+       const aggregate=await tracedRequest<{
+        eligible?:boolean;total?:number;numericCount?:number;sum?:number;min?:number;max?:number
+       }>(route);
+       if(aggregate.eligible===true){
+        if(typeof aggregate.total!=='number'||!Number.isFinite(aggregate.total))
+         throw Error(node.name+' count unavailable');
+        if(aggregate.total>maxAggregateRecords)
+         throw Error(node.name+' matches more than '+maxAggregateRecords+' records; narrow the criteria');
+        const numeric=Number(aggregate.numericCount??0);
+        const sum=Number(aggregate.sum??0);
+        const value=!numeric?0:node.name==='SUMIFS'?Math.round(sum*1e9)/1e9:
+         node.name==='AVERAGEIFS'?sum/numeric:node.name==='MINIFS'?Number(aggregate.min??0):
+          Number(aggregate.max??0);
+        if(!Number.isFinite(value))throw Error(node.name+' result unavailable');
+        resolved.set(node,value);
+        return;
+       }
+       // Unsupported numeric representations, formula fields or unreadable output:
+       // preserve the old authorized row-fetch result exactly.
+      }
       const rows=await listMatching(tracedRequest,object,filters,maxAggregateRecords,node.name);
       const numbers=rows.map(row=>aggregateNumber(row[field])).filter((value):value is number=>value!==null);
       const total=numbers.reduce((sum,value)=>sum+value,0);

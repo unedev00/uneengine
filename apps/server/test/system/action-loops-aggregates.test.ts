@@ -5,6 +5,9 @@ import {validateFormulaFunctions} from '../../src/expression-engine/FormulaFunct
 import {Parser,type Expression} from '../../src/expression-engine/FormulaParser.js';
 import {tokenize} from '../../src/expression-engine/FormulaTokenizer.js';
 import {executeActionFormula} from '../../../web/src/component-libraries/shared/FieldExpression.js';
+import {computeFilteredNumericAggregate} from '../../src/object-engine/FilteredNumericAggregate.js';
+import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
+import type {RbacEngine} from '../../src/system-files/rbac-engine.js';
 
 const cartId='11111111-1111-4111-8111-111111111111';
 const id=(n:number)=>'22222222-2222-4222-8222-'+String(n).padStart(12,'0');
@@ -144,4 +147,95 @@ test('actions read live $component values and CLOSESCREEN reaches the page runti
  assert.deepEqual(reads,['CashInput.value']);
  assert.deepEqual(actions,['CLOSESCREEN']);
  assert.throws(()=>compileActionPlan('=CLOSESCREEN(now)'),/no arguments/);
+});
+
+test('baseline: 250 matched SUMIFS rows require three serial list calls',async()=>{
+ const requests:Call[]=[];
+ const result=await run('=STATE(total, SUMIFS(CartLine, LineTotal, Cart, @cartId))',
+  recordApi(lines(250),requests));
+ assert.equal(result.changes[0].value,47062.5);
+ assert.equal(requests.length,3);
+ assert.deepEqual(requests.map(call=>Number(new URL('http://x'+call.path).searchParams.get('limit'))),[100,100,100]);
+ console.info('SUMIFS baseline: matched=250 requests=3 sequence=GET>GET>GET');
+});
+
+test('opted-in SQL SUMIFS returns same number as three legacy list pages in one request',async()=>{
+ const data=lines(250);
+ const legacy=await run('=STATE(total, SUMIFS(CartLine, LineTotal, Cart, @cartId))',
+  recordApi(data,[]));
+ const calls:Call[]=[];
+ const sql=await run('=STATE(total, SUMIFS(CartLine, LineTotal, Cart, @cartId))',
+  async(path,init)=>{
+   calls.push({path,method:init?.method??'GET'});
+   if(path.includes('/aggregate?'))return {eligible:true,total:250,numericCount:250,
+    sum:47062.5,min:1.5,max:375} as never;
+   throw Error('SQL mode unexpectedly downloaded records');
+  },{},{useSqlAggregates:true});
+ assert.deepEqual(sql.changes,legacy.changes);
+ assert.equal(calls.length,1,'SQL aggregate must issue one request, no 100-row paging');
+ assert.match(calls[0].path,/\/aggregate\?/);
+ console.info('SQL SUMIFS: matched=250 requests=3->1 value='+sql.changes[0].value);
+});
+
+test('SQL aggregate empty and overflow retain old Formula results and 5000-row error',async()=>{
+ const empty=await run('=STATE(total, AVERAGEIFS(CartLine, Quantity))',
+  async()=>({eligible:true,total:0,numericCount:0,sum:0,min:0,max:0}) as never,
+  {},{useSqlAggregates:true});
+ assert.deepEqual(empty.changes,[{key:'total',value:0}]);
+ await assert.rejects(run('=STATE(total, SUMIFS(CartLine, Quantity))',
+  async()=>({eligible:true,total:5001,numericCount:5001,sum:5001,min:1,max:1}) as never,
+  {},{useSqlAggregates:true}),/SUMIFS matches more than 5000 records/);
+});
+
+test('SQL aggregate falls back to existing protected row query for ineligible fields',async()=>{
+ const calls:string[]=[];
+ const api=async<T>(path:string):Promise<T>=>{
+  calls.push(path);
+  if(path.includes('/aggregate?'))return {eligible:false} as T;
+  return {records:[{LineTotal:2.25}],total:1} as T;
+ };
+ const result=await run('=STATE(total, SUMIFS(CartLine, LineTotal, Cart, @cartId))',
+  api,{},{useSqlAggregates:true});
+ assert.deepEqual(result.changes,[{key:'total',value:2.25}]);
+ assert.equal(calls.length,2);
+});
+
+test('filtered SQL aggregate applies object, field and related-lookup RBAC before querying',async()=>{
+ const queries:Array<{sql:string;args:unknown[]}>= [];
+ const db={query:async(sql:string,args:unknown[])=>{
+  queries.push({sql,args});
+  return {rows:[{total:'2',numeric_count:'2',numeric_sum:'7.5',
+   numeric_min:'2.5',numeric_max:'5.0'}]};
+ }} as unknown as Pick<SqlPersistence,'query'>;
+ const allowed:string[]=[];
+ const rbac={
+  require:async(t:string,u:string,res:string,act:string)=>{allowed.push('require '+t+' '+u+' '+res+' '+act);},
+  allowed:async(t:string,u:string,res:string,act:string)=>{
+   allowed.push('allowed '+t+' '+u+' '+res+' '+act);return true;
+  }
+ } as unknown as Pick<RbacEngine,'require'|'allowed'>;
+ const meta=async(name:string)=>name==='CartLine'?
+  [{api_name:'LineTotal',data_type:'number',related_object:null},
+   {api_name:'Product',data_type:'reference',related_object:'Product'}]:
+  [{api_name:'Category',data_type:'text',related_object:null}];
+ const output=await computeFilteredNumericAggregate(db,rbac,meta,
+  'tenant-1','user-2','CartLine','LineTotal',
+  [{field:'Product.Category',operator:'eq',value:'Drinks'}]);
+ assert.deepEqual(output,{eligible:true,total:2,numericCount:2,sum:7.5,min:2.5,max:5});
+ assert.equal(queries.length,1);
+ assert.match(queries[0].sql,/md_record_access\(\$1,\$3,r\.id,'read'\)/);
+ assert.match(queries[0].sql,/md_record_access\(\$1,\$3,rel\.id,'read'\)/);
+ assert.ok(allowed.some(s=>s.includes('CartLine.LineTotal read')));
+ assert.ok(allowed.some(s=>s.includes('Product.Category read')));
+});
+
+test('filtered SQL aggregate with denied object read executes zero SQL requests',async()=>{
+ let queryCount=0;
+ const db={query:async()=>{queryCount++;return {rows:[]};}} as unknown as Pick<SqlPersistence,'query'>;
+ const rbac={require:async()=>{throw Error('Permission denied');},
+  allowed:async()=>false} as unknown as Pick<RbacEngine,'require'|'allowed'>;
+ await assert.rejects(computeFilteredNumericAggregate(db,rbac,
+  async()=>[{api_name:'Total',data_type:'number',related_object:null}],
+  'tenant-1','user-no-read','Cart','Total',[]),/Permission denied/);
+ assert.equal(queryCount,0);
 });
