@@ -230,3 +230,25 @@ test('UX-0057 Page Builder card sort offers a direction control',()=>{
  assert.match(page,/page-manager-card-sort/);
  assert.match(page,/setPageListSortDescending\(value=>!value\)/);
 });
+
+test('UX-0006 authentication colours are declared in one dedicated token file',()=>{
+ const css=source('src/core/authentication/Login/standaloneLogin.css');
+ const ramp=source('src/core/authentication/Login/authTokens.css');
+ assert.match(css,/@import '\.\/authTokens\.css'/);
+ assert.doesNotMatch(css,/#[0-9a-fA-F]{3,8}\b/);
+ assert.match(ramp,/--auth-color-primary:#0b57d0/);
+ assert.match(ramp,/--auth-color-hover:#0946a7/);
+ assert.match(ramp,/--auth-color-disabled:#698ac0/);
+});
+test('UX-0026 security event meta shows a category and relative time instead of generic copy',()=>{
+ const setup=source('src/core/settings/SetupHome/setupHomeView.tsx');
+ assert.match(setup,/function relativeSecurityTime/);
+ assert.match(setup,/function securityActivityType/);
+ assert.match(setup,/relativeSecurityTime\(event\.at,Date\.now\(\)\)/);
+ assert.match(setup,/dateTime=\{event\.at\}/);
+ assert.doesNotMatch(setup,/<small>Security event<\/small>/);
+});
+test('Page card sort controls exist through narrow-desktop card breakpoint',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(css,/page-manager-mobile-sort \{ display:none; \}[\s\S]*?@media\(max-width:1199px\)/);
+});
