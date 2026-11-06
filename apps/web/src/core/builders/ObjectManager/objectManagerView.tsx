@@ -531,6 +531,8 @@ function ObjectManager({
     const result=objectSortKey==='fields'?a.fields.length-b.fields.length:objectSortKey==='kind'?a.kind.localeCompare(b.kind):objectSortKey==='apiName'?a.apiName.localeCompare(b.apiName):a.label.localeCompare(b.label);
     return objectSortDescending?-result:result;
   });
+  const showDescriptionColumn=sortedVisibleObjects.some(item=>Boolean(item.description?.trim()));
+  const showDeploymentColumn=sortedVisibleObjects.some(item=>Boolean(item.settings?.deploymentStatus&&item.settings.deploymentStatus!=='Deployed'));
   const objectPageCount=Math.max(1,Math.ceil(sortedVisibleObjects.length/objectPageSize));
   const currentObjectPage=Math.min(objectListPage,objectPageCount-1);
   const paginatedObjects=sortedVisibleObjects.slice(currentObjectPage*objectPageSize,(currentObjectPage+1)*objectPageSize);
@@ -2024,12 +2026,16 @@ function ObjectManager({
         <thead><tr>
           {([['label','Object label'],['apiName','API name'],['kind','Type']] as const).map(([key,label])=>
             <th key={key} aria-sort={objectSortKey===key?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort(key)}>{label}</button></th>)}
-          <th>Description</th><th>Deployment</th>
+          {showDescriptionColumn&&<th>Description</th>}{showDeploymentColumn&&<th>Deployment</th>}
           <th aria-sort={objectSortKey==='fields'?(objectSortDescending?'descending':'ascending'):undefined}><button type="button" onClick={()=>changeObjectSort('fields')}>Fields</button></th>
           <th>Action</th></tr></thead>
         <tbody>{paginatedObjects.map(item => <tr key={item.apiName}>
-          <td><button type="button" className="field-link" onClick={()=>onObjectSelect(item)}>{item.label}</button></td>
-          <td className="api-name">{item.apiName}</td><td>{item.kind}</td><td>{item.description || "—"}</td><td>{item.settings?.deploymentStatus ?? "Deployed"}</td><td>{item.fields.length}</td>
+          <td><a className="field-link" href={'/une/setup/object-manager/'+encodeURIComponent(item.apiName)+'/Details'}
+            onClick={event=>{if(event.ctrlKey||event.metaKey||event.shiftKey)return;event.preventDefault();onObjectSelect(item);}}>{item.label}</a></td>
+          <td className="api-name">{item.apiName}</td><td>{item.kind}</td>
+          {showDescriptionColumn&&<td>{item.description || "—"}</td>}
+          {showDeploymentColumn&&<td>{item.settings?.deploymentStatus ?? "Deployed"}</td>}
+          <td>{item.fields.length}</td>
           <td><button className="btn" type="button" onClick={()=>onObjectSelect(item)}>View</button></td>
         </tr>)}</tbody></table></div>
       <label className="object-manager-mobile-sort">Sort objects <select value={objectSortKey} onChange={event=>changeObjectSort(event.target.value as typeof objectSortKey)}><option value="label">Label</option><option value="apiName">API name</option><option value="kind">Type</option><option value="fields">Field count</option></select></label>
@@ -2041,7 +2047,10 @@ function ObjectManager({
           </button>
         </div>)}
       </div>
-      {!visibleObjects.length && <div className="empty-state">No objects match this search. Clear the search or select a different object type.</div>}
+      {!visibleObjects.length && <div className="empty-state" role="status">
+        <p>No objects match the search or selected type.</p>
+        <button className="btn" type="button" onClick={()=>{onSearch('');setViewMode('All Objects');}}>Clear filters</button>
+      </div>}
       <nav className="object-manager-pagination" aria-label="Object Manager pages">
         <span>{sortedVisibleObjects.length?currentObjectPage*objectPageSize+1:0}–{Math.min((currentObjectPage+1)*objectPageSize,sortedVisibleObjects.length)} of {sortedVisibleObjects.length} {sortedVisibleObjects.length===1?"object":"objects"}</span>
         <button type="button" className="btn" disabled={currentObjectPage===0} onClick={()=>changeObjectPage(Math.max(0,currentObjectPage-1))}>Previous</button>
