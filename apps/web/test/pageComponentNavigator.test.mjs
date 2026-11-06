@@ -63,7 +63,9 @@ test('View tab wires the navigator into existing selection, persisted rename and
   const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
   const navigator=readFileSync(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
   assert.match(view,/<PageComponentNavigator components=\{page.components\}/);
-  assert.match(view,/setSelectedId\(id\);setSelectionIds\(\[id\]\)/);
+  assert.match(view,/selectCanvasIds\(page\.components,selectionIds,id,mode,selectedId\)/);
+  assert.match(view,/setSelectionIds\(ids\)/);
+  assert.match(navigator,/aria-multiselectable="true"/);
   assert.match(view,/scrollIntoView\(\{block:'nearest'/);
   assert.match(view,/navigatorName:proposed/);
   assert.match(view,/Component Name already exists on this page layout/);
