@@ -404,6 +404,18 @@ export function evaluateParsedExpression(expression,record,formulaContext){
    return descriptor&&Object.prototype.hasOwnProperty.call(descriptor,'value')
     ?descriptor.value:undefined;
   };
+  // Action results are returned by authorised Record/Files services and may
+  // be referenced as AS(alias).Field without unrelated record mention hydration.
+  // The runtime supplies the explicit aliases: never trust a page property to
+  // declare which nested objects may be read.
+  if(parts.length===2&&Array.isArray(formulaContext.actionAliases)&&
+    formulaContext.actionAliases.includes(parts[0])){
+   const result=ownValue(ownValue(currentRecord,parts[0])??{},parts[1]);
+   if(result===undefined||result===null)return '';
+   if(!['string','number','boolean'].includes(typeof result))
+    throw Error('Action result field must be a permitted scalar');
+   return result;
+  }
   // Related values have been hydrated against Object Manager metadata and
   // read permissions by the Page Runtime; they are not arbitrary JS traversal.
   if(reference.includes('.')){
@@ -712,5 +724,5 @@ export function evaluateCollectionFormula(formula,sourceRecords={},context={}){
 /** Explicit action entry point. Ordinary field evaluation remains side-effect free. */
 export function executeActionFormula(formula,record,context,services){
  return executeActionPlan(formula,{...record,sessionId:context?.sessionId??''},
-  (node,scope)=>evaluateParsedExpression(node,scope,context),services);
+  (node,scope,aliases)=>evaluateParsedExpression(node,scope,{...context,actionAliases:aliases}),services);
 }
