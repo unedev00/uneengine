@@ -145,3 +145,13 @@ test('actions read live $component values and CLOSESCREEN reaches the page runti
  assert.deepEqual(actions,['CLOSESCREEN']);
  assert.throws(()=>compileActionPlan('=CLOSESCREEN(now)'),/no arguments/);
 });
+
+test('baseline: 250 matched SUMIFS rows require three serial list calls',async()=>{
+ const requests:Call[]=[];
+ const result=await run('=STATE(total, SUMIFS(CartLine, LineTotal, Cart, @cartId))',
+  recordApi(lines(250),requests));
+ assert.equal(result.changes[0].value,47062.5);
+ assert.equal(requests.length,3);
+ assert.deepEqual(requests.map(call=>Number(new URL('http://x'+call.path).searchParams.get('limit'))),[100,100,100]);
+ console.info('SUMIFS baseline: matched=250 requests=3 sequence=GET>GET>GET');
+});
