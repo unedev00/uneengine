@@ -295,3 +295,48 @@ test('missing future alias field retains guarded GET fallback and permission err
  }}),/CREATERECORD failed after 1 confirmed action\(s\). Permission denied/);
  assert.deepEqual(calls,['POST /records/Item','GET /records/Item/'+cartId]);
 });
+
+
+test('server action formulas resolve session user/tenant from authenticated actor, not client scope',async()=>{
+ const actor={tenant_id:'tenant-trusted',user_id:'user-trusted'};
+ const calls:Array<{sql:string;params:unknown}>=[],writes:Record<string,unknown>[]=[];
+ const db={
+  query:async(sql:string,params:unknown[])=>{
+   calls.push({sql,params});
+   if(sql.includes('FROM md_users'))return {rows:[{email:'trusted@example.test',
+    display_name:'Trusted User',time_zone:'Europe/London',locale:'en-GB',
+    currency_iso_code:'GBP'}]};
+   if(sql.includes('FROM md_tenants'))return {rows:[{name:'Trusted Tenant'}]};
+   if(sql.includes('FROM md_tenant_settings'))return {rows:[{properties:{
+    tradingName:'Public Trading Name',logoUrl:'https://example.test/logo.png'}}]};
+   throw Error('Unexpected SQL query');
+  },
+  transaction:async<T>(run:()=>Promise<T>)=>run()
+ } as unknown as Pick<SqlPersistence,'transaction'|'query'>;
+ const records={
+  create:async(tenant:string,user:string,object:string,values:Record<string,unknown>)=>{
+   assert.deepEqual([tenant,user,object],['tenant-trusted','user-trusted','Audit']);
+   writes.push(values);return cartId;
+  },
+  get:async()=>({Id:cartId}),list:async()=>({records:[],total:0}),
+  update:async()=>undefined,remove:async()=>undefined
+ } as unknown as Pick<RecordEngine,'list'|'get'|'create'|'update'|'remove'>;
+ const formula='=CREATERECORD(Audit, UserId, $session.user.id, UserEmail, $session.user.email, '+
+  'TenantId, $session.tenant.id, TenantName, $session.tenant.name)';
+ const plan=splitServerDataActionPlan(formula);
+ assert.ok(plan);
+ const server=await executeServerDataAction(db,records,actor,formula,{
+  sessionId:'page-session',user:{id:'spoof'},tenant:{id:'spoof'}
+ },plan.dataSteps);
+ assert.equal(server.error,undefined);
+ assert.deepEqual(writes,[{UserId:'user-trusted',UserEmail:'trusted@example.test',
+  TenantId:'tenant-trusted',TenantName:'Public Trading Name'}]);
+ assert.equal(calls.length,3,'Identity read once per action plan');
+ assert.deepEqual(calls[0].params,['tenant-trusted','user-trusted']);
+ const invalid='=CREATERECORD(Audit, Owner, $session.user.password)';
+ const invalidPlan=splitServerDataActionPlan(invalid);
+ assert.ok(invalidPlan);
+ const blocked=await executeServerDataAction(db,records,actor,invalid,{sessionId:'page'},invalidPlan.dataSteps);
+ assert.match(blocked.error??'',/Unsupported session reference/);
+ assert.equal(writes.length,1);
+});
