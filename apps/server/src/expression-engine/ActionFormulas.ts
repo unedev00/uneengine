@@ -411,13 +411,63 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      const resolveServer=async(node:Expression|undefined):Promise<void>=>{
       if(!node)return;
       if(node.kind==='binary'){
-       if(parallelSafe(node.left)&&parallelSafe(node.right))
+       // Match the scalar evaluator's short-circuit semantics before starting IO.
+       if(node.operator==='AND'||node.operator==='OR'){
+        await resolveServer(node.left);
+        const truth=formulaTruth(evaluateNow(substitute(node.left)));
+        if(node.operator==='AND'&&!truth||node.operator==='OR'&&truth)return;
+        await resolveServer(node.right);
+       }else if(parallelSafe(node.left)&&parallelSafe(node.right))
         await Promise.all([resolveServer(node.left),resolveServer(node.right)]);
        else{await resolveServer(node.left);await resolveServer(node.right);}
        return;
       }
       if(node.kind==='unary'){await resolveServer(node.value);return;}
       if(node.kind!=='call')return;
+      if(node.name==='IF'&&node.args.length===3){
+       await resolveServer(node.args[0]);
+       const selected=formulaTruth(evaluateNow(substitute(node.args[0])))?1:2;
+       await resolveServer(node.args[selected]);
+       return;
+      }
+      if(node.name==='IFERROR'&&node.args.length===2){
+       try{
+        await resolveServer(node.args[0]);
+        evaluateNow(substitute(node.args[0]));
+       }catch{
+        await resolveServer(node.args[1]);
+        // A server failure in the protected operand must become an ordinary
+        // fallback value so the later synchronous IFERROR sees the same result.
+        resolved.set(node,evaluateNow(substitute(node.args[1])));
+       }
+       return;
+      }
+      if((node.name==='BLANKVALUE'||node.name==='NULLVALUE')&&node.args.length===2){
+       await resolveServer(node.args[0]);
+       const first=evaluateNow(substitute(node.args[0]));
+       if(first===null||first===undefined||node.name==='BLANKVALUE'&&first==='')
+        await resolveServer(node.args[1]);
+       return;
+      }
+      if(node.name==='AND'||node.name==='OR'){
+       for(const arg of node.args){
+        await resolveServer(arg);
+        const truth=formulaTruth(evaluateNow(substitute(arg)));
+        if(node.name==='AND'&&!truth||node.name==='OR'&&truth)break;
+       }
+       return;
+      }
+      if(node.name==='CASE'&&node.args.length>=4&&node.args.length%2===0){
+       await resolveServer(node.args[0]);
+       const target=evaluateNow(substitute(node.args[0]));
+       let selected=node.args.length-1;
+       for(let index=1;index<node.args.length-1;index+=2){
+        await resolveServer(node.args[index]);
+        if(target===evaluateNow(substitute(node.args[index]))){selected=index+1;break;}
+       }
+       await resolveServer(node.args[selected]);
+       return;
+      }
       if(node.args.length>1&&node.args.every(parallelSafe))
        await Promise.all(node.args.map(resolveServer));
       else for(const arg of node.args)await resolveServer(arg);

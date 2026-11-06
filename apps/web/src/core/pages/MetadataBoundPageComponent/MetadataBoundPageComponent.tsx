@@ -130,6 +130,7 @@ export default function MetadataBoundPageComponent({
   const recordPageSize=100;
   const [dataError, setDataError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [actionPending,setActionPending]=useState(0);
   const [selectedCategories, setSelectedCategories] = useState<Record<string,string>>({});
   const [selectedFilterRecords, setSelectedFilterRecords] = useState<Record<string,{
     recordId:string;label:string;sourceObjectApiName:string
@@ -591,15 +592,23 @@ export default function MetadataBoundPageComponent({
       throw error;
     }
   };
-  const onAction = async (action:{event:string;value?:unknown}) => {
-    try{return await executeAction(action);}
-    catch(error){
-     if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
-      window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
-       detail:{pageSessionKey,sessionId,objectApiNames:error.mutatedObjectApiNames}
-      }));
-     setActionError(error instanceof Error?error.message:'Action failed');
-     throw error;
+  const onAction = async (action: {event:string;value?:unknown}) => {
+    setActionPending(count=>count+1);
+    try {
+      const result=await executeAction(action);
+      setActionError('');
+      return result;
+    } catch(error) {
+      // A prior Record API write may have succeeded before this step failed.
+      // Refresh only the confirmed objects. Do not replay the authored action.
+      if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
+       window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+        detail:{pageSessionKey,sessionId,objectApiNames:error.mutatedObjectApiNames}
+       }));
+      setActionError(error instanceof Error?error.message:'Action failed');
+      throw error;
+    } finally {
+      setActionPending(count=>Math.max(0,count-1));
     }
   };
   useEffect(() => {
@@ -646,13 +655,13 @@ export default function MetadataBoundPageComponent({
         ? apiRequest<{contentType:string;contentBase64:string}>('/media-assets/'+id)
         : Promise.reject(new Error('Invalid media asset ID')),
       loadCompanySettings: () => apiRequest('/metadata/currencies'),
-      onChange: (value: unknown) => {
+      onChange: (value: unknown, dispatch?:{actionHandled?:boolean}) => {
         publishComponentInput(component.id,value);
-        if (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
-          &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change')))
-          void onAction({ event: 'change', value }).catch(() => {});
+        if (!dispatch?.actionHandled && (actionFlows.change || (Array.isArray(pageBehaviors(properties)?.interactions)
+          &&(pageBehaviors(properties)!.interactions as Array<{event?:unknown}>).some(item=>item?.event==='change'))))
+          void onAction({ event: 'change', value }).catch(() => {/* Error displayed by action boundary. */});
       },
-      loading: dataLoading && recordsForRequest !== recordRequestKey, sessionId, previewOnly: disableActions, builderPreview: builderPreview===true&&disableActions,
+      loading: actionPending>0 || (dataLoading && recordsForRequest !== recordRequestKey), sessionId, previewOnly: disableActions, builderPreview: builderPreview===true&&disableActions,
       // Only bind scalar expressions when one authorised record is in scope.
       // Multi-row components resolve their per-row values inside their own renderer.
       ...(contextRecords.length===1 ? {record:contextRecords[0]} : {}),

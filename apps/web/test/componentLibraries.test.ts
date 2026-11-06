@@ -1,3 +1,4 @@
+import {dispatchComponentEvent} from '../src/component-libraries/shared/componentEventDispatch.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -353,4 +354,28 @@ test('rejected renderer retries and legacy revisions refetch without cross-versi
  assert.equal(await loadBundledRenderer('component-library/components/button.hash2.json@2',
   async()=>{hashed++;return 'v2';}),'v2');
  assert.equal(hashed,2,'new published renderer hash requires a fresh fetch');
+});
+
+test('shared events return awaitable completion and preserve rejected errors',async()=>{
+ let finish!:(value:string)=>void;
+ const pending=new Promise<string>(resolve=>{finish=resolve;});
+ const completion=dispatchComponentEvent({onAction:()=>pending},'itemSelect',{Id:'x'});
+ assert.equal(typeof completion.then,'function');
+ finish('saved');
+ assert.equal(await completion,'saved');
+ const failed=dispatchComponentEvent({onAction:()=>Promise.reject(Error('Denied'))},'click',null);
+ await assert.rejects(failed,/Denied/);
+});
+test('metadata change publishes input but dispatches a single action',async()=>{
+ const events:string[]=[];
+ const p={actionFlows:{change:{actionType:'Formula'}},
+  onChange:(_value:unknown,options?:{actionHandled?:boolean})=>{
+   events.push('publish');assert.equal(options?.actionHandled,true);
+  },onAction:async()=>{events.push('write');return {ok:true};}};
+ assert.deepEqual(await dispatchComponentEvent(p,'change',42),{ok:true});
+ assert.deepEqual(events,['publish','write']);
+ events.length=0;
+ const direct={onChange:(value:unknown)=>{events.push(String(value));}};
+ await dispatchComponentEvent(direct,'change',7);
+ assert.deepEqual(events,['7']);
 });
