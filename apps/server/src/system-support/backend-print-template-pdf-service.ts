@@ -158,7 +158,7 @@ export async function buildPrintDocument(page:PrintPage,record:Record<string,unk
    'text-align:'+style.align+';';
   const tableText=contentRows?[
     (Array.isArray(object(p.dataCollection).columns)
-      ?object(p.dataCollection).columns:[]).join('  |  '),
+      ?object(p.dataCollection).columns as string[]:[]).join('  |  '),
     ...contentRows.map(row=>Object.entries(row).filter(([key])=>key!=='Id'&&
       !key.startsWith('__')).slice(0,12).map(([,item])=>recordValue(item)).join('  |  '))
   ].join('\n'):value;
