@@ -23,6 +23,7 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
  const [execution,setExecution]=useState<Report|null>(null);
  const [exportMode,setExportMode]=useState<'current'|'all'>('current');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [notice,setNotice]=useState('');
  const fileRef=useRef<HTMLInputElement>(null);
  const hasWorkbook=Boolean(workbook);
  const report=execution??validation;
@@ -66,7 +67,9 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
   try{
    const result=await apiRequest<{workbook:string}>('/metadata/loader/export',{
     method:'POST',body:JSON.stringify({objects:exportMode==='current'?[currentObject]:[]})});
-   saveXlsx(result.workbook,exportMode==='current'?'MetaDrive_'+currentObject+'_Metadata.xlsx':'MetaDrive_All_Metadata.xlsx');
+   const downloadedName=exportMode==='current'?'MetaDrive_'+currentObject+'_Metadata.xlsx':'MetaDrive_All_Metadata.xlsx';
+   saveXlsx(result.workbook,downloadedName);
+   setNotice('Downloaded '+downloadedName+'.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to export metadata');}
   finally{setBusy(false);}
  };
@@ -82,8 +85,9 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
    </div>
    <section className="metadata-card" style={{marginBottom:16}}>
     <h3><Download size={17}/> Download existing metadata</h3>
-    <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:12}}>
-     <label><input type="radio" checked={exportMode==='current'} onChange={()=>setExportMode('current')}
+    <fieldset style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:12,minWidth:0,border:0,padding:0,margin:0}}>
+     <legend className="form-label">Export scope</legend>
+     <label><input name="metadata-export-scope" type="radio" checked={exportMode==='current'} onChange={()=>setExportMode('current')}
       disabled={!currentObject}/> Selected object{!availableObjects?.length||!onObjectChange?' ('+(currentObject||'none')+')':''}</label>
      {availableObjects&&onObjectChange&&<select className="form-control" aria-label="Select object for metadata export"
       style={{width:260,maxWidth:'100%'}} value={currentObject}
@@ -91,21 +95,23 @@ export default function UniversalMetadataLoader({apiRequest,currentObject,onClos
       {availableObjects.map(item=><option key={item.apiName} value={item.apiName}>
        {item.label} ({item.apiName})</option>)}
      </select>}
-     <label><input type="radio" checked={exportMode==='all'} onChange={()=>setExportMode('all')}/> All permitted objects</label>
+     <label><input name="metadata-export-scope" type="radio" checked={exportMode==='all'} onChange={()=>setExportMode('all')}/> All permitted objects</label>
      <button className="btn" type="button" onClick={()=>void exportWorkbook()}
       disabled={busy||(exportMode==='current'&&!currentObject)}>
-      <FileSpreadsheet size={16}/> Download Excel</button>
-    </div>
+      <FileSpreadsheet size={16}/> {busy?'Preparing Excel…':'Download Excel'}</button>
+    </fieldset>
+    {notice&&<p role="status">{notice}</p>}
     <p className="properties-help">This object selection controls only the download. Upload an Objects/Fields workbook for any permitted object, regardless of the selected export object. The export includes API names and revisions; removing a row never deletes metadata.</p>
    </section>
    <section className="metadata-card" style={{marginBottom:16}}>
     <h3><Upload size={17}/> Upload workbook</h3>
     <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:12}}>
-     <input ref={fileRef} type="file" accept=".xlsx" aria-label="Upload metadata Excel workbook"
+     <input ref={fileRef} type="file" accept=".xlsx" aria-label="Upload metadata Excel workbook" style={{minWidth:0,maxWidth:"100%",width:"100%",boxSizing:"border-box"}}
       onChange={e=>void selectFile(e)}/>
      <button type="button" className="btn btn-brand" onClick={()=>void validate()}
-      disabled={busy||!hasWorkbook}>1. Validate first</button>
+      disabled={busy||!hasWorkbook} aria-describedby={!hasWorkbook?"metadata-loader-validate-hint":undefined}>1. Validate first</button>
     </div>
+    {!hasWorkbook&&<small id="metadata-loader-validate-hint">Select an exported workbook to enable validation.</small>}
     <p className="properties-help">{fileName||'Upload an exported .xlsx workbook with Objects and/or Fields sheets. Actions: Create, Update, Upsert, Delete, HardDelete.'}</p>
    </section>
    {error&&<p role="alert" style={{color:'var(--color-danger,#b42318)'}}><AlertTriangle size={15}/> {error}</p>}
