@@ -84,6 +84,38 @@ test('Cart uses the universal Formula Engine for =SUM of line totals and row exp
  assert.doesNotMatch(cart,/const sum=|for\(const record of records\)/);
 });
 
+test('Cart summary slots display formula text and respect bound Object field types',async()=>{
+ const source={
+  objectApiName:'CartLine',
+  objects:[{apiName:'CartLine',fields:[
+   {apiName:'LineTotal',dataType:'Currency'},
+   {apiName:'CouponCode',dataType:'Text'}
+  ]}],
+  records:[{Id:'a',LineTotal:6,CouponCode:'0012'},{Id:'b',LineTotal:10,CouponCode:'0020'}],
+  currencyCode:'GBP'
+ };
+ const free=await cartMarkup({...source,
+  subtotalValue:'="Subtotal £" & SUM(@LineTotal)',
+  discountValue:'@CouponCode',
+  taxLabel:'VAT',taxValue:'="VAT included"',
+  totalValue:'="£" & SUM(@LineTotal)'
+ });
+ assert.match(free,/>Subtotal<\/span><span>Subtotal £16<\/span>/);
+ assert.match(free,/>Discount<\/span><span>0012<\/span>/,
+  'a text Object field must not be converted to currency even when numeric-looking');
+ assert.match(free,/>VAT<\/span><span>VAT included<\/span>/);
+ assert.match(free,/>Total<\/span><span>£16<\/span>/);
+ const numeric=await cartMarkup({...source,
+  subtotalValue:'@LineTotal',discountValue:1,taxValue:'=SUM(@LineTotal)',totalValue:16
+ });
+ assert.match(numeric,/>Subtotal<\/span><span>£6\.00<\/span>/,
+  'a numeric Object field uses the default currency format');
+ assert.match(numeric,/>Discount<\/span><span>£1\.00<\/span>/);
+ assert.match(numeric,/>Tax<\/span><span>£16\.00<\/span>/,
+  'existing purely numeric formulas keep their currency format');
+ assert.match(numeric,/>Total<\/span><span>£16\.00<\/span>/);
+});
+
 test('Universal SUM handles authorised row expressions, explicit markers and bounded failures',async()=>{
  const {evaluateFieldExpressionDetailed:evaluate}=await import('../src/component-libraries/shared/FieldExpression.js');
  const rows=[{LineTotal:6,Price:3,Quantity:2},{LineTotal:10,Price:5,Quantity:2}];
