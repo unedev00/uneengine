@@ -648,3 +648,22 @@ html, body, #root { min-width:0; max-width:100%; }
 @media(max-width:599px) {
   .lightning .home-content .welcome-banner.setup-home-summary { padding:12px 14px; }
 }
+
+/* UX-0056 / UX-0072: use operable cards instead of clipped tables at 1024–1199px. */
+@media(min-width:1024px) and (max-width:1199px) {
+ .lightning .page-manager-view>.page-manager-table-scroll,
+ .lightning .app-manager-list>.app-manager-list-scroll { display:none!important; }
+ .lightning .page-manager-view>.md-responsive-rows,
+ .lightning .app-manager-list>.md-responsive-rows {
+   display:block;margin:10px 0;border:1px solid var(--md-border,#dce3eb);
+   border-radius:12px;background:var(--md-surface,#fff);
+ }
+ .lightning .page-manager-view>.md-responsive-empty,
+ .lightning .app-manager-list>.md-responsive-empty {
+   display:block;padding:22px 15px;
+ }
+ .lightning .page-manager-view>.md-responsive-rows .md-responsive-details,
+ .lightning .app-manager-list>.md-responsive-rows .md-responsive-details {
+   max-width:100%;overflow-wrap:anywhere;
+ }
+}
