@@ -1,4 +1,4 @@
-import {isActionPlan,type ActionPlanTiming} from '../../../../../server/src/expression-engine/ActionFormulas.js';
+import {isActionPlan,splitServerDataActionPlan,type ActionPlanTiming} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import type {FieldMetadata} from '../../metadata/Definitions/metadata';
 import {executeActionFormula,evaluateFieldExpressionDetailed,type FormulaBindingContext} from '../../../component-libraries/shared/FieldExpression.js';
 import {adjustNumberRecord,type AdjustNumberBinding} from './adjustNumberRecord';
@@ -57,9 +57,39 @@ export async function executePageFormulaAction(
    formulaName:formulaContext.timingName,
    onTiming:(sample:ActionPlanTiming)=>console.info('[FormulaTiming]',sample)
   }:{};
-  return executeActionFormula(formula,{...payload,state:pageState,event:payload},
-   {...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()},
-   {request,print,runPageAction,createPdf,...timing});
+  const scope={...payload,state:pageState,event:payload,sessionId};
+  const context={...formulaContext,pageState,sessionId,timeZone:'UTC',now:new Date()};
+  const services={request,print,runPageAction,createPdf,...timing};
+  let enabled=false;
+  if(typeof window!=='undefined'){
+   try{enabled=window.sessionStorage.getItem('metadrive:formula-server-data')==='1';}
+   catch{/* Disabled private storage. */}
+  }
+  const split=enabled?splitServerDataActionPlan(formula):null;
+  if(split){
+   const first=await request<{
+    supported:boolean;error?:string;changes?:Change[];recordChanged?:boolean;
+    mutatedObjectApiNames?:string[];variables?:Record<string,unknown>;completedActionCount?:number
+   }>('/action-formulas/execute-data',{
+    method:'POST',body:JSON.stringify({formula,scope,dataSteps:split.dataSteps})
+   });
+   if(first.supported===true){
+    if(first.error)throw Error(first.error);
+    const data={changes:first.changes??[],recordChanged:first.recordChanged===true,
+     mutatedObjectApiNames:first.mutatedObjectApiNames??[]};
+    if(split.dataSteps===split.totalSteps)return data;
+    // Browser-only suffix resumes after commit, with captured FLS-projected values.
+    const rest=await executeActionFormula(formula,scope,context,{
+     ...services,planWindow:{start:split.dataSteps,end:split.totalSteps,
+      variables:first.variables??{},completedBefore:first.completedActionCount??0}
+    });
+    return {changes:[...data.changes,...rest.changes],
+     recordChanged:data.recordChanged||rest.recordChanged,
+     mutatedObjectApiNames:[...new Set([...data.mutatedObjectApiNames,...rest.mutatedObjectApiNames])]};
+   }
+  }
+  // Both feature gates OFF or an unsafe plan: unchanged existing interpreter.
+  return executeActionFormula(formula,scope,context,services);
  }
  if(!formula.trim()||formula.length>300)
   throw Error('Enter a valid action formula in the Actions ribbon.');
