@@ -355,3 +355,76 @@ test('baseline: guarded numeric cart adjustment performs GET then PATCH before p
  console.info('optimistic numeric baseline: requests=2 order=GET>PATCH elapsedMockMs='+
   (performance.now()-start).toFixed(2));
 });
+
+test('opt-in guarded numeric update publishes before write, then commits without extra requests',async()=>{
+ const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
+ const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
+ const calls:string[]=[];const updates:Array<{key:string;value:unknown}>=[];
+ let release!:()=>void;
+ const writePending=new Promise<void>(resolve=>{release=resolve;});
+ const state={cartSessionId:sessionId,cartItems:[row],total:2.5};
+ const binding={
+  actionType:'AdjustNumber' as const,fieldApiName:'Quantity',deltaSource:'$event.delta' as const,
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
+  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
+ };
+ const task=adjustNumberRecord(async<T>(path,init)=>{
+  calls.push((init?.method??'GET')+' '+path);
+  if(init?.method==='PATCH')await writePending;
+  return {record:row} as T;
+ },binding,{recordId:rowId,delta:1},state,objects,'CartLine',
+  changes=>beginOptimisticNumberChange('page-opt','session-opt','cartItems',state,changes,
+   (key,value)=>updates.push({key,value})));
+ await new Promise<void>(resolve=>setTimeout(resolve,0));
+ assert.deepEqual(calls,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
+ assert.equal(updates.find(item=>item.key==='total')?.value,3.75);
+ release();
+ const result=await task;
+ assert.deepEqual(result.map(x=>x.key),['cartItems','total']);
+ assert.equal(updates.length,2);
+});
+
+test('opt-in numeric adjustment rolls back rejected write and preserves security error and ordering',async()=>{
+ const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
+ const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
+ const state={cartSessionId:sessionId,cartItems:[row],total:2.5};
+ const calls:string[]=[];const updates:Array<{key:string;value:unknown}>=[];
+ const config={
+  actionType:'AdjustNumber' as const,fieldApiName:'Quantity',deltaSource:'$event.delta' as const,
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
+  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
+ };
+ const req=async<T>(path:string,init?:RequestInit):Promise<T>=>{
+  calls.push((init?.method??'GET')+' '+path);
+  if(init?.method==='PATCH')throw Error('Permission denied');
+  return {record:row} as T;
+ };
+ const callback=(changes:ReadonlyArray<{key:string;value:unknown}>)=>
+  beginOptimisticNumberChange('page-rollback','session-rollback','cartItems',state,changes,
+    (key,value)=>updates.push({key,value}));
+ await assert.rejects(adjustNumberRecord(req,config,{recordId:rowId,delta:1},state,objects,'CartLine',callback),
+  /Permission denied/);
+ assert.deepEqual(calls,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
+ assert.equal(updates.length,4);
+ assert.equal(updates[1].value,3.75);
+ assert.equal(updates[3].value,2.5);
+ assert.deepEqual(updates[2].value,state.cartItems);
+ // Lock is released after rollback.
+ const ok=await adjustNumberRecord(async<T>()=>({record:row}) as T,
+  config,{recordId:rowId,delta:1},state,objects,'CartLine',callback);
+ assert.equal(ok.length,2);
+});
+
+test('optimistic state guard rejects concurrent provisional changes to avoid stale rollback',async()=>{
+ const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
+ const first=beginOptimisticNumberChange('same','session','cartItems',{total:5},
+  [{key:'total',value:6}],()=>{});
+ assert.throws(()=>beginOptimisticNumberChange('same','session','cartItems',{total:5},
+  [{key:'total',value:7}],()=>{}),/still pending/);
+ first.rollback();
+ const later=beginOptimisticNumberChange('same','session','cartItems',{total:5},
+  [{key:'total',value:7}],()=>{});
+ later.commit();
+});

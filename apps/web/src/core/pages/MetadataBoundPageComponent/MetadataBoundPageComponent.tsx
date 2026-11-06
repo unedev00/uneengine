@@ -1,3 +1,4 @@
+import {beginOptimisticNumberChange} from '../PageRuntime/optimisticPageNumbers';
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
 import {shouldInvalidatePageComponent,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
 import {isActionPlan,isScreenAction} from '../../../../../server/src/expression-engine/ActionFormulas.js';
@@ -489,8 +490,14 @@ export default function MetadataBoundPageComponent({
     if (binding.actionType === 'AdjustNumber') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
         ?action.value as Record<string,unknown>:{value:action.value};
+      const optimistic=binding.optimisticUiEnabled===true
+        ?(changes:ReadonlyArray<{key:string;value:unknown}>)=>beginOptimisticNumberChange(
+           pageSessionKey,sessionId,String(binding.stateCollectionKey??''),pageState,changes,
+           (key,value)=>window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
+            detail:{pageSessionKey,key,value}})))
+        :undefined;
       const changes=await adjustNumberRecord(apiRequest,binding as unknown as AdjustNumberBinding,
-        payload,pageState,objects,objectApiName);
+        payload,pageState,objects,objectApiName,optimistic);
       for(const change of changes)
         window.dispatchEvent(new CustomEvent('metadrive:page-local-state',{
           detail:{pageSessionKey,key:change.key,value:change.value}
