@@ -3,6 +3,7 @@ import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {inflateSync,deflateSync} from 'node:zlib';
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RbacEngine} from '../system-files/rbac-engine.js';
 import type {RecordEngine} from '../system-files/record-engine.js';
@@ -88,7 +89,8 @@ function layoutStyle(component:PrintComponent,page:PrintPage,index:number){
  return {x,y,width,height,fontSize,padding,color,background,border,borderWidth,weight,align};
 }
 type PdfElement={html:string;text:string;x:number;y:number;width:number;height:number;fontSize:number;
- color:string;background:string;border:string;borderWidth:number;padding:number;weight:string;align:string};
+ color:string;background:string;border:string;borderWidth:number;padding:number;weight:string;align:string;
+ image?:{contentType:string;contentBase64:string}};
 const dataAsset=/^asset:([0-9a-f-]{36})$/i;
 export async function buildPrintDocument(page:PrintPage,record:Record<string,unknown>,
  loadImage?:(assetId:string)=>Promise<{contentType:string;contentBase64:string}>){
@@ -110,12 +112,14 @@ export async function buildPrintDocument(page:PrintPage,record:Record<string,unk
   const image=typeof imageSource==='string'?
    resolvePrintValue(imageSource,record,page.targetObject):'';
   let content=escapeHtml(value).replace(/\r?\n/g,'<br>');
+  let embeddedImage:PdfElement['image'];
   if(/image|logo|avatar/.test(kind)&&image){
    const match=dataAsset.exec(image);
    if(!match||!loadImage)throw Error('Print images must use permitted tenant media assets');
    const asset=await loadImage(match[1]);
    if(!['image/png','image/jpeg','image/webp'].includes(asset.contentType))
     throw Error('Unsupported Print Template image type');
+   embeddedImage=asset;
    content='<img alt="" style="max-width:100%;max-height:100%;object-fit:contain" src="data:'+
      asset.contentType+';base64,'+asset.contentBase64+'">';
   }
@@ -131,7 +135,7 @@ export async function buildPrintDocument(page:PrintPage,record:Record<string,unk
    'font: '+style.weight+' '+style.fontSize+'px Arial,sans-serif;'+
    'text-align:'+style.align+';';
   elements.push({...style,text:value,x:left,y:top,width,height,
-   html:'<div style="'+css+'">'+content+'</div>'});
+   html:'<div style="'+css+'">'+content+'</div>',image:embeddedImage});
  }
  const pages=Math.ceil(maxBottom/page.canvasHeight);
  if(pages>100)throw Error('Print Template exceeds 100 pages');
@@ -156,16 +160,94 @@ function rgb(value:string):string{
  if(!hex)return '0 0 0';
  const h=hex[1];return [0,2,4].map(i=>(parseInt(h.slice(i,i+2),16)/255).toFixed(3)).join(' ');
 }
+
+function preparePdfImage(image:{contentType:string;contentBase64:string}):{
+ width:number;height:number;bytes:Buffer;filter:'DCTDecode'|'FlateDecode'
+}{
+ const data=Buffer.from(image.contentBase64,'base64');
+ if(data.length>5*1024*1024||data.length<8)throw Error('Invalid Print Template image');
+ if(image.contentType==='image/jpeg'){
+  if(data[0]!==255||data[1]!==216)throw Error('Invalid JPEG attachment');
+  let offset=2;
+  while(offset+9<data.length){
+   if(data[offset]!==255){offset++;continue;}
+   const marker=data[offset+1],length=data.readUInt16BE(offset+2);
+   if([192,193,194].includes(marker)){
+    const height=data.readUInt16BE(offset+5),width=data.readUInt16BE(offset+7);
+    if(width>0&&height>0&&width*height<=10000000)
+     return {width,height,bytes:data,filter:'DCTDecode'};
+   }
+   if(length<2||offset+2+length>data.length)break;
+   offset+=2+length;
+  }
+  throw Error('Unsupported JPEG dimensions');
+ }
+ if(image.contentType!=='image/png')throw Error('Vector backend requires PNG or JPEG image');
+ if(!data.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))
+  throw Error('Invalid PNG attachment');
+ let width=0,height=0,depth=0,colorType=0,interlace=1;
+ const idat:Buffer[]=[];let palette:Buffer|undefined;
+ for(let i=8;i+12<=data.length;){
+  const n=data.readUInt32BE(i),type=data.toString('ascii',i+4,i+8);
+  if(n>5*1024*1024||i+12+n>data.length)throw Error('Malformed PNG');
+  const chunk=data.subarray(i+8,i+8+n);
+  if(type==='IHDR'){
+   width=chunk.readUInt32BE(0);height=chunk.readUInt32BE(4);depth=chunk[8];
+   colorType=chunk[9];interlace=chunk[12];
+  }else if(type==='PLTE')palette=chunk;
+  else if(type==='IDAT')idat.push(chunk);
+  else if(type==='IEND')break;
+  i+=12+n;
+ }
+ if(!width||!height||width*height>10000000||depth!==8||interlace!==0||
+  ![0,2,3,4,6].includes(colorType))throw Error('Unsupported PNG format');
+ const channels:Record<number,number>={0:1,2:3,3:1,4:2,6:4};
+ const bpp=channels[colorType],stride=width*bpp;
+ const inflated=inflateSync(Buffer.concat(idat),{maxOutputLength:height*(stride+1)});
+ if(inflated.length!==height*(stride+1))throw Error('PNG scanline length mismatch');
+ const rgb=Buffer.alloc(width*height*3);let previous=Buffer.alloc(stride),cursor=0;
+ const paeth=(a:number,b:number,c:number)=>{
+  const p=a+b-c,da=Math.abs(p-a),db=Math.abs(p-b),dc=Math.abs(p-c);
+  return da<=db&&da<=dc?a:db<=dc?b:c;
+ };
+ for(let row=0;row<height;row++){
+  const filter=inflated[cursor++];
+  if(filter>4)throw Error('Invalid PNG filter');
+  const scan=Buffer.from(inflated.subarray(cursor,cursor+stride));cursor+=stride;
+  for(let i=0;i<stride;i++){
+   const a=i>=bpp?scan[i-bpp]:0,b=previous[i],c=i>=bpp?previous[i-bpp]:0;
+   const predictor=filter===1?a:filter===2?b:filter===3?Math.floor((a+b)/2):
+    filter===4?paeth(a,b,c):0;
+   scan[i]=(scan[i]+predictor)&255;
+  }
+  for(let col=0;col<width;col++){
+   const i=col*bpp,out=(row*width+col)*3;
+   const color=colorType===3?palette?.subarray(scan[i]*3,scan[i]*3+3):null;
+   if(colorType===3&&(!color||color.length!==3))throw Error('PNG palette is unavailable');
+   const r=colorType===0||colorType===4?scan[i]:color?color[0]:scan[i];
+   const g=colorType===0||colorType===4?scan[i]:color?color[1]:scan[i+1];
+   const b=colorType===0||colorType===4?scan[i]:color?color[2]:scan[i+2];
+   const alpha=colorType===4?scan[i+1]:colorType===6?scan[i+3]:255;
+   rgb[out]=Math.round((r*alpha+255*(255-alpha))/255);
+   rgb[out+1]=Math.round((g*alpha+255*(255-alpha))/255);
+   rgb[out+2]=Math.round((b*alpha+255*(255-alpha))/255);
+  }
+  previous=scan;
+ }
+ return {width,height,bytes:deflateSync(rgb),filter:'FlateDecode'};
+}
+
 /** Guaranteed backend fallback when a headless Chrome binary is unavailable.
  * It retains text, record values, geometry and solid fills with no user browser. */
 export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>>):Buffer{
  const objects:Buffer[]=[Buffer.alloc(0)];
- const add=(body:string)=>{objects.push(Buffer.from(body,'latin1'));return objects.length-1};
+ const add=(body:string|Buffer)=>{objects.push(Buffer.isBuffer(body)?body:Buffer.from(body,'latin1'));return objects.length-1};
  const catalog=add(''),pages=add(''),font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
  const kids:number[]=[];
  const scale=.75,w=(document.width*scale).toFixed(2),h=(document.height*scale).toFixed(2);
  for(let p=0;p<document.pages;p++){
   const commands:string[]=[];
+  const imageResources:string[]=[];
   for(const e of document.elements){
    if(e.y>=document.height*(p+1)||e.y+e.height<=document.height*p)continue;
    const x=(e.x*scale).toFixed(2),y=((document.height*(p+1)-e.y-e.height)*scale).toFixed(2),
@@ -174,6 +256,23 @@ export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>
     commands.push(rgb(e.background)+' rg '+x+' '+y+' '+ww+' '+hh+' re f');
    if(e.borderWidth>0)commands.push(rgb(e.border)+' RG '+(e.borderWidth*scale).toFixed(2)+
     ' w '+x+' '+y+' '+ww+' '+hh+' re S');
+   if(e.image){
+    const prepared=preparePdfImage(e.image);
+    const imageId=add(Buffer.concat([Buffer.from(
+     '<< /Type /XObject /Subtype /Image /Width '+prepared.width+
+     ' /Height '+prepared.height+
+     ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /'+prepared.filter+
+     ' /Length '+prepared.bytes.length+' >>\nstream\n'),prepared.bytes,Buffer.from('\nendstream')]));
+    const imageName='Im'+imageResources.length;
+    imageResources.push('/'+imageName+' '+imageId+' 0 R');
+    const ratio=Math.min(e.width/prepared.width,e.height/prepared.height);
+    const dw=prepared.width*ratio*scale,dh=prepared.height*ratio*scale;
+    const dx=(e.x*scale+(e.width*scale-dw)/2).toFixed(2);
+    const dy=((document.height*(p+1)-e.y)*scale-(e.height*scale+dh)/2).toFixed(2);
+    commands.push('q '+dw.toFixed(2)+' 0 0 '+dh.toFixed(2)+' '+dx+' '+dy+
+     ' cm /'+imageName+' Do Q');
+    continue;
+   }
    const fontSize=Math.min(72,Math.max(5,e.fontSize*scale));
    const maxChars=Math.max(1,Math.floor((e.width-2*e.padding)*scale/(fontSize*.53)));
    const lineHeight=fontSize*1.25;
@@ -200,7 +299,9 @@ export function vectorPdf(document:Awaited<ReturnType<typeof buildPrintDocument>
   const bytes=Buffer.from(stream,'latin1');
   const content=add('<< /Length '+bytes.length+' >>\nstream\n'+stream+'endstream');
   const page=add('<< /Type /Page /Parent '+pages+' 0 R /MediaBox [0 0 '+w+' '+h+
-   '] /Resources << /Font << /F1 '+font+' 0 R >> >> /Contents '+content+' 0 R >>');
+   '] /Resources << /Font << /F1 '+font+' 0 R >>'+
+   (imageResources.length?' /XObject << '+imageResources.join(' ')+' >>':'')+
+   ' >> /Contents '+content+' 0 R >>');
   kids.push(page);
  }
  objects[catalog]=Buffer.from('<< /Type /Catalog /Pages '+pages+' 0 R >>');
