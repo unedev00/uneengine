@@ -551,3 +551,14 @@ html, body, #root { min-width:0; max-width:100%; }
  .lightning .home-content .shortcut-card { min-height:72px; }
  .lightning .page-manager-table { min-width:0; }
 }
+
+/* Audit UX-0024/25: bounded global search and labelled Home entry. */
+.lightning .header-searches { min-width:0;max-width:min(420px,40vw); }
+.lightning .header-searches .global-record-search { max-width:100%;min-width:0; }
+.lightning .header-searches .global-record-search>span { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.lightning .brand-home-label { display:inline-block;font-size:12px;font-weight:600;margin-left:5px; }
+@media(max-width:900px){
+ .lightning .header-searches { max-width:48px; }
+ .lightning .header-searches .global-record-search>span,.lightning .header-searches .global-record-search kbd { display:none; }
+ .lightning .brand-home-label { display:none; }
+}
