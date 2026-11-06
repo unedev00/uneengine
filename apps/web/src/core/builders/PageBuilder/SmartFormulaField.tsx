@@ -154,7 +154,7 @@ export default function SmartFormulaField({value,onChange,fields,disabled,label,
       if(!object)return 'Unknown object: '+step.object;
       for(const field of step.fields.keys())if(!object.fields.some(item=>item.apiName===field))return 'Unknown field: '+step.object+'.'+field;
      }
-     if(step.name==='PRINT'&&!actionPages.some(item=>item.apiName===step.object&&item.pageType==='Print Template'&&item.status==='Active'))return 'Unknown published Print Template: '+step.object;
+     if(['PRINT','CREATEPDF'].includes(step.name)&&!actionPages.some(item=>item.apiName===step.object&&item.pageType==='Print Template'&&item.status==='Active'))return 'Unknown published Print Template: '+step.object;
      if(step.name==='FLOW'&&!flowReferences.some(item=>item.apiName===step.object))return 'Unknown active Flow: '+step.object;
      if(['EMAIL','SMS','WHATSAPP'].includes(step.name)&&!actionCredentials.some(item=>item.apiName===step.object))return 'Choose an enabled Named Credential';
     }
