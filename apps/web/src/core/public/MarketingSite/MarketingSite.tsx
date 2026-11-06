@@ -165,4 +165,37 @@ export function PrivacyPolicyPage(){
   </div>;
 }
 
+
+/**
+ * UX-0010: A public entry point for obtaining the applicable service terms.
+ * Legal terms are contractual and must not be fabricated in source code.
+ * VITE_TERMS_URL can direct users to the approved published document instead.
+ */
+export function TermsAccessPage(){
+  useEffect(()=>{
+    const previous=document.title;
+    document.title='Service Terms | UNE Solutions';
+    return ()=>{document.title=previous;};
+  },[]);
+  return <div className="une-marketing une-privacy-page">
+    <header className="une-privacy-header">
+      <div className="une-container une-privacy-header-inner">
+        <a href={prefix} aria-label="UNE Solutions home"><UneBrandLogo className="une-marketing-logo"/></a>
+        <a href={loginHref}>Back to sign in <ArrowRight size={16} aria-hidden="true"/></a>
+      </div>
+    </header>
+    <main id="main-content" className="une-container une-privacy-main">
+      <p className="une-section-eyebrow">UNE SOLUTIONS</p>
+      <h1>Service Terms</h1>
+      <p>For the terms that apply to your organisation's UNE Solutions service, please consult your service agreement or contact your organisation administrator.</p>
+      <p>To request a copy of the applicable terms, email <a href="mailto:support@unesolutions.co.uk?subject=Service%20terms%20request">support@unesolutions.co.uk</a>. This information page is not a substitute for your agreed terms.</p>
+      <nav className="une-privacy-actions" aria-label="Terms access navigation">
+        <a href={loginHref}>Client sign in</a>
+        <a href={`${prefix}privacy`}>Privacy Policy</a>
+      </nav>
+    </main>
+    <footer className="une-privacy-footer"><div className="une-container">© {new Date().getFullYear()} UNE Solutions · <a href="mailto:support@unesolutions.co.uk">Contact support</a></div></footer>
+  </div>;
+}
+
 export default MarketingSite;

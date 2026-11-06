@@ -350,3 +350,19 @@ test('UX-0053 Data Loader navigation aligns with the inset configuration panel',
  assert.match(loader,/maxWidth:1052,marginLeft:24/);
  assert.match(loader,/maxWidth:1100,minWidth:0/);
 });
+
+test('UX-0010 Terms, Privacy, Support and Build all stay available at sign in without a configured legal URL',()=>{
+ const login=source('src/core/authentication/Login/loginView.tsx');
+ const main=source('src/main.tsx');
+ const marketing=source('src/core/public/MarketingSite/MarketingSite.tsx');
+ assert.match(login,/auth-signin-footer/);
+ assert.match(login,/mailto:support@unesolutions\.co\.uk/);
+ assert.match(login,/VITE_PRIVACY_POLICY_URL/);
+ assert.match(login,/VITE_TERMS_URL\?\.startsWith\('https:\/\/'\)/);
+ assert.match(login,/BASE_URL\}terms/);
+ assert.match(login,/Build \{__METADRIVE_WEB_RELEASE__/);
+ assert.match(main,/const isTermsRoute = pathname === '\/terms'/);
+ assert.match(main,/<TermsAccessPage\s*\/>/);
+ assert.match(marketing,/export function TermsAccessPage\(/);
+ assert.match(marketing,/mailto:support@unesolutions\.co\.uk\?subject=Service%20terms%20request/);
+});
