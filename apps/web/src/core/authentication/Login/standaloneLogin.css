@@ -193,3 +193,20 @@
  .auth-screen .auth-card .auth-recovery-action {margin:0;}
  .auth-screen .auth-card .auth-signin-footer {padding:0;margin:4px 0;}
 }
+
+/* One auth action palette; keep the contrast-appropriate white text on blue. */
+.auth-screen:not(.auth-screen--standalone) {
+ --auth-action:#0b57d0;
+ --md-primary:#0b57d0;
+ --md-focus-ring:#0b57d0;
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(a,.text-action,.auth-password-toggle) {
+ color:var(--auth-action);
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit,
+.auth-screen:not(.auth-screen--standalone) .auth-card .btn-brand {
+ background:var(--auth-action);border-color:var(--auth-action);color:#fff;
+}
+.auth-screen:not(.auth-screen--standalone) .auth-card :is(input,select,textarea,button,a):focus-visible {
+ outline:2px solid var(--auth-action);outline-offset:2px;
+}
