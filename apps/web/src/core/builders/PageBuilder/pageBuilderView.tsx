@@ -456,6 +456,9 @@ function PageBuilder({
   const [pageListTypeTab, setPageListTypeTab] = useState('App Page');
   const [pageListDeviceTab, setPageListDeviceTab] = useState('all');
   const [pageListPage,setPageListPage]=useState(1);
+  const [pageListSort,setPageListSort]=useState<'updatedAt'|'label'|'apiName'|'status'>('updatedAt');
+  const [pageListSortDescending,setPageListSortDescending]=useState(true);
+  const changePageListSort=(key:typeof pageListSort)=>{if(key===pageListSort)setPageListSortDescending(value=>!value);else{setPageListSort(key);setPageListSortDescending(key==='updatedAt');}setPageListPage(1);};
   const [pageDetailsApi,setPageDetailsApi]=useState<string|null>(null);
   const paletteResizeStart = useRef<{ pointerId: number; pointerX: number; width: number } | null>(null);
   const [customPropertiesDraft, setCustomPropertiesDraft] = useState('');
@@ -2213,7 +2216,12 @@ function PageBuilder({
       : pageListDeviceTab === 'Desktop'
         ? item.layoutVariant === 'Desktop' || item.devices.includes('Desktop')
         : item.layoutVariant === pageListDeviceTab))
-    && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => (Date.parse(b.updatedAt ?? '') || 0) - (Date.parse(a.updatedAt ?? '') || 0));
+    && (!pageListObject || item.targetObject === pageListObject) && `${item.label} ${item.apiName}`.toLowerCase().includes(pageListSearch.trim().toLowerCase())).sort((a,b) => {
+      const result=pageListSort==='updatedAt'?(Date.parse(a.updatedAt??'')||0)-(Date.parse(b.updatedAt??'')||0):
+        pageListSort==='status'?a.status.localeCompare(b.status):
+        pageListSort==='apiName'?a.apiName.localeCompare(b.apiName):a.label.localeCompare(b.label);
+      return pageListSortDescending?-result:result;
+    });
   const pageListPageCount=Math.max(1,Math.ceil(visiblePages.length/50));
   const safePageListPage=Math.min(pageListPage,pageListPageCount);
   const paginatedPages=visiblePages.slice((safePageListPage-1)*50,safePageListPage*50);
@@ -3601,8 +3609,14 @@ function PageBuilder({
             </select>
           </label>}
         </div>
+        <label className="page-manager-mobile-sort">Sort pages
+          <select className="form-control" value={pageListSort} onChange={event=>{setPageListSort(event.target.value as typeof pageListSort);setPageListSortDescending(event.target.value==='updatedAt');setPageListPage(1);}}>
+           <option value="updatedAt">Last modified</option><option value="label">Page name</option>
+           <option value="apiName">API name</option><option value="status">Status</option>
+          </select>
+        </label>
         <ResponsiveDataList rows={paginatedPages} includeTablet getId={item=>item.apiName}
-          label="Page Manager pages" emptyText="No pages match the selected filters"
+          label="Page Manager pages" emptyText={pageListSearch||pageListObject||pageListDeviceTab!=="all"?"No pages match the selected filters.":"No pages of this type exist yet."}
           onOpen={item=>void openPageDesign(item.apiName)} openLabel="Open page designer"
           columns={[
             {apiName:'label',label:'Page',phoneRole:'title',render:item=>item.label},
@@ -3611,13 +3625,27 @@ function PageBuilder({
             {apiName:'type',label:'Type',render:item=>item.pageType},
             {apiName:'device',label:'Devices',phoneRole:'trailing',render:item=><>{pageDeviceLabel(item)}{layoutBadges(item)}</>},
             {apiName:'actions',label:'Actions',render:item=><div className="page-manager-mobile-actions">
-              <button type="button" className="btn" disabled={saving} onClick={()=>setPageDetailsApi(item.apiName)}>Page properties</button>
-              <button type="button" className="btn" onClick={()=>void openPageDesign(item.apiName)}>Design</button>
-              <button type="button" className="btn" disabled={saving} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
-              <button type="button" className="btn" disabled={saving||Boolean(archivingPageApiName)} onClick={()=>setPendingArchivePageApiName(item.apiName)}>Delete</button>
+              <button type="button" className="btn" aria-label={"Page properties for "+item.label} disabled={saving} onClick={()=>setPageDetailsApi(item.apiName)}>Page properties</button>
+              <button type="button" className="btn" aria-label={"Design "+item.label} onClick={()=>void openPageDesign(item.apiName)}>Design</button>
+              <button type="button" className="btn" aria-label={(item.status==="Active"?"Deactivate ":"Activate ")+item.label} disabled={saving} onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}>{item.status==='Active'?'Deactivate':'Activate'}</button>
+              <button type="button" className="btn" aria-label={"Delete "+item.label} disabled={saving||Boolean(archivingPageApiName)} onClick={()=>setPendingArchivePageApiName(item.apiName)}>Delete</button>
             </div>}
           ]}/>
-        <div className="page-manager-table-scroll md-mobile-table-replaced md-tablet-table-replaced"><table className="records-table page-manager-table"><thead><tr><th scope="col" className="page-manager-actions-heading">Actions</th><th>Page name</th><th>API Name</th><th>Application</th><th>Version</th><th>Type</th><th>Related object</th><th>Device</th><th>Dimensions</th><th>Orientation</th><th>Last modified</th><th>Status</th></tr></thead>
+        <div className="page-manager-table-scroll md-mobile-table-replaced md-tablet-table-replaced"><table className="records-table page-manager-table"><thead><tr>
+          <th scope="col" className="page-manager-actions-heading">Actions</th>
+          {([['label','Page name'],['apiName','API name']] as const).map(([key,label])=>
+            <th key={key} scope="col" aria-sort={pageListSort===key?(pageListSortDescending?'descending':'ascending'):undefined}>
+              <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort(key)}>{label}</button>
+            </th>)}
+          <th scope="col">Application</th><th scope="col">Version</th>
+          <th scope="col">Related object</th><th scope="col">Layout</th>
+          <th scope="col" aria-sort={pageListSort==='updatedAt'?(pageListSortDescending?'descending':'ascending'):undefined}>
+            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('updatedAt')}>Last modified</button>
+          </th>
+          <th scope="col" aria-sort={pageListSort==='status'?(pageListSortDescending?'descending':'ascending'):undefined}>
+            <button className="page-manager-sort-button" type="button" onClick={()=>changePageListSort('status')}>Status</button>
+          </th>
+        </tr></thead>
         <tbody>{paginatedPages.map(item=><tr key={item.apiName}>
           <td className="page-manager-actions">
             <div className="page-manager-action-icons" role="group" aria-label={'Actions for '+item.label}>
@@ -3631,7 +3659,7 @@ function PageBuilder({
                 onOpenDefault={()=>void openPageDesign(item.apiName)}
                 onOpenLayout={variant=>void openPageDesignLayout(item.apiName,variant)}/>
               <button className={'page-manager-icon-action page-manager-toggle'+(item.status==='Active'?' is-active':'')} type="button"
-                disabled={saving} aria-pressed={item.status==='Active'}
+                disabled={saving}
                 aria-label={(item.status==='Active'?'Deactivate ':'Activate ')+item.label}
                 title={item.status==='Active'?'Deactivate page':'Activate page'}
                 onClick={()=>void(item.status==='Active'?onDeactivate(item.apiName):savePage('Active',item,true))}><Power size={16}/></button>
@@ -3646,13 +3674,17 @@ function PageBuilder({
           <td>{apps.find(app=>app.navigationPageApiNames.includes(item.apiName)
             ||(item.activationAssignments??[]).some(a=>a.appId===app.apiName))?.label??'—'}</td>
           <td>{item.publishedRevision?'v'+item.publishedRevision:'—'}</td>
-          <td>{item.pageType}</td><td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : 'Not object-specific'}</td><td>{pageDeviceLabel(item)}{layoutBadges(item)}</td><td>{item.canvasWidth} × {item.canvasHeight} px</td><td>{canvasOrientation(item.canvasWidth,item.canvasHeight)}</td>
+          <td>{item.targetObject ? objects.find(object=>object.apiName===item.targetObject)?.label ?? item.targetObject : '—'}</td>
+          <td title={item.pageType+' · '+pageDeviceLabel(item)+' · '+item.canvasWidth+' × '+item.canvasHeight+' · '+canvasOrientation(item.canvasWidth,item.canvasHeight)}>
+            <strong>{pageDeviceLabel(item)}{layoutBadges(item)}</strong>
+            <small className="page-manager-layout-metadata">{item.pageType} · {item.canvasWidth} × {item.canvasHeight}</small>
+          </td>
           <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : '—'}</td>
           <td><span className={item.status === 'Active' ? 'page-status-badge active' : 'page-status-badge'}>{item.status}</span></td>
 
-        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : 'No pages match the selected filter. Create a new page to begin.'}</div>}</div>
+        </tr>)}</tbody></table>{!visiblePages.length && <div className="records-empty">{!recordPageContext && pageListTypeTab === 'Record Page' ? 'Record Pages are managed inside Object Manager. Choose an object there to manage its record pages.' : pageListSearch||pageListObject||pageListDeviceTab!=='all'?'No pages match the selected filters. Clear filters to see all pages.':'No pages of this type exist yet. Create a new page to begin.'}</div>}</div>
         <nav className="flow-existing-pagination" aria-label="Page list pagination">
-          <span>{visiblePages.length} pages · Page {safePageListPage} of {pageListPageCount}</span>
+          <span>{visiblePages.length} {visiblePages.length===1?"page":"pages"} · Page {safePageListPage} of {pageListPageCount}</span>
           <button className="btn" disabled={safePageListPage<=1} onClick={()=>setPageListPage(safePageListPage-1)}>Previous</button>
           <button className="btn" disabled={safePageListPage>=pageListPageCount} onClick={()=>setPageListPage(safePageListPage+1)}>Next</button>
         </nav>
