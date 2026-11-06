@@ -360,7 +360,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await cart.locator('.smart-cart-header').evaluate(element=>
    getComputedStyle(element).textAlign),'right','R3C2 alignment did not update the Cart header');
 
- // Image Placement sits beside Width at R2C5; Image Fill stays at R3C6.
+ // Image Placement follows Shadow at R2C4; Image Fill is at R3C5.
  // have icon-based menus, including the existing Fit/Fill/Stretch choices.
  await chooseArea('Image');
  const imagePlacement=row.locator('[data-design-row="2"] [data-design-slot="placement"]');
@@ -370,9 +370,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(await imagePlacement.getAttribute('data-supported'),'true');
  assert.equal(await imageFill.getAttribute('data-supported'),'true');
  assert.equal(await imagePlacement.locator('.design2-icon-trigger').count(),1,
-   'R2C5 image placement must be an icon dropdown');
+   'R2C4 image placement must be an icon dropdown');
  assert.equal(await imageFill.locator('.design2-icon-trigger').count(),1,
-   'R3C6 image fit must be an icon dropdown');
+   'R3C5 image fit must be an icon dropdown');
  // Geometry is Excel-owned and remains at 40x26px, not enlarged by
  // the earlier Design tab's wider select CSS.
  const placementRect=await imagePlacement.locator('.design2-icon-trigger').boundingBox();
@@ -487,9 +487,9 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.headerAlignment,'right',
   'Design 2 R3C2 alignment icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imagePlacement,'left',
-  'Design 2 R2C5 image placement icon dropdown did not persist');
+  'Design 2 R2C4 image placement icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.properties.imageFill,'fit',
-  'Design 2 R3C6 image fit icon dropdown did not persist');
+  'Design 2 R3C5 image fit icon dropdown did not persist');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.x,64,
   'Design 2 R0 X position did not survive SQL save');
  assert.equal(draft.components.find(item=>item.id==='browser-design2-cart')?.position?.y,68,
@@ -517,7 +517,7 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
  const tabsAreas=(await areaButtons().allTextContents()).map(value=>value.trim());
  assert.deepEqual(tabsAreas,allAreas,'All Excel areas must be visible for Smart Tabs');
  await chooseArea('Image');
- for(const [slotKey,rowNumber,column] of [['fill',1,1],['placement',2,5],['imageFill',3,6]]){
+ for(const [slotKey,rowNumber,column] of [['fill',1,1],['placement',2,4],['imageFill',3,5]]){
   const control=row.locator('[data-design-row="'+rowNumber+'"] [data-design-slot="'+slotKey+'"]');
   assert.equal(await control.count(),1,'Unsupported Image slot must remain visible');
   assert.equal(await control.getAttribute('data-design-column'),String(column));
