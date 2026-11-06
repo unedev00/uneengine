@@ -1,5 +1,4 @@
 import {dispatchComponentEvent as fire} from '../../shared/componentEventDispatch.js';
-};
 const records=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
 const key=k=>typeof k==="string"&&/^[A-Za-z][A-Za-z0-9_]*$/.test(k);
 const field=(row,name,fallback)=>key(name)?row?.[name]??fallback:fallback;
