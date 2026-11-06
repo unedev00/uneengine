@@ -229,3 +229,9 @@
  right:2px;min-width:44px;width:44px;min-height:44px;height:44px;
  padding:0;
 }
+
+/* UX-0001: override the 320px workspace-root minimum when a vertical scrollbar
+   reduces the actual layout viewport below 320 CSS pixels. */
+html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
+ min-width:0;max-width:100%;overflow-x:clip;
+}
