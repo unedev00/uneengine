@@ -43,7 +43,7 @@ export async function executePageFormulaAction(
  createPdf?:(template:string,id:string)=>Promise<{FileId:string;AssetRef:string}>,
  /** Page data the action may read: TABLE()/COLLECTION() sources and $component values. */
  formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'>={}
-):Promise<{changes:Change[];recordChanged:boolean}>{
+):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[]}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
   return executeActionFormula(formula,{...payload,state:pageState,event:payload},
@@ -70,7 +70,7 @@ export async function executePageFormulaAction(
     incrementFormula:formula,decrementFormula:formula};
   const changes=await adjustNumberRecord(request,config as AdjustNumberBinding,
     {...payload,delta},pageState,objects,objectApiName);
-  return {changes,recordChanged:true};
+  return {changes,recordChanged:true,mutatedObjectApiNames:objectApiName?[objectApiName]:[]};
  }
  const key=String(binding.stateKey??refs.find(name=>
   fieldIdentifier.test(name)&&Object.prototype.hasOwnProperty.call(pageState,name))??'');

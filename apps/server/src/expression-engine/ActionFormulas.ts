@@ -258,6 +258,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   const pins=new Map<string,boolean>();
   let completed=0;
   let recordChanged=false;
+  const mutatedObjectApiNames=new Set<string>();
   let iterations=0;
 
   /** Runs one list of steps. Each IF condition is decided once, when its first step runs,
@@ -427,6 +428,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      });
      completed++;
      recordChanged=true;
+     mutatedObjectApiNames.add(step.object);
      if(step.alias){
       const alias=step.alias;
       const later=(next:ActionStep):boolean=>[...stepNodes(next),...(next.guards??[]).map(g=>g.condition)]
@@ -447,5 +449,5 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
    return true;
   }
   await run(steps,Object.create(null),true);
-  return {changes,recordChanged};
+  return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames]};
 }

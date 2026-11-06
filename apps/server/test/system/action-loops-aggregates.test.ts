@@ -81,6 +81,7 @@ test('FOREACH snapshots matching records and runs the body for each one',async()
  assert.equal(data.find(row=>row.Id===id(50))?.Cart,'other','non-matching row untouched');
  assert.deepEqual(result.changes,[{key:'left',value:2}]);
  assert.equal(result.recordChanged,true);
+ assert.deepEqual(result.mutatedObjectApiNames,['CartLine']);
 });
 
 test('FOREACH validates its shape and rejects WAIT, nesting and oversized loops',async()=>{
