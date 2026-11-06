@@ -221,6 +221,43 @@ export function compileActionPlan(source:string):ActionStep[] {
  return steps;
 }
 
+
+/** Conservative, server-safe contiguous data prefix. A browser-only suffix
+ * must be unconditional and cannot be followed by another DB action.
+ * Unsafe/unsplittable formulas always retain the existing client path.
+ */
+export type ActionPlanDataSplit={dataSteps:number;totalSteps:number};
+const serverDataNames=new Set(['GETRECORD','CREATERECORD','UPDATERECORD','DELETERECORD','FOREACH']);
+const safeServerCalls=new Set(['IF','IFERROR','ISBLANK','ISNULL','ISNUMBER','NOT','AND','OR',
+ 'BLANKVALUE','NULLVALUE','VALUE','TEXT','LEN','ABS','ROUND','ROUNDUP','ROUNDDOWN',
+ 'SUM','MIN','MAX','COUNTIFS','SUMIFS','AVERAGEIFS','MINIFS','MAXIFS']);
+function safeServerNode(node:Expression|undefined):boolean{
+ if(!node)return true;
+ if(node.kind==='literal')return true;
+ if(node.kind==='reference')return !node.value.startsWith('$component.')
+  &&!node.value.startsWith('$flow.')&&!/(?:^|\.)(?:__proto__|prototype|constructor)(?:\.|$)/.test(node.value);
+ if(node.kind==='binary')return safeServerNode(node.left)&&safeServerNode(node.right);
+ if(node.kind==='unary')return safeServerNode(node.value);
+ return safeServerCalls.has(node.name)&&node.args.every(safeServerNode);
+}
+function safeServerStep(step:ActionStep):boolean{
+ if(!serverDataNames.has(step.name))return false;
+ if(step.name==='FOREACH'&&step.source)return false;
+ if(step.body?.some(body=>!safeServerStep(body)))return false;
+ return [...stepNodes(step),...(step.guards??[]).map(g=>g.condition)].every(safeServerNode);
+}
+export function splitServerDataActionPlan(formula:string):ActionPlanDataSplit|null{
+ const steps=compileActionPlan(formula);
+ const firstClient=steps.findIndex(step=>!safeServerStep(step));
+ const count=firstClient===-1?steps.length:firstClient;
+ if(count===0)return null;
+ // Conditional browser suffixes can re-decide IF guards after the server
+ // transaction; never split them or plans with intervening data actions.
+ if(steps.slice(count).some(step=>serverDataNames.has(step.name)||(step.guards?.length??0)>0))
+  return null;
+ return {dataSteps:count,totalSteps:steps.length};
+}
+
 export const isScreenAction=(source:string)=>/^\s*=?\s*SCREEN\s*\(/i.test(source);
 export function parseScreenAction(source:string){
  const node=new Parser(tokenize(source)).parse();
@@ -259,17 +296,27 @@ export type ActionServices={
  onTiming?:(timing:ActionPlanTiming)=>void;
  /** Stable metadata identifier, not the authored formula text or a field value. */
  formulaName?:string;
+ /** Private internal option for verified contiguous data-prefix execution. */
+ planWindow?:{
+  start:number;end:number;variables?:Record<string,unknown>;
+  completedBefore?:number;includeVariables?:boolean
+ };
 };
 type EvaluateValue=(node:Expression,scope:Record<string,unknown>,aliases?:readonly string[],
  state?:Readonly<Record<string,unknown>>)=>unknown;
 export async function executeActionPlan(formula:string,record:Record<string,unknown>,
- evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName}:ActionServices){
+ evaluateValue:EvaluateValue,{request,print,createPdf,runPageAction,onTiming,formulaName,planWindow}:ActionServices){
   const trace=typeof onTiming==='function';
   const started=trace?performance.now():0;
   const steps=compileActionPlan(formula);
+  if(planWindow&&(!Number.isSafeInteger(planWindow.start)||!Number.isSafeInteger(planWindow.end)||
+    planWindow.start<0||planWindow.end>steps.length||planWindow.end<planWindow.start||
+    !Number.isSafeInteger(planWindow.completedBefore??0)||(planWindow.completedBefore??0)<0))
+   throw Error('Invalid Formula execution segment');
+  const selectedSteps=planWindow?steps.slice(planWindow.start,planWindow.end):steps;
   const countSteps=(list:readonly ActionStep[]):number=>list.reduce(
    (total,step)=>total+1+(step.body?countSteps(step.body):0),0);
-  const stepCount=trace?countSteps(steps):0;
+  const stepCount=trace?countSteps(selectedSteps):0;
   const traceSteps:ActionPlanStepTiming[]=[];
   let requestCount=0;
   let activeStep:ActionPlanStepTiming|undefined;
@@ -285,7 +332,7 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   const stateChanges:Record<string,unknown>=Object.create(null);
   const changes:Array<{key:string;value:unknown}>=[];
   const pins=new Map<string,boolean>();
-  let completed=0;
+  let completed=planWindow?.completedBefore??0;
   let recordChanged=false;
   const mutatedObjectApiNames=new Set<string>();
   let iterations=0;
@@ -488,8 +535,10 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
   }
   let status:'completed'|'failed'='completed';
   try{
-   await run(steps,Object.create(null),true);
-   return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames]};
+   const variables=Object.assign(Object.create(null) as Record<string,unknown>,planWindow?.variables??{});
+   await run(selectedSteps,variables,true);
+   return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames],
+    ...(planWindow?.includeVariables?{variables,completedActionCount:completed}:{})};
   }catch(error){
    status='failed';
    throw error;
