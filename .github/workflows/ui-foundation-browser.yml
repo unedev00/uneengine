@@ -70,16 +70,19 @@ jobs:
           UI_84_AUTH_SCREENSHOTS: '1'
         run: node scripts/ui-84-auth-responsive-browser.mjs
       - name: Check Setup Home at 19 original audit viewport sizes
+        if: always()
         env:
           UI_84_SETUP_SCREENSHOT_DIR: artifacts/ui-84-setup-home
           UI_84_SETUP_SCREENSHOTS: '1'
         run: node scripts/ui-84-setup-home-browser.mjs
       - name: Check App Manager responsive registry, clone, and discard at 19 viewports
+        if: always()
         env:
           UI_84_APPS_SCREENSHOT_DIR: artifacts/ui-84-app-manager
           UI_84_APPS_SCREENSHOTS: '1'
         run: node scripts/ui-84-app-manager-browser.mjs
       - name: Check Data Loader mouse/keyboard tabs at 19 original audit viewport sizes
+        if: always()
         env:
           UI_84_LOADER_SCREENSHOT_DIR: artifacts/ui-84-loader
           UI_84_LOADER_SCREENSHOTS: '1'
