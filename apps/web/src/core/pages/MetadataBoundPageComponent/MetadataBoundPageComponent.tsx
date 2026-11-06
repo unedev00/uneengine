@@ -1,4 +1,5 @@
 import {beginOptimisticNumberChange} from '../PageRuntime/optimisticPageNumbers';
+import {runSerializedPageAction,planReadWriteObjects} from '../PageRuntime/pageActionCoordinator';
 import {runSequenceFlow} from '../PageRuntime/formulaFlowSequence';
 import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation,type PageMutationDetail} from '../PageRuntime/pageMutationScope';
 import {isActionPlan,isScreenAction,PartialActionError} from '../../../../../server/src/expression-engine/ActionFormulas.js';
@@ -595,7 +596,13 @@ export default function MetadataBoundPageComponent({
   const onAction = async (action: {event:string;value?:unknown}) => {
     setActionPending(count=>count+1);
     try {
-      const result=await executeAction(action);
+      const configured=actionFlows[action.event];
+      const dependencyObjects=configured&&typeof configured==='object'&&!Array.isArray(configured)
+       ?planReadWriteObjects(configured as Record<string,unknown>,objectApiName):[];
+      const result=dependencyObjects.length
+       ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,
+          ()=>executeAction(action))
+       :await executeAction(action);
       setActionError('');
       return result;
     } catch(error) {
