@@ -743,3 +743,17 @@ html, body, #root { min-width:0; max-width:100%; }
   color:var(--md-primary,#1d4ed8);
  }
 }
+
+/* UX-0029: refresh state is visible without adding layout shift; honor reduced motion. */
+.lightning .setup-home-refresh .setup-refresh-spinning {animation:md-setup-refresh-spin .85s linear infinite}
+@keyframes md-setup-refresh-spin {to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+ .lightning .setup-home-refresh .setup-refresh-spinning {animation:none}
+}
+.lightning .object-manager-mobile-sort .object-manager-sort-direction {
+ min-height:40px;white-space:nowrap;flex:0 0 auto;
+}
+@media(max-width:399px){
+ .lightning .object-manager-mobile-sort {flex-wrap:wrap}
+ .lightning .object-manager-mobile-sort select {flex:1 1 130px;min-width:0}
+}
