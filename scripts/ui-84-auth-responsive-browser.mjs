@@ -35,11 +35,11 @@ try{
   const signIn=page.getByRole('button',{name:'Sign in',exact:true});
   await signIn.waitFor({state:'visible',timeout:20000});
   // UX-0010: all three footer destinations must exist without optional env config.
-  const footer=page.getByRole('navigation',{name:'Sign-in help and legal',includeHidden:true});
-  const terms=footer.getByRole('link',{name:'Terms',exact:true,includeHidden:true});
+  const footer=page.locator('nav.auth-signin-footer[aria-label="Sign-in help and legal"]');
+  const terms=footer.locator('a').filter({hasText:/^Terms$/});
   assert.equal(await footer.count(),1,'Footer navigation must exist for each login variant');
-  assert.equal(await footer.getByRole('link',{name:'Contact support',includeHidden:true}).count(),1);
-  assert.equal(await footer.getByRole('link',{name:'Privacy Policy',includeHidden:true}).count(),1);
+  assert.equal(await footer.locator('a').filter({hasText:/^Contact support$/}).count(),1);
+  assert.equal(await footer.locator('a').filter({hasText:/^Privacy Policy$/}).count(),1);
   assert.equal(await terms.count(),1);
   assert.match(await terms.getAttribute('href'),/(^|\/)terms\/?$|^https:\/\//);
   const metrics=await page.evaluate(()=>{
