@@ -68,3 +68,26 @@ test('WAIT can schedule CREATEPDF after 600 minutes and retain follow-up attachm
  assert.equal(response.status,'Pending');
  assert(sql.some(x=>x.includes('INSERT INTO md_scheduled_actions')));
 });
+
+
+test('backend PDF preserves related table rows and PDF image objects',async()=>{
+ const table={...sample,components:[{id:'line-items',type:'smart_table',
+  label:'Line items',visible:true,position:{x:20,y:150,width:740,height:120},
+  properties:{dataCollection:{objectApiName:'SaleLine',columns:['Name','Amount']},
+   relatedFieldApiName:'SaleId'}}]};
+ const doc=await buildPrintDocument(table,{Id:uuid,Name:'Order',Total:9},undefined,
+  async()=>[{Name:'Line A',Amount:9},{Name:'Line B',Amount:0}]);
+ assert(doc.html.includes('<table'));
+ assert(doc.html.includes('Line A'));
+ assert(doc.html.includes('Line B'));
+ assert(vectorPdf(doc).toString('ascii',0,5)==='%PDF-');
+ const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9en9ZJUAAAAASUVORK5CYII=';
+ const picture={...sample,components:[{id:'logo',type:'smart_image',label:'Logo',
+  visible:true,position:{x:5,y:5,width:120,height:120},
+  properties:{imageSource:'asset:'+uuid}}]};
+ const imageDoc=await buildPrintDocument(picture,{Id:uuid,Name:'Order',Total:10},
+  async()=>({contentType:'image/png',contentBase64:png}));
+ const pdf=vectorPdf(imageDoc);
+ assert(pdf.toString('latin1').includes('/Subtype /Image'));
+ assert(pdf.toString('latin1').includes('/FlateDecode'));
+});
