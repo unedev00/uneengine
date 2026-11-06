@@ -198,13 +198,25 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
      onClick={onClose} disabled={busy}>×</button>
    </header>
    <div className="page-details-body">
-    <nav className="page-details-nav" aria-label="Page edit sections">
-     <a href="#page-details-properties" aria-current={activeSection==='properties'?'location':undefined}
-       onClick={()=>setActiveSection('properties')}>Page Properties</a>
-     <a href="#page-details-history" aria-current={activeSection==='history'?'location':undefined}
-       onClick={()=>setActiveSection('history')}>Versions</a>
-    </nav>
-    <div id="page-details-properties" className="page-details-grid">
+    <div className="page-details-nav" role="tablist" aria-label="Page edit sections"
+     onKeyDown={event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      event.preventDefault();
+      const selected=event.key==='ArrowRight'||event.key==='End'?'history':'properties';
+      setActiveSection(selected);
+      dialogRef.current?.querySelector<HTMLButtonElement>('#page-details-tab-'+selected)?.focus();
+     }}>
+     <button id="page-details-tab-properties" type="button" role="tab"
+       aria-selected={activeSection==='properties'} aria-controls="page-details-properties"
+       tabIndex={activeSection==='properties'?0:-1}
+       onClick={()=>setActiveSection('properties')}>Page Properties</button>
+     <button id="page-details-tab-history" type="button" role="tab"
+       aria-selected={activeSection==='history'} aria-controls="page-details-history"
+       tabIndex={activeSection==='history'?0:-1}
+       onClick={()=>setActiveSection('history')}>Versions</button>
+    </div>
+    <div id="page-details-properties" className="page-details-grid" role="tabpanel"
+     aria-labelledby="page-details-tab-properties" hidden={activeSection!=='properties'}>
      <div className="page-details-main">
       <section className="page-details-section" aria-label="Basic Information">
        <h3>Basic Information</h3>
@@ -270,7 +282,7 @@ export default function PageDetailsDialog({page,apps,profiles,recordTypes,disabl
      </aside>
     </div>
     <section id="page-details-history" className="page-details-section page-details-versions"
-     aria-label="Page Versions">
+     role="tabpanel" aria-labelledby="page-details-tab-history" hidden={activeSection!=='history'}>
      <div className="page-details-version-heading">
       <h3><History size={17}/> Page Versions</h3>
       <label className="form-label">Layout

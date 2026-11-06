@@ -242,34 +242,33 @@ export function renderSetupShell(ctx: any) {
                 <div className="setup-tree-group" key={group.group} role="group" aria-label={group.group}
                   data-group-short={group.group.split(/\s+/).map((word:string)=>word[0]).join('').slice(0,3).toUpperCase()} title={group.group}>
                   <div className="tree-group-label">{group.group}</div>
-                  {group.items.map((item) => (
-                    <React.Fragment key={item}>
-                      <button
-                        className={((workspace === 'object-manager' && item === 'Object Manager')
-                          || (workspace === 'data-loader' && item === 'Universal Data Loader')
-                          || (workspace === 'page-builder' && item === 'Page Builder')
-                          || (workspace === 'app-manager' && item === 'App Manager')
-                          || (workspace === 'app-exchange' && item === 'AppExchange')
-                          || (workspace === 'tenant-management' && item === 'Tenant Management')
-                          || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'NamedDevices' ? 'Named Devices' : route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
-                                                    || (workspace === 'flow-interviews' && item === 'Paused and Waiting Interviews')
-                          || (workspace === 'scheduled-actions' && item === 'Scheduled Actions')
-                          || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
-                          || (workspace === 'flow-logs' && item === 'Flow History')
-                          || (workspace === 'report-builder' && item === (route.kind==='setup' && route.resourceApiName==='viewer'?'Reports View':'Reports Builder'))
-                          || (workspace === 'dashboard-builder' && item === (route.kind==='setup' && (route.dashboardView || route.resourceApiName==='viewer')?'Dashboard View':'Dashboard Builder'))) ? 'tree-item selected' : 'tree-item'}
-                        aria-label={item === "Tenant Management" && !canManagePlatformTenants ? "Open My Tenant Management" : `Open ${item}`}
-                        title={item}
-                        data-short-label={item.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('')}
-                        onClick={() => navigateSetupItem(item)}
-                      >
-                        <SettingsNavigationIcon group={group.group} label={item} />
-                        <span>{item === 'Tenant Management' && !canManagePlatformTenants ? 'My Tenant Management' : item}</span>
-                        <ChevronRight size={13} />
-                      </button>
-
-                    </React.Fragment>
-                  ))}
+                  {group.items.map((item) => {
+                    const isSelected = (workspace === 'object-manager' && item === 'Object Manager')
+                      || (workspace === 'data-loader' && item === 'Universal Data Loader')
+                      || (workspace === 'page-builder' && item === 'Page Builder')
+                      || (workspace === 'app-manager' && item === 'App Manager')
+                      || (workspace === 'app-exchange' && item === 'AppExchange')
+                      || (workspace === 'tenant-management' && item === 'Tenant Management')
+                      || (workspace === 'named-credentials' && item === (route.kind === 'setup' && route.resourceApiName === 'NamedDevices' ? 'Named Devices' : route.kind === 'setup' && route.resourceApiName === 'Webhooks' ? 'Webhook Endpoints' : 'Named Credentials'))
+                      || (workspace === 'flow-interviews' && item === 'Paused and Waiting Interviews')
+                      || (workspace === 'scheduled-actions' && item === 'Scheduled Actions')
+                      || (workspace === 'scheduled-flows' && item === 'Scheduled Flows')
+                      || (workspace === 'flow-logs' && item === 'Flow History')
+                      || (workspace === 'report-builder' && item === (route.kind==='setup' && route.resourceApiName==='viewer'?'Reports View':'Reports Builder'))
+                      || (workspace === 'dashboard-builder' && item === (route.kind==='setup' && (route.dashboardView || route.resourceApiName==='viewer')?'Dashboard View':'Dashboard Builder'));
+                    return <button key={item}
+                      className={isSelected ? 'tree-item selected' : 'tree-item'}
+                      aria-current={isSelected ? 'page' : undefined}
+                      aria-label={item === 'Tenant Management' && !canManagePlatformTenants ? 'Open My Tenant Management' : `Open ${item}`}
+                      title={item}
+                      data-short-label={item.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('')}
+                      onClick={() => navigateSetupItem(item)}
+                    >
+                      <SettingsNavigationIcon group={group.group} label={item} />
+                      <span>{item === 'Tenant Management' && !canManagePlatformTenants ? 'My Tenant Management' : item}</span>
+                      <ChevronRight size={13} />
+                    </button>;
+                  })}
                 </div>
               ))}
               {filteredSetupGroups.length === 0 && <div className="empty-tree" role="status">No matching setup items. <button type="button" className="text-action" onClick={()=>setQuickFind('')}>Clear search</button></div>}

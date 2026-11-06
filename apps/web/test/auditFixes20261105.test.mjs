@@ -151,3 +151,53 @@ test('UNE privacy policy is a public route accessible without workspace authenti
   assert.match(login,/BASE_URL\}privacy/);
   assert.match(styles,/\.une-privacy-main/);
 });
+
+test('UX-0012 boot splash uses real UNE brand and reduced-motion-aware progress',()=>{
+ const entry=source('src/main.tsx');
+ const style=source('src/core/workspace/WorkspaceTheme/bootSplash.css');
+ assert.match(entry,/<UneBrandLogo className="md-boot-brand"/);
+ assert.match(entry,/md-boot-spinner/);
+ assert.match(style,/prefers-reduced-motion:reduce/);
+});
+test('UX-0028 Setup Home no longer creates empty auto-fit grid tracks',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(css,/home-content \.shortcut-grid \{ display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css,/home-content \.shortcut-grid \{ display:grid;grid-template-columns:repeat\(auto-fit/);
+});
+test('UX-0062 Page Details exposes selected tabs and accessible owned panels',()=>{
+ const dialog=source('src/core/builders/PageBuilder/PageDetailsDialog.tsx');
+ const css=source('src/core/builders/PageBuilder/PageDetailsDialog.css');
+ assert.match(dialog,/role="tablist" aria-label="Page edit sections"/);
+ assert.match(dialog,/role="tab"\s+aria-selected=\{activeSection==='properties'\}/);
+ assert.match(dialog,/role="tabpanel"\s+aria-labelledby="page-details-tab-properties"/);
+ assert.match(dialog,/role="tabpanel" aria-labelledby="page-details-tab-history"/);
+ assert.match(css,/\[role="tabpanel"\]\[hidden\]/);
+});
+
+test('UX-0031 collapsed Setup sidebar displays item initials and group abbreviations',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ const nav=source('src/core/workspace/SetupShell/setupShellPresentation.tsx');
+ assert.match(css,/\.setup-sidebar\.setup-sidebar-collapsed \.tree-item::after/);
+ assert.match(css,/content:attr\(data-short-label\)/);
+ assert.match(css,/content:attr\(data-group-short\)/);
+ assert.match(nav,/data-short-label=/);
+ assert.match(nav,/aria-label=\{item === ['"]Tenant Management['"]/);
+});
+test('UX-0004 and UX-0006 define auth action states and desktop rhythm',()=>{
+ const css=source('src/core/authentication/Login/standaloneLogin.css');
+ assert.match(css,/--auth-primary-disabled:/);
+ assert.match(css,/--auth-primary-hover:/);
+ assert.match(css,/--auth-focus:/);
+ assert.match(css,/#login-email \{margin-bottom:18px\}/);
+ assert.match(css,/\.auth-submit \{margin-top:24px\}/);
+});
+
+test('UX-0043 Setup sidebar shares one navigation registry and exposes current item',()=>{
+ const presentation=source('src/core/workspace/SetupShell/setupShellPresentation.tsx');
+ const navigation=source('src/core/platform/Workspace/platformSetupNavigation.ts');
+ const shell=source('src/core/workspace/SetupShell/setupAppShell.tsx');
+ assert.match(presentation,/aria-current=\{isSelected \? 'page' : undefined\}/);
+ assert.match(presentation,/const isSelected =/);
+ assert.match(shell,/resolveSetupNavigation\(quickFind/);
+ assert.match(navigation,/return setupNavigation/);
+});

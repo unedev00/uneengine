@@ -466,7 +466,11 @@ html, body, #root { min-width:0; max-width:100%; }
 .lightning .home-content .welcome-banner { min-height:0; padding:14px 18px; gap:14px; }
 .lightning .home-content .welcome-art { transform:scale(.7); transform-origin:center; }
 .lightning .home-content .welcome-quick { gap:6px; }
-.lightning .home-content .shortcut-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:var(--grid-gutter,12px); }
+.lightning .home-content .shortcut-grid { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--grid-gutter,12px); }
+@media(max-width:1599px){.lightning .home-content .shortcut-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:1240px){.lightning .home-content .shortcut-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.lightning .home-content .shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.lightning .home-content .shortcut-grid{grid-template-columns:minmax(0,1fr)}}
 .lightning .home-content .shortcut-card { min-width:0;box-sizing:border-box;align-content:center; }
 .lightning .home-content .shortcut-title,.lightning .home-content .shortcut-description { width:auto;max-width:100%;min-width:0; }
 .lightning .home-content .shortcut-description { overflow-wrap:anywhere; }
@@ -721,5 +725,21 @@ html, body, #root { min-width:0; max-width:100%; }
  .lightning .object-manager>.section-toolbar>.toolbar-actions>.btn {
   font-size:12px;min-height:44px;line-height:1.25;padding-inline:5px;
   justify-content:center;text-align:center;
+ }
+}
+
+/* UX-0031: collapsed desktop Setup rail must not be an unlabeled icon wall. */
+@media(min-width:601px){
+ .lightning .setup-layout .setup-sidebar.setup-sidebar-collapsed .tree-item {
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:2px;min-height:51px;padding:5px 1px;overflow:hidden;
+ }
+ .lightning .setup-layout .setup-sidebar.setup-sidebar-collapsed .tree-item::after {
+  content:attr(data-short-label);display:block;min-width:0;max-width:100%;
+  font:700 9px/1.15 system-ui,sans-serif;letter-spacing:.02em;
+  color:var(--md-text-2,#526175);text-align:center;
+ }
+ .lightning .setup-layout .setup-sidebar.setup-sidebar-collapsed .tree-item.selected::after {
+  color:var(--md-primary,#1d4ed8);
  }
 }
