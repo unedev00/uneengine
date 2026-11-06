@@ -1,6 +1,5 @@
+import {dispatchComponentEvent as fire} from '../../shared/componentEventDispatch.js';
 import {resolvePhoneColumns} from "../../../core/records/ResponsiveDataList/phoneColumns.mjs";
-const fire=(p,event,value)=>{if(event==='change'&&typeof p.onChange==='function'&&!p.actionFlows?.change)p.onChange(value);
-  if(p.actionFlows?.[event]&&typeof p.onAction==='function')return Promise.resolve(p.onAction({event,value})).catch(()=>{});
 };
 const data=p=>Array.isArray(p.records)?p.records:Array.isArray(p.items)?p.items:[];
 const valid=v=>typeof v==="string"&&/^[A-Za-z][A-Za-z0-9_]*$/.test(v);
