@@ -1368,6 +1368,8 @@ function PageBuilder({
   // re-rendering the entire page on each frame. A normal drag always targets
   // exactly the hit component; multi-selection is for explicit Group/Align.
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
+    // A drag must not suppress a later independent click if its click event was cancelled.
+    suppressCanvasClickRef.current=false;
     if (previewMode || !component.position || isCanvasLocked(component)
       || event.button !== 0 || event.shiftKey || event.ctrlKey || event.metaKey
       || canvasMoveStart.current || canvasResizeStart.current) return;
