@@ -22,7 +22,7 @@ try{
   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1});
   const page=await context.newPage();
   // No tenant login or reset request is made. Only read-only federation boot calls are stubbed.
-  await page.route(/\\/auth\\/federation\\/(providers|complete)/,async route=>{
+  await page.route('**/auth/federation/*',async route=>{
     const path=new URL(route.request().url()).pathname;
     await route.fulfill(path.endsWith('/providers')
       ?{status:200,contentType:'application/json',body:JSON.stringify({providers:[]})}
