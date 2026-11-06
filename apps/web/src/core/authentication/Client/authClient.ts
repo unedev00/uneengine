@@ -1,3 +1,4 @@
+import {createRecordPageCoalescer} from './recordPageCoalescer';
 // Same-origin API for deployed builds and development's Vite /api proxy.
 export const apiBase = import.meta.env.VITE_API_BASE_URL ?? `${window.location.origin}/api`;
 let accessToken: string | undefined;
@@ -197,6 +198,7 @@ export async function executeConnectorAppLifecycleFlow(apiName: string, appKey: 
     method: 'POST', body: JSON.stringify({AppKey:appKey})
   });
 }
+const pageCoalescer=createRecordPageCoalescer<Record<string,unknown>>();
 export type FlowScreenRecordPageOptions={
   limit?:number;
   offset?:number;
@@ -210,7 +212,7 @@ export async function loadFlowScreenRecordPage(
   const limit=options.limit??100,offset=options.offset??0;
   if(!Number.isInteger(limit)||limit<1||limit>100||!Number.isInteger(offset)||offset<0||offset>1000000)
     throw new Error('Invalid record page request');
-  const params=new URLSearchParams({limit:String(limit),offset:String(offset)});
+  const params=new URLSearchParams({offset:String(offset)});
   if(options.filter){
     params.set(options.filter.related?'relatedField':'filterField',options.filter.field);
     params.set(options.filter.related?'relatedId':'filterValue',options.filter.value);
@@ -219,8 +221,16 @@ export async function loadFlowScreenRecordPage(
     params.set('filters',JSON.stringify(options.filters));
     if(options.filterLogic)params.set('filterLogic',options.filterLogic);
   }
-  return apiRequest<{records:Record<string,unknown>[];total:number}>(
-    '/records/'+encodeURIComponent(objectApiName)+'?'+params.toString());
+  // The key includes auth identity and every server query dimension except
+  // limit. A concurrent 2-row and 100-row request then uses the larger page.
+  // Later requests still reauthorize through the Object API (no settled cache).
+  const key=JSON.stringify([accessToken??null,objectApiName,params.toString()]);
+  return pageCoalescer(key,limit,combinedLimit=>{
+   const query=new URLSearchParams(params);
+   query.set('limit',String(combinedLimit));
+   return apiRequest<{records:Record<string,unknown>[];total:number}>(
+    '/records/'+encodeURIComponent(objectApiName)+'?'+query.toString());
+  });
 }
 export async function loadFlowScreenRecords(
   objectApiName:string,filter?:{field:string;value:string;related:boolean}
