@@ -6,31 +6,40 @@ export function uneProps(p,kind){
  const tone=oneOf(p.tone,Object.keys(accents),"blue");
  const result={...p,kind,theme:oneOf(p.theme,["light","dark"],"light"),accentColor:p.accentColor||accents[tone],
  radius:px(p.radius,20),padding:px(p.padding,16),gap:px(p.gap,12),glassBlur:px(p.glassBlur,12,40)};
- // Resolve only declared text slots with a valid record context. Keep legacy
- // literals untouched and never evaluate arbitrary code or numeric properties.
+ // Data formulas are displayable on every component that owns a text/value
+ // slot. A scalar expression does not need an Object record (e.g. =1+2,
+ // $state.total, $session.*, $tenant.*). Never depend on a displayMode flag.
+ // Repeating record captions remain owned by their row renderers.
  const record=p.record&&typeof p.record==="object"&&!Array.isArray(p.record)?p.record:
    Array.isArray(p.records)&&p.records.length?p.records[0]:
-   Array.isArray(p.items)&&p.items.length?p.items[0]:null;
- if(record){
-  const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText","emptyText","emptyTitle","loadingText",
-   "src","alt","imageSrc","imageAlt","submitLabel","openLabel","confirmLabel","searchPlaceholder","searchLabel",
-   "filterLabel","newConversationLabel","refreshLabel","contactSearchLabel","sentNoticeText","emptyConversationsText",
-   "newMessageNoticeLabel","badge","value","message","basketTitle","basketPresentation","checkoutLabel",
-   "clearLabel","totalLabel","emptyBasketText","nextTransactionLabel"];
-  for(const key of textKeys){
-   const raw=result[key];
-   if(typeof raw==="string"&&(raw.startsWith('$component.')||/@(?:[A-Za-z][A-Za-z0-9_]*)/.test(raw)||/^\s*[A-Za-z]+\s*\(/.test(raw)))
-    result[key]=evaluateFieldExpression(raw,record,{readComponent:p.readComponent});
-  }
+   Array.isArray(p.items)&&p.items.length?p.items[0]:{};
+ const context={readComponent:p.readComponent,pageState:p.pageState,sessionId:p.sessionId,
+   rootObjectApiName:p.objectApiName,collectionSources:p.formulaCollectionSources,
+   namedCollections:p.namedCollections,
+   namedCollectionSelections:p.pageState?.collectionSelections};
+ const allowed=key=>typeof p.fieldAllowed==="function"?p.fieldAllowed(key,record):
+   !p.dataFieldFilters||typeof p.dataFieldFilters!=="object"||
+   !Object.prototype.hasOwnProperty.call(p.dataFieldFilters,key);
+ const resolve=(key,raw)=>allowed(key)?evaluateFieldExpression(raw,record,context):"";
+ const textKeys=["text","label","title","subtitle","description","caption","placeholder","helpText",
+   "emptyText","emptyTitle","loadingText","src","alt","imageSrc","imageAlt",
+   "submitLabel","openLabel","confirmLabel","searchPlaceholder","searchLabel",
+   "filterLabel","newConversationLabel","refreshLabel","contactSearchLabel",
+   "sentNoticeText","emptyConversationsText","newMessageNoticeLabel","badge",
+   "value","defaultValue","message","basketTitle","basketPresentation",
+   "checkoutLabel","clearLabel","totalLabel","emptyBasketText","nextTransactionLabel"];
+ for(const key of textKeys){
+  const raw=result[key];
+  if(typeof raw==="string")result[key]=resolve(key,raw);
  }
- // Data > Text Source is an app-owned expression property; the evaluated
- // display value uses the same record context as other text fields.
- if(record&&typeof p.textSource==="string"&&p.textSource.trim()&&
-    ["Input","Lookup","Tabs"].includes(kind)){
-   const resolved=evaluateFieldExpression(p.textSource,record,{readComponent:p.readComponent});
-   if(kind==="Input"||kind==="Lookup")result.value=resolved;
-   else result.label=resolved;
- }
+ // Shared Data > Text Source maps to the primary displayed value for scalar
+ // controls. Containers, tables and repeating collections continue resolving
+ // their per-row expressions instead of reducing them to the first record.
+ const displayTargets={Input:"value",Lookup:"value",Tabs:"label",Button:"label",
+   Metric:"value",Progress:"value",Alert:"text",Card:"title"};
+ const target=displayTargets[kind];
+ if(target&&typeof p.textSource==="string"&&p.textSource.trim())
+  result[target]=resolve("textSource",p.textSource);
  if(kind==="Calendar"&&Array.isArray(p.records)&&(p.dateFieldApiName||p.titleFieldApiName))
   result.records=p.records.map(item=>({...item,
    ...(p.dateFieldApiName?{date:item[p.dateFieldApiName]}:{}),
