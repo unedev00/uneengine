@@ -328,3 +328,10 @@ html:has(.auth-screen), body:has(.auth-screen), #root:has(.auth-screen) {
  .auth-screen:not(.auth-screen--standalone) .auth-card .auth-recovery-action {margin-top:8px;margin-bottom:0}
  .auth-screen:not(.auth-screen--standalone) .auth-card .auth-submit {margin-top:24px}
 }
+
+/* UX-0003: short landscape phones must show the sign-in action without scrolling.
+   The field names and recovery action remain; the introductory copy is redundant here. */
+@media (max-height:420px) and (orientation:landscape) {
+ .auth-screen:not(.auth-screen--standalone) .auth-card > p,
+ .auth-screen:not(.auth-screen--standalone) .auth-card .eyebrow {display:none!important}
+}
