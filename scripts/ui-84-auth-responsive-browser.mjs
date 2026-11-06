@@ -28,6 +28,9 @@ try{
       ?{status:200,contentType:'application/json',body:JSON.stringify({providers:[]})}
       :{status:204,body:''});
   });
+  await page.route('**/auth/password-reset/options',async route=>
+    route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({otpLength:6,method:'OTP',channels:{email:false,whatsapp:false,sms:false}})}));
   await page.goto(base+'/login',{waitUntil:'domcontentloaded',timeout:30000});
   const signIn=page.getByRole('button',{name:'Sign in',exact:true});
   await signIn.waitFor({state:'visible',timeout:20000});
@@ -51,6 +54,8 @@ try{
   if(width===320||width===390||width===1024){
     await page.getByRole('button',{name:'Forgot password?'}).click();
     await page.getByRole('heading',{name:'Recover your password'}).waitFor();
+    // Wait until async options have resolved; checking before that races the initial loading state.
+    await page.locator('a[href="mailto:support@unesolutions.co.uk"]').waitFor({state:'visible'});
     const recovery=await page.evaluate(()=>({
       overflow:Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth),
       unavailable:document.body.innerText.includes('Not configured'),
