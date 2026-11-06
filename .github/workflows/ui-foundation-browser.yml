@@ -9,6 +9,7 @@ on:
       - 'scripts/ui-84-auth-responsive-browser.mjs'
       - 'scripts/ui-84-setup-home-browser.mjs'
       - 'scripts/ui-84-app-manager-browser.mjs'
+      - 'scripts/ui-84-data-loader-browser.mjs'
       - 'scripts/all-apps-ui-100pct-audit.mjs'
       - '.github/workflows/ui-foundation-browser.yml'
       - 'package.json'
@@ -78,6 +79,11 @@ jobs:
           UI_84_APPS_SCREENSHOT_DIR: artifacts/ui-84-app-manager
           UI_84_APPS_SCREENSHOTS: '1'
         run: node scripts/ui-84-app-manager-browser.mjs
+      - name: Check Data Loader mouse/keyboard tabs at 19 original audit viewport sizes
+        env:
+          UI_84_LOADER_SCREENSHOT_DIR: artifacts/ui-84-loader
+          UI_84_LOADER_SCREENSHOTS: '1'
+        run: node scripts/ui-84-data-loader-browser.mjs
       - name: Audit every available React fixture at native 100% browser zoom
         if: always()
         env:
@@ -90,6 +96,13 @@ jobs:
           name: all-apps-100pct-visual-audit
           path: artifacts/all-apps-ui/
           if-no-files-found: error
+      - name: Upload Data Loader viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-84-data-loader-19-viewports
+          path: artifacts/ui-84-loader/
+          if-no-files-found: ignore
       - name: Upload App Manager viewport evidence
         if: always()
         uses: actions/upload-artifact@v4
