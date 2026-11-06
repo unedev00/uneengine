@@ -31,7 +31,17 @@ export default function AppManagerList({apps, busy, onEdit, onClone}: Props) {
           onChange={event => setSearch(event.target.value)} placeholder="Search apps…"/>
       </label>
     </div>
-    <label className="app-manager-mobile-sort">Sort applications <select value={sort} onChange={event=>{setSort(event.target.value as typeof sort);setDescending(false);}}><option value="label">App name</option><option value="apiName">Developer name</option><option value="navigation">Navigation items</option><option value="pages">App pages</option></select></label>
+    <div className="app-manager-mobile-sort">
+      <label htmlFor="app-manager-sort-field">Sort applications</label>
+      <select id="app-manager-sort-field" value={sort} onChange={event=>{setSort(event.target.value as typeof sort);setDescending(false);}}>
+        <option value="label">App name</option><option value="apiName">Developer name</option>
+        <option value="navigation">Navigation items</option><option value="pages">App pages</option>
+      </select>
+      <button type="button" className="app-manager-sort-direction"
+        aria-label={descending?'Sort descending; change to ascending':'Sort ascending; change to descending'}
+        aria-pressed={descending} title={descending?'Descending (switch to ascending)':'Ascending (switch to descending)'}
+        onClick={()=>setDescending(value=>!value)}>{descending?'↓ Descending':'↑ Ascending'}</button>
+    </div>
     <ResponsiveDataList rows={filtered} includeTablet includeNarrowDesktop getId={app=>app.apiName} label="Applications"
       onOpen={app=>onEdit(app)} openLabel="Edit application"
       columns={[
