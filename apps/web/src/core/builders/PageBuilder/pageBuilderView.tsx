@@ -1370,7 +1370,7 @@ function PageBuilder({
   // Move selected shapes as one block; style updates stay off React's hot path.
   const startCanvasMove = (event: React.PointerEvent<HTMLElement>, component: PageComponentMetadata) => {
     if(previewMode||!component.position||isCanvasLocked(component)||event.button!==0
-      ||event.shiftKey||event.ctrlKey||event.metaKey||canvasMoveStart.current||canvasResizeStart.current)return;
+      ||event.shiftKey||event.ctrlKey||event.metaKey||event.altKey||canvasMoveStart.current||canvasResizeStart.current)return;
     const hit=event.target as Element;
     const floating=event.currentTarget.closest<HTMLElement>('.canvas-floating-actions-host');
     const portalGrip=floating?.dataset.canvasActionsFor===component.id
