@@ -23,7 +23,9 @@ export function useCanvasGroupGestures({members,bounds,width,height,scale,enable
     if(!enabled||!bounds||members.length<2||event.button!==0||gesture.current
       ||members.some(item=>item.properties.editorLocked===true))return;
     const stage=event.currentTarget.closest<HTMLElement>('.free-canvas-stage');
-    const outline=event.currentTarget.closest<HTMLElement>('.canvas-group-outline');
+    // A drag may originate on any selected member, not only on the group handle.
+    const outline=event.currentTarget.closest<HTMLElement>('.canvas-group-outline')
+      ??stage?.querySelector<HTMLElement>('.canvas-group-outline')??null;
     if(!stage||!outline)return;
     const nodes=new Map<string,HTMLElement>();
     const candidates=Array.from(stage.querySelectorAll<HTMLElement>('.free-canvas-component[data-component-id]'));
