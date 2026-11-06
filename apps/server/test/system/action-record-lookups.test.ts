@@ -123,3 +123,16 @@ test('record filters accept one-level lookup paths through the related record',(
  assert.throws(()=>compileRecordFilters([{field:'Product.Name',operator:'eq',value:'x'}],undefined,
   new Map([['Cart',{api_name:'Cart',data_type:'reference'}]]),4),/Invalid list field/);
 });
+
+
+test('baseline: identical cart lookups currently make separate awaited GETs',async()=>{
+ const paths:string[]=[];
+ const source='=ACTIONS(GETRECORD(Cart, SessionKey, "pos", AS(cartA)), GETRECORD(Cart, SessionKey, "pos", AS(cartB)), STATE(done, TRUE))';
+ await executeActionPlan(source,{},evaluator,{request:async(path,init)=>{
+  paths.push((init?.method??'GET')+' '+path);
+  return {records:[{Id:cartId}],total:1} as never;
+ }});
+ assert.equal(paths.length,2);
+ assert.equal(paths[0],paths[1]);
+ console.info('Formula memo baseline: GETs=2 uniquePaths=1 order=GET>GET');
+});
