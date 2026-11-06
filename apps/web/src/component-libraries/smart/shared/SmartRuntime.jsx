@@ -136,6 +136,18 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
  const focused=grid&&selected;
  const focusedWidth=number(p.focusedCardWidth,0,0,1200);
  const focusedHeight=number(p.focusedCardHeight,0,0,1200);
+ // An explicitly authored Card Grid header height is a bounded box, not merely
+ // a minimum. Unconfigured grids and standalone Images keep intrinsic growth.
+ const fixedGridHeader=grid&&p.headerBoxHeight!==undefined
+   &&p.headerBoxHeight!==null&&p.headerBoxHeight!=="";
+ const captionFontSize=focused&&p.focusedTextSize!==undefined
+   &&p.focusedTextSize!==null&&p.focusedTextSize!==""
+   ?number(p.focusedTextSize,16,8):number(p.textSize,16,8);
+ // Keep as much vertical padding as fits one text line in a compact header.
+ const headerPaddingY=fixedGridHeader
+   ?Math.min(cardPadding===null?4:cardPadding,
+     Math.max(0,Math.floor((headerHeight-Math.ceil(captionFontSize*1.2))/2)))
+   :null;
  const focusedText=focused&&p.focusedTextColor?String(p.focusedTextColor):null;
  const focusedWeight=focused&&typeof p.focusedTextBold==="boolean"
   ?(p.focusedTextBold?700:400):undefined;
@@ -209,9 +221,11 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
   </div>}
   {header&&headerHeight>0&&<div data-md-bind={p.builderPreview?"textSource":undefined} data-md-bind-titles={p.builderPreview?"Card title":undefined} className="smart-card-content" style={{
     order:1,flex:horizontal?(imageVisible?"1 1 50%":"1 1 100%"):undefined,display:"flex",alignItems:"center",
-    // Header Box Height is a minimum, not a text clipping mask: wrapped or
-    // enlarged captions grow to their intrinsic height inside the card scroller.
-    height:headerHeight,minHeight:"max-content",alignSelf:horizontal?"safe center":undefined,flexShrink:0,
+    // Explicit Card Grid heights bound the title box; excess text is scrollable.
+    // Standalone Image captions retain intrinsic growth for large typography.
+    height:headerHeight,minHeight:fixedGridHeader?0:"max-content",
+    maxHeight:fixedGridHeader?headerHeight:undefined,
+    alignSelf:horizontal?"safe center":undefined,flexShrink:0,
     fontWeight:focusedWeight??(p.headerBold===false?400:700),
     // Standalone Image's visible caption is edited by the shared Typography
     // Label Alignment control; Card Grid retains its prior Header precedence.
@@ -222,8 +236,10 @@ function SmartCard({p,record,onButtonClick,onCustomButton,onSelect,selected=fals
     border:p.headerBorderColor?"1px solid "+p.headerBorderColor:undefined,
     color:focusedText||(single?p.labelColor||p.defaultValueColor||undefined:p.defaultValueColor||p.labelColor||undefined),
     whiteSpace:p.wrapText===false?"nowrap":"normal",
-    overflow:p.wrapText===false?"auto":"visible",overflowWrap:"anywhere",
-    padding:cardPadding===null?"4px 10px":cardPadding+"px"
+    overflow:fixedGridHeader?"auto":p.wrapText===false?"auto":"visible",overflowWrap:"anywhere",
+    padding:fixedGridHeader
+      ?headerPaddingY+"px "+(cardPadding===null?10:cardPadding)+"px"
+      :cardPadding===null?"4px 10px":cardPadding+"px"
   }}>{header}</div>}
   {grid&&(description||value||buttonText||customButtons.length>0)&&<div className="smart-card-details"
    style={cardPadding===null?undefined:{padding:cardPadding+"px"}}>
