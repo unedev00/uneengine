@@ -242,10 +242,10 @@ export function renderSetupShell(ctx: any) {
                 <div className="setup-tree-group" key={group.group} role="group" aria-label={group.group}
                   data-group-short={group.group.split(/\s+/).map((word:string)=>word[0]).join('').slice(0,3).toUpperCase()} title={group.group}>
                   <div className="tree-group-label">{group.group}</div>
-                  {group.items.map((item) => (
-                    <React.Fragment key={item}>
-                      <button
-                        className={((workspace === 'object-manager' && item === 'Object Manager')
+                  {group.items.map((item) => {
+                    const isSelected = ((workspace === 'object-manager' && item === 'Object Manager')
+className={isSelected ? 'tree-item selected' : 'tree-item'}
+                        aria-current={isSelected ? 'page' : undefined}className={((workspace === 'object-manager' && item === 'Object Manager')
                           || (workspace === 'data-loader' && item === 'Universal Data Loader')
                           || (workspace === 'page-builder' && item === 'Page Builder')
                           || (workspace === 'app-manager' && item === 'App Manager')
@@ -268,8 +268,8 @@ export function renderSetupShell(ctx: any) {
                         <ChevronRight size={13} />
                       </button>
 
-                    </React.Fragment>
-                  ))}
+                    </React.Fragment>);
+                  })}
                 </div>
               ))}
               {filteredSetupGroups.length === 0 && <div className="empty-tree" role="status">No matching setup items. <button type="button" className="text-action" onClick={()=>setQuickFind('')}>Clear search</button></div>}
