@@ -252,3 +252,10 @@ test('Page card sort controls exist through narrow-desktop card breakpoint',()=>
  const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
  assert.match(css,/page-manager-mobile-sort \{ display:none; \}[\s\S]*?@media\(max-width:1199px\)/);
 });
+
+test('UX-0021 title baselines stay aligned and UX-0024 search has a fixed width cap',()=>{
+ const css=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
+ assert.match(css,/grid-template-rows: minmax\(36px,auto\) minmax\(0,1fr\)/);
+ assert.match(css,/home-content \.shortcut-card \.shortcut-title \{align-self:start\}/);
+ assert.match(css,/header-searches \{ min-width:0;max-width:min\(360px,40vw\); \}/);
+});
