@@ -1,5 +1,6 @@
 import {visiblePageCollectionResult} from '../src/core/pages/PageRuntime/pageCollectionVisibility';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {loadBoundedCollectionSource} from '../src/core/pages/PageRuntime/loadBoundedCollectionSource';
 import test from 'node:test';
 import {sameFormulaSnapshot} from '../src/core/components/RegisteredComponent/pageFormulaSnapshot';
@@ -152,4 +153,11 @@ test('explicit unknown field bindings report an error while null and unbound val
  assert.equal(resolveRegisteredTextProperties(definitions,{
   ...base,textSource:'="literal @Subtotal: " & @Quantity'
  }).textSource,'literal @Subtotal: 2');
+});
+
+
+test('published component formulas show safe errors rather than silently swallowing exceptions',()=>{
+ const source=readFileSync(new URL('../src/core/components/RegisteredComponent/PageFormulaScope.tsx',import.meta.url),'utf8');
+ assert.match(source,/bindingErrors\.push\('Cannot evaluate formula for '/);
+ assert.match(source,/role="alert"/);
 });
