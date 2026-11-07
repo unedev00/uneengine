@@ -6,14 +6,12 @@ on:
       - '.github/workflows/codextill-data-bindings.yml'
       - 'scripts/codextill/bind-tab-and-cart.mjs'
       - 'scripts/codextill/bind-product-card-click.mjs'
-      - 'scripts/codextill/ensure-cart-session-open-status.mjs'
   workflow_dispatch:
   pull_request:
     paths:
       - '.github/workflows/codextill-data-bindings.yml'
       - 'scripts/codextill/bind-tab-and-cart.mjs'
       - 'scripts/codextill/bind-product-card-click.mjs'
-      - 'scripts/codextill/ensure-cart-session-open-status.mjs'
 permissions:
   contents: read
 concurrency:
@@ -36,7 +34,6 @@ jobs:
           npm run build:system --workspace apps/server
           node scripts/codextill/bind-tab-and-cart.mjs --preflight
           node scripts/codextill/bind-product-card-click.mjs --preflight
-          node scripts/codextill/ensure-cart-session-open-status.mjs --preflight
   apply:
     needs: validate
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -59,7 +56,6 @@ jobs:
           bash -n scripts/oracle/apply-codextill-draft-only.sh
           node scripts/codextill/bind-tab-and-cart.mjs --preflight
           node scripts/codextill/bind-product-card-click.mjs --preflight
-          node scripts/codextill/ensure-cart-session-open-status.mjs --preflight
       - name: Save and verify CODEXTILL category and CartLine bindings
         shell: bash
         run: |
@@ -79,5 +75,4 @@ jobs:
             cd "$GITHUB_WORKSPACE"
             node scripts/codextill/bind-tab-and-cart.mjs
             node scripts/codextill/bind-product-card-click.mjs
-            node scripts/codextill/ensure-cart-session-open-status.mjs
           '

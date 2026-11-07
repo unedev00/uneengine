@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {readFileSync} from 'node:fs';
 import type {PoolClient} from 'pg';
 import {copilotPosGraphs,seedAcetillCopilotPosFlows} from '../../src/app-seeders/acetill-copilot-pos-flows.js';
 import {copilotTillLayout} from '../../src/app-seeders/acetill-copilot-pos-page.js';
 
-const required=['AcetillCopilotAddProduct','AcetillCopilotReadCart','AcetillCopilotChangeQuantity','AcetillCopilotDefaultCategory','AcetillCopilotVerifyPin'];
+const required=['AcetillCopilotNewCart','AcetillCopilotSelectCart','AcetillCopilotAddProduct','AcetillCopilotReadCart','AcetillCopilotChangeQuantity','AcetillCopilotDefaultCategory','AcetillCopilotVerifyPin'];
 test('Copilot POS installs only metadata-driven reuse of existing shared runtimes',()=>{
  assert.deepEqual(copilotPosGraphs.map(g=>g.apiName),required);
  for(const g of copilotPosGraphs){
@@ -22,10 +21,10 @@ test('Copilot POS installs only metadata-driven reuse of existing shared runtime
    assert.ok(ids.has(edge.to),g.apiName+' missing destination '+edge.to);
   }
  }
- const add=copilotPosGraphs[0];
+ const add=copilotPosGraphs.find(g=>g.apiName==='AcetillCopilotAddProduct')!;
  assert.ok(add.elements.some(n=>n.type==='Get Records'&&n.config.object==='Product'));
  assert.ok(add.elements.some(n=>n.type==='Create Records'&&n.config.object==='CartLine'));
- const change=copilotPosGraphs[2];
+ const change=copilotPosGraphs.find(g=>g.apiName==='AcetillCopilotChangeQuantity')!;
  assert.ok(change.elements.some(n=>n.type==='Get Records'&&n.config.object==='CartLine'));
  assert.ok(change.elements.some(n=>n.type==='Delete Records'));
  assert.ok(change.elements.some(n=>n.type==='Update Records'));
@@ -51,8 +50,8 @@ test('Page Blueprint uses only shared Smart Components and Flow actions, not har
  const cart=copilotTillLayout.find(x=>x.id==='copilot-pos-cart');
  assert.equal(products?.properties.objectApiName,'Product');
  assert.equal(cart?.properties.objectApiName,'CartLine');
- assert.equal(cart?.properties.relatedFilterKey,'cartSessionId');
- assert.equal(cart?.properties.relatedFieldApiName,'CartSession');
+ assert.equal(cart?.properties.relatedFilterKey,'activeCartId');
+ assert.equal(cart?.properties.relatedFieldApiName,'Cart');
  assert.equal(cart?.properties.totalValue,'$state.total');
 });
 test('Copilot till Flow seeder is idempotent and never replaces authored metadata',async()=>{
@@ -60,8 +59,8 @@ test('Copilot till Flow seeder is idempotent and never replaces authored metadat
  const fields=[
   ['Product','Name'],['Product','Price'],['Product','Active'],
   ['MenuCategory','Active'],['MenuCategory','IsVisiblePOS'],
-  ['CartSession','SessionKey'],['CartSession','Name'],['CartSession','Status'],
-  ['CartLine','CartSession'],['CartLine','Product'],['CartLine','Name'],
+  ['Cart','SessionKey'],['Cart','Name'],['Cart','Status'],['Cart','UserId'],
+  ['CartLine','Cart'],['CartLine','Product'],['CartLine','Name'],
   ['CartLine','Quantity'],['CartLine','UnitPrice'],
   ['CartLine','OriginalUnitPrice'],['CartLine','LineTotal']
  ];
@@ -79,29 +78,20 @@ test('Copilot till Flow seeder is idempotent and never replaces authored metadat
   }
   return {rows:[],rowCount:1};
  }} as unknown as PoolClient;
- assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),5);
+ assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),7);
  assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),0);
- assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,5);
+ assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,7);
  assert.equal(queries.some(q=>q.includes('DELETE FROM md_flow')||q.includes('UPDATE md_flow')),false);
 });
 
-test('CODEXTILL cart session picklist migration preserves original metadata and status semantics',()=>{
+test('Cart creation and activeCartId replace CartSession without duplicate parent',()=>{
  const add=copilotPosGraphs.find(flow=>flow.apiName==='AcetillCopilotAddProduct');
- const sessionNode=add?.elements.find(node=>node.type==='Create Records'
-   &&node.config.object==='CartSession');
- assert.ok(sessionNode,'Missing session creation Flow node');
- const fields=sessionNode.config.fieldValues as Array<{field:string;value:unknown}>;
- assert.deepEqual(fields.find(item=>item.field==='Status'),{field:'Status',value:'Open'});
- const script=readFileSync(new URL('../../../../scripts/codextill/ensure-cart-session-open-status.mjs',import.meta.url),'utf8');
- const workflow=readFileSync(new URL('../../../../.github/workflows/codextill-data-bindings.yml',import.meta.url),'utf8');
- assert.ok(script.includes('md_field_picklist_values'));
- assert.ok(script.includes('md_field_global_value_sets'));
- assert.ok(script.includes('ON CONFLICT (tenant_id,object_api,field_api,value) DO NOTHING'));
- assert.ok(script.includes('md_system_migrations'));
- assert.ok(script.includes("graph.elements.filter"));
- assert.ok(!script.includes('UPDATE md_field_definitions'));
- assert.ok(!script.includes('DELETE FROM md_field_picklist_values'));
- assert.ok(!script.includes('UPDATE md_flow_editor_values'));
- assert.ok(workflow.includes('node scripts/codextill/ensure-cart-session-open-status.mjs --preflight'));
- assert.ok(workflow.includes('node scripts/codextill/ensure-cart-session-open-status.mjs'));
+ const cart=add?.elements.find(n=>n.type==='Create Records'&&n.config.object==='Cart');
+ assert.ok(cart);
+ const fields=cart.config.fieldValues as Array<{field:string;value:unknown}>;
+ assert.deepEqual(fields.find(f=>f.field==='UserId'),{field:'UserId',value:'{!$User.Id}'});
+ assert.deepEqual(fields.find(f=>f.field==='Status'),{field:'Status',value:'Open'});
+ assert.ok(add?.elements.some(n=>n.type==='Create Records'&&n.config.object==='CartLine'
+  &&(n.config.fieldValues as Array<{field:string}>).some(v=>v.field==='Cart')));
+ assert.equal(copilotTillLayout.find(x=>x.id==='copilot-pos-cart')?.properties.relatedFieldApiName,'Cart');
 });

@@ -8,15 +8,15 @@ import type {Expression} from '../../server/src/expression-engine/FormulaParser.
 const rowId='11111111-1111-4111-8111-111111111111';
 const sessionId='22222222-2222-4222-8222-222222222222';
 const row={Id:rowId,Quantity:2,UnitPrice:1.25,LineTotal:2.5,
- CartSession:sessionId,LastModifiedDate:'2026-11-01T10:00:00.000Z'};
+ Cart:sessionId,LastModifiedDate:'2026-11-01T10:00:00.000Z'};
 const fields=['Quantity','UnitPrice','LineTotal'].map(apiName=>({
  apiName,label:apiName,dataType:'Number',required:false,unique:false
-})).concat([{apiName:'CartSession',label:'CartSession',dataType:'Lookup(CartSession)',
+})).concat([{apiName:'Cart',label:'Cart',dataType:'Lookup(Cart)',
  required:false,unique:false}]);
 const objects=[{apiName:'CartLine',fields}];
 const base={actionType:'Formula',fieldApiName:'Quantity',
- deltaSource:'$event.delta',relatedFieldApiName:'CartSession',
- relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+ deltaSource:'$event.delta',relatedFieldApiName:'Cart',
+ relatedStateKey:'activeCartId',stateCollectionKey:'cartItems',
  unitPriceFieldApiName:'UnitPrice',totalFieldApiName:'LineTotal',
  totalStateKey:'total',minValue:0,deleteOnZero:true};
 
@@ -27,7 +27,7 @@ test('independent + formula performs a guarded numeric Record API update',async(
   return {record:row} as T;
  };
  const result=await executePageFormulaAction(request,{...base,formula:'@Quantity + 2'},
-  {recordId:rowId,delta:1},{cartItems:[row],cartSessionId:sessionId},objects,'CartLine');
+  {recordId:rowId,delta:1},{cartItems:[row],activeCartId:sessionId},objects,'CartLine');
  assert.equal(result.recordChanged,true);
  assert.deepEqual(result.mutatedObjectApiNames,['CartLine']);
  assert.equal(calls[1].method,'PATCH');
@@ -42,7 +42,7 @@ test('independent − formula removes a quantity-one row at zero',async()=>{
   calls.push({method:options?.method});return {record:existing} as T;
  };
  const result=await executePageFormulaAction(request,{...base,formula:'@Quantity - 2'},
-  {recordId:rowId,delta:-1},{cartItems:[existing],cartSessionId:sessionId},objects,'CartLine');
+  {recordId:rowId,delta:-1},{cartItems:[existing],activeCartId:sessionId},objects,'CartLine');
  assert.equal(calls[1].method,'DELETE');
  assert.deepEqual(result.changes.find(x=>x.key==='cartItems')?.value,[]);
 });
@@ -347,10 +347,10 @@ test('baseline: guarded numeric cart adjustment performs GET then PATCH before p
  const start=performance.now();
  const changes=await adjustNumberRecord(request,{
   actionType:'AdjustNumber',fieldApiName:'Quantity',deltaSource:'$event.delta',
-  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
-  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'Cart',
+  relatedStateKey:'activeCartId',stateCollectionKey:'cartItems',
   totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
- },{recordId:rowId,delta:1},{cartSessionId:sessionId,cartItems:[row]},objects,'CartLine');
+ },{recordId:rowId,delta:1},{activeCartId:sessionId,cartItems:[row]},objects,'CartLine');
  assert.deepEqual(events,['GET /records/CartLine/'+rowId,'PATCH /records/CartLine/'+rowId]);
  assert.deepEqual(changes.find(change=>change.key==='total')?.value,3.75);
  console.info('optimistic numeric baseline: requests=2 order=GET>PATCH elapsedMockMs='+
@@ -363,11 +363,11 @@ test('opt-in guarded numeric update publishes before write, then commits without
  const calls:string[]=[];const updates:Array<{key:string;value:unknown}>=[];
  let release!:()=>void;
  const writePending=new Promise<void>(resolve=>{release=resolve;});
- const state={cartSessionId:sessionId,cartItems:[row],total:2.5};
+ const state={activeCartId:sessionId,cartItems:[row],total:2.5};
  const binding={
   actionType:'AdjustNumber' as const,fieldApiName:'Quantity',deltaSource:'$event.delta' as const,
-  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
-  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'Cart',
+  relatedStateKey:'activeCartId',stateCollectionKey:'cartItems',
   totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
  };
  const task=adjustNumberRecord(async<T>(path,init)=>{
@@ -389,12 +389,12 @@ test('opt-in guarded numeric update publishes before write, then commits without
 test('opt-in numeric adjustment rolls back rejected write and preserves security error and ordering',async()=>{
  const {adjustNumberRecord}=await import('../src/core/pages/PageRuntime/adjustNumberRecord');
  const {beginOptimisticNumberChange}=await import('../src/core/pages/PageRuntime/optimisticPageNumbers');
- const state={cartSessionId:sessionId,cartItems:[row],total:2.5};
+ const state={activeCartId:sessionId,cartItems:[row],total:2.5};
  const calls:string[]=[];const updates:Array<{key:string;value:unknown}>=[];
  const config={
   actionType:'AdjustNumber' as const,fieldApiName:'Quantity',deltaSource:'$event.delta' as const,
-  incrementFormula:'@Quantity + 1',relatedFieldApiName:'CartSession',
-  relatedStateKey:'cartSessionId',stateCollectionKey:'cartItems',
+  incrementFormula:'@Quantity + 1',relatedFieldApiName:'Cart',
+  relatedStateKey:'activeCartId',stateCollectionKey:'cartItems',
   totalFieldApiName:'LineTotal',unitPriceFieldApiName:'UnitPrice',totalStateKey:'total'
  };
  const req=async<T>(path:string,init?:RequestInit):Promise<T>=>{

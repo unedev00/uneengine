@@ -7,7 +7,7 @@
         "id": "1",
         "kind": "normal",
         "label": "Next",
-        "to": 2
+        "to": 24
       },
       {
         "from": 2,
@@ -140,7 +140,7 @@
         "id": "20",
         "kind": "normal",
         "label": "Next",
-        "to": 19
+        "to": 27
       },
       {
         "id": "21",
@@ -187,6 +187,41 @@
       {
         "id": "27",
         "from": 23,
+        "to": 19,
+        "kind": "normal",
+        "label": "Next"
+      },
+      {
+        "id": "28",
+        "from": 24,
+        "to": 25,
+        "kind": "normal",
+        "label": "Next"
+      },
+      {
+        "id": "29",
+        "from": 25,
+        "to": 2,
+        "kind": "normal",
+        "label": "Valid"
+      },
+      {
+        "id": "30",
+        "from": 25,
+        "to": 26,
+        "kind": "normal",
+        "label": "Default"
+      },
+      {
+        "id": "31",
+        "from": 26,
+        "to": 19,
+        "kind": "normal",
+        "label": "Next"
+      },
+      {
+        "id": "32",
+        "from": 27,
         "to": 19,
         "kind": "normal",
         "label": "Next"
@@ -533,11 +568,96 @@
           "errorLocation": "Page",
           "errorMessage": "Product price changed during checkout; no sale was recorded. Please try again."
         }
+      },
+      {
+        "id": 24,
+        "type": "Get Records",
+        "label": "Read authorised open Cart",
+        "config": {
+          "object": "Cart",
+          "recordLimit": "1",
+          "outputVariable": "saleCart",
+          "conditions": [
+            {
+              "field": "Id",
+              "operator": "Equals",
+              "value": "{!cartId}"
+            },
+            {
+              "field": "UserId",
+              "operator": "Equals",
+              "value": "{!$User.Id}"
+            },
+            {
+              "field": "Status",
+              "operator": "Equals",
+              "value": "Open"
+            }
+          ]
+        }
+      },
+      {
+        "id": 25,
+        "type": "Decision",
+        "label": "Cart ready for payment?",
+        "config": {
+          "outcomes": [
+            {
+              "name": "Valid",
+              "label": "Valid",
+              "conditionLogic": "All",
+              "conditions": [
+                {
+                  "field": "{!saleCart}",
+                  "operator": "IsNotNull"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 26,
+        "type": "Custom Error",
+        "label": "Cart unavailable",
+        "config": {
+          "errorLocation": "Page",
+          "errorMessage": "Select an open cart you own before payment."
+        }
+      },
+      {
+        "id": 27,
+        "type": "Update Records",
+        "label": "Complete paid Cart",
+        "config": {
+          "object": "Cart",
+          "recordId": "{!saleCart.Id}",
+          "fieldValues": [
+            {
+              "field": "Status",
+              "value": "Completed"
+            },
+            {
+              "field": "Subtotal",
+              "value": "{!validatedTotal}"
+            },
+            {
+              "field": "Total",
+              "value": "{!validatedTotal}"
+            }
+          ]
+        }
       }
     ],
     "flowType": "Autolaunched Flow",
     "label": "Acetill Payment Cash",
     "resources": [
+      {
+        "name": "cartId",
+        "type": "Variable",
+        "dataType": "Text",
+        "availableForInput": true
+      },
       {
         "availableForInput": true,
         "dataType": "InvoiceLine",
@@ -618,6 +738,11 @@
         "type": "Formula",
         "dataType": "Number",
         "value": "currentProduct.Price * saveLine.Quantity"
+      },
+      {
+        "name": "saleCart",
+        "type": "Record",
+        "dataType": "Cart"
       }
     ],
     "startConfig": {
@@ -636,7 +761,7 @@
         "id": "1",
         "kind": "normal",
         "label": "Next",
-        "to": 2
+        "to": 24
       },
       {
         "from": 2,
@@ -769,7 +894,7 @@
         "id": "20",
         "kind": "normal",
         "label": "Next",
-        "to": 19
+        "to": 27
       },
       {
         "id": "21",
@@ -816,6 +941,41 @@
       {
         "id": "27",
         "from": 23,
+        "to": 19,
+        "kind": "normal",
+        "label": "Next"
+      },
+      {
+        "id": "28",
+        "from": 24,
+        "to": 25,
+        "kind": "normal",
+        "label": "Next"
+      },
+      {
+        "id": "29",
+        "from": 25,
+        "to": 2,
+        "kind": "normal",
+        "label": "Valid"
+      },
+      {
+        "id": "30",
+        "from": 25,
+        "to": 26,
+        "kind": "normal",
+        "label": "Default"
+      },
+      {
+        "id": "31",
+        "from": 26,
+        "to": 19,
+        "kind": "normal",
+        "label": "Next"
+      },
+      {
+        "id": "32",
+        "from": 27,
         "to": 19,
         "kind": "normal",
         "label": "Next"
@@ -1162,11 +1322,96 @@
           "errorLocation": "Page",
           "errorMessage": "Product price changed during checkout; no sale was recorded. Please try again."
         }
+      },
+      {
+        "id": 24,
+        "type": "Get Records",
+        "label": "Read authorised open Cart",
+        "config": {
+          "object": "Cart",
+          "recordLimit": "1",
+          "outputVariable": "saleCart",
+          "conditions": [
+            {
+              "field": "Id",
+              "operator": "Equals",
+              "value": "{!cartId}"
+            },
+            {
+              "field": "UserId",
+              "operator": "Equals",
+              "value": "{!$User.Id}"
+            },
+            {
+              "field": "Status",
+              "operator": "Equals",
+              "value": "Open"
+            }
+          ]
+        }
+      },
+      {
+        "id": 25,
+        "type": "Decision",
+        "label": "Cart ready for payment?",
+        "config": {
+          "outcomes": [
+            {
+              "name": "Valid",
+              "label": "Valid",
+              "conditionLogic": "All",
+              "conditions": [
+                {
+                  "field": "{!saleCart}",
+                  "operator": "IsNotNull"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 26,
+        "type": "Custom Error",
+        "label": "Cart unavailable",
+        "config": {
+          "errorLocation": "Page",
+          "errorMessage": "Select an open cart you own before payment."
+        }
+      },
+      {
+        "id": 27,
+        "type": "Update Records",
+        "label": "Complete paid Cart",
+        "config": {
+          "object": "Cart",
+          "recordId": "{!saleCart.Id}",
+          "fieldValues": [
+            {
+              "field": "Status",
+              "value": "Completed"
+            },
+            {
+              "field": "Subtotal",
+              "value": "{!validatedTotal}"
+            },
+            {
+              "field": "Total",
+              "value": "{!validatedTotal}"
+            }
+          ]
+        }
       }
     ],
     "flowType": "Autolaunched Flow",
     "label": "Acetill Payment Card",
     "resources": [
+      {
+        "name": "cartId",
+        "type": "Variable",
+        "dataType": "Text",
+        "availableForInput": true
+      },
       {
         "availableForInput": true,
         "dataType": "InvoiceLine",
@@ -1241,6 +1486,11 @@
         "type": "Formula",
         "dataType": "Number",
         "value": "currentProduct.Price * saveLine.Quantity"
+      },
+      {
+        "name": "saleCart",
+        "type": "Record",
+        "dataType": "Cart"
       }
     ],
     "startConfig": {

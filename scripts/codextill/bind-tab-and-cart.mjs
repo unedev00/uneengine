@@ -10,9 +10,9 @@ const RECEIPT='codextill-tab-and-cart-read-bindings-20261101-v1';
 const cartRead={
  actionType:'Flow',flowType:'Autolaunched Flow',
  flowApiName:'AcetillCopilotReadCart',
- inputs:{sessionKey:'$session'},
+ inputs:{cartId:'$session.cartId'},
  outputs:{
-  cartSessionId:'cartSessionId',
+  cartId:'activeCartId',
   cartItems:'cartItems',
   subtotal:'subtotal',
   total:'total'
@@ -29,8 +29,8 @@ export const BINDINGS={
  },
  'codextill-cart':{
   objectApiName:'CartLine',
-  relatedFilterKey:'cartSessionId',
-  relatedFieldApiName:'CartSession',
+  relatedFilterKey:'activeCartId',
+  relatedFieldApiName:'Cart',
   textSource:'@Name',
   column2Source:'@UnitPrice',
   column3Source:'@Quantity',
@@ -49,7 +49,7 @@ const originalTypes={
 };
 const expectedFields={
  MenuCategory:['Name'],
- CartLine:['CartSession','Name','UnitPrice','Quantity','LineTotal','DiscountAmount']
+ CartLine:['Cart','Name','UnitPrice','Quantity','LineTotal','DiscountAmount']
 };
 const actionKeys=new Set(['start','change']);
 for(const [id,props] of Object.entries(BINDINGS)){
@@ -62,7 +62,7 @@ for(const [id,props] of Object.entries(BINDINGS)){
  }
 }
 assert.equal(BINDINGS['codextill-categories'].actionFlows.change.value,'$event.record.Id');
-assert.equal(BINDINGS['codextill-cart'].relatedFilterKey,'cartSessionId');
+assert.equal(BINDINGS['codextill-cart'].relatedFilterKey,'activeCartId');
 assert.equal(BINDINGS['codextill-cart'].actionFlows.start.flowApiName,'AcetillCopilotReadCart');
 const checksum=createHash('sha256').update(JSON.stringify(BINDINGS)).digest('hex');
 if(process.argv.includes('--preflight')){
@@ -155,6 +155,6 @@ try{
   }
   await db.query(`INSERT INTO md_system_migrations(version,checksum) VALUES($1,$2)
     ON CONFLICT(version) DO NOTHING`,[RECEIPT,checksum]);
-  console.log('CODEXTILL TAB/CART DATA BINDINGS VERIFIED: MenuCategory dynamic tabs, categoryId PageState selection, CartLine scoped to current CartSession via AcetillCopilotReadCart; all layout and Product bindings preserved');
+  console.log('CODEXTILL TAB/CART DATA BINDINGS VERIFIED: MenuCategory dynamic tabs, categoryId PageState selection, CartLine scoped to current Cart via AcetillCopilotReadCart; all layout and Product bindings preserved');
  }
 }finally{await db.pool.end();}

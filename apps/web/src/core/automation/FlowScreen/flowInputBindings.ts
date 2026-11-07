@@ -5,6 +5,7 @@ export type InputSource = { kind: InputSourceKind; detail: string; value: unknow
 const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
 export const sessionInputFields=Object.freeze([
  {key:'id',label:'Page session ID'},
+ {key:'cartId',label:'Active Cart record ID'},
  {key:'user.id',label:'Logged-in user ID'},
  {key:'user.email',label:'Logged-in user email'},
  {key:'user.name',label:'Logged-in user name'},

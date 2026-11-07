@@ -12,16 +12,17 @@ export async function seedAcetillCashierPolicy(client:PoolClient,tenantId:string
   ...['HoldSale','RetrieveSale','SalesReturn'].map(name=>['Action:Acetill'+name,'execute'] as [string,string]),
   ...['GetProducts','GetCategories','HoldCart','ListHeldCarts','ResumeHeldCart','LoadReturnInvoice',
     'CreateSalesReturn','VerifyUserPin','ScanProduct','PaymentCash','PaymentCard',
-    'CopilotAddProduct','CopilotReadCart','CopilotChangeQuantity','CopilotDefaultCategory',
+    'CopilotNewCart','CopilotSelectCart','CopilotAddProduct','CopilotReadCart','CopilotChangeQuantity','CopilotDefaultCategory',
     'CopilotVerifyPin'].map(name=>['Flow:Acetill'+name,'execute'] as [string,string]),
-  ...['Cart','CartLine','CartSession','MenuCategory','Invoice','InvoiceLine','Product'].map(name=>[name,'read'] as [string,string]),
-  ['CartSession','create'],['CartLine','delete'],
+  ...['Cart','CartLine','MenuCategory','Invoice','InvoiceLine','Product'].map(name=>[name,'read'] as [string,string]),
+  ['CartLine','delete'],
   ...['Cart','CartLine'].flatMap(name=>[[name,'create'],[name,'edit']] as Array<[string,string]>),
-  ...['Name','Status','SessionKey'].flatMap(name=>
-    ['read','create'].map(action=>['CartSession.'+name,action] as [string,string])),
+  ...['Status','Subtotal','Total','HoldReference','HoldLabel','HeldBy'].map(name=>['Cart.'+name,'edit'] as [string,string]),
+  ...['Name','Status','SessionKey','UserId'].flatMap(name=>
+    ['read','create'].map(action=>['Cart.'+name,action] as [string,string])),
   ...['Name','Active','IsVisiblePOS'].map(name=>['MenuCategory.'+name,'read'] as [string,string]),
   ['Product.MenuCategory','read'],['Product.Active','read'],
-  ...['CartSession','UnitPrice','Quantity','LineTotal'].flatMap(name=>
+  ...['UnitPrice','Quantity','LineTotal'].flatMap(name=>
     ['read','create','edit'].map(action=>['CartLine.'+name,action] as [string,string])),
   ...['Invoice','InvoiceLine'].map(name=>[name,'create'] as [string,string]),
   ...['Name','Status','HoldReference','HoldLabel','HeldBy','HeldAt'].flatMap(name=>

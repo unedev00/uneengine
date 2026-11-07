@@ -10,16 +10,17 @@ export const cash={
  inputs:{
   cartItems:{source:'ProjectRecords',value:'$state.cartItems',fields:['Product','Quantity']},
   cartTotal:{source:'ToNumber',value:'$state.total'},
-  requestId:'$session',
+  cartId:'$session.cartId',
+  requestId:'$session.cartId',
   cashReceived:{source:'ToNumber',value:'$state.total'}
  },
  inputRules:{requestId:'NonEmpty'},
  outputs:{status:'checkoutStatus',invoiceId:'invoiceId',total:'checkoutTotal'},
  resetSessionOnSuccess:true,mutatesData:true,
- successState:{cartSessionId:null,subtotal:0,total:0}
+ successState:{activeCartId:null,subtotal:0,total:0}
 };
 assert.equal(cash.inputs.cashReceived.value,'$state.total','Cash tender must equal displayed total');
-assert.equal(cash.inputs.requestId,'$session','Must use idempotent session key');
+assert.equal(cash.inputs.requestId,'$session.cartId','Must use idempotent session key');
 assert(cash.resetSessionOnSuccess);
 const checksum=createHash('sha256').update(JSON.stringify(cash)).digest('hex');
 if(process.argv.includes('--preflight')){

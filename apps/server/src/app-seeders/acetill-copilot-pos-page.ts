@@ -10,17 +10,17 @@ type Block=Record<string,unknown> & {
 const flow=(name:string,inputs:Record<string,unknown>={},outputs:Record<string,string>={})=>({
  actionType:'Flow',flowType:'Autolaunched Flow',flowApiName:name,inputs,outputs
 });
-const totals={cartSessionId:'cartSessionId',cartItems:'cartItems',subtotal:'subtotal',total:'total'};
-const read=flow('AcetillCopilotReadCart',{sessionKey:'$session'},totals);
+const totals={cartId:'activeCartId',cartItems:'cartItems',subtotal:'subtotal',total:'total'};
+const read=flow('AcetillCopilotReadCart',{cartId:'$session.cartId'},totals);
 const add=flow('AcetillCopilotAddProduct',{
- sessionKey:'$session',productId:'$event.recordId'
+ sessionKey:'$session',cartId:'$session.cartId',productId:'$event.recordId'
 },totals);
 const qty=flow('AcetillCopilotChangeQuantity',{
- sessionKey:'$session',cartLineId:'$event.recordId',delta:'$event.delta'
+ cartId:'$session.cartId',cartLineId:'$event.recordId',delta:'$event.delta'
 },totals);
 const cash=flow('AcetillPaymentCash',{
  cartItems:{source:'ProjectRecords',value:'$state.cartItems',fields:['Product','Quantity']},
- cartTotal:'$state.total',requestId:'$session',
+ cartTotal:'$state.total',cartId:'$session.cartId',requestId:'$session.cartId',
  cashReceived:{source:'ToNumber',value:'$state.cashReceived'}
 },{status:'checkoutStatus',invoiceId:'invoiceId',total:'checkoutTotal'});
 const box=(id:string,type:string,label:string,region:string,
@@ -42,8 +42,8 @@ export const copilotTillLayout=[
   actionFlows:{click:add,start:read}
  }),
  box('cart','smart_cart','Current sale','sidebar',846,104,536,550,{
-  objectApiName:'CartLine',relatedFilterKey:'cartSessionId',
-  relatedFieldApiName:'CartSession',
+  objectApiName:'CartLine',relatedFilterKey:'activeCartId',
+  relatedFieldApiName:'Cart',
   textSource:'@Name',column2Source:'@UnitPrice',column3Source:'@Quantity',
   column4Source:'@Quantity * @UnitPrice',column5Source:'@DiscountAmount',
   columnVisibility:['Column 1','Column 2','Column 3','Column 4'],
@@ -69,13 +69,13 @@ export const copilotTillLayout=[
   placeholder:'Find a product or scan barcode',
   backgroundColor:'#FFFFFF',borderColor:'#D6E1EE',radius:8,
   actionFlows:{select:flow('AcetillCopilotAddProduct',{
-   sessionKey:'$session',productId:'$event.record.Id'
+   sessionKey:'$session',cartId:'$session.cartId',productId:'$event.record.Id'
   },totals)}
  }),
  box('new','smart_button','New sale','header',606,28,158,52,{
   label:'New sale',backgroundColor:'#1A6AD2',labelColor:'#FFFFFF',
   textSize:14,radius:8,actionFlows:{click:{
-   ...read,resetSessionOnSuccess:true,mutatesData:false
+   ...flow('AcetillCopilotNewCart',{sessionKey:'$session'}, totals),mutatesData:true
   }}
  }),
  box('lock','smart_button','Verify till PIN','header',1214,28,168,52,{
@@ -97,11 +97,11 @@ export const copilotTillLayout=[
  box('hold','smart_button','Hold sale','sidebar',846,750,164,48,{
   label:'Hold sale',backgroundColor:'#334E72',labelColor:'#FFFFFF',radius:8,
   actionFlows:{click:{
-   ...flow('AcetillHoldCart',{requestId:'$session',label:'Till held sale',
+   ...flow('AcetillHoldCart',{cartId:'$session.cartId',requestId:'$session',label:'Till held sale',
     cartItems:{source:'ProjectRecords',value:'$state.cartItems',
      fields:['Product','Quantity','OriginalUnitPrice']}},
-    {holdReference:'holdReference',cartId:'heldCartId'}),
-   resetSessionOnSuccess:true
+    {holdReference:'holdReference'}),
+   successState:{activeCartId:null,subtotal:0,total:0},mutatesData:true
   }}
  }),
  box('held','smart_button','List held sales','sidebar',1022,750,176,48,{

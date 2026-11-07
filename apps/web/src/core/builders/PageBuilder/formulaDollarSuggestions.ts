@@ -13,6 +13,7 @@ export function formulaDollarSuggestions(
 ):DollarFormulaSuggestion[]{
  const suggestions:DollarFormulaSuggestion[]=[
   {reference:'$session.id',label:'Current page session ID'},
+  {reference:'$session.cartId',label:'Active Cart record ID'},
   {reference:'$session.user.id',label:'Logged-in user ID'},
   {reference:'$session.user.email',label:'Logged-in user email'},
   {reference:'$session.user.name',label:'Logged-in user name'},
