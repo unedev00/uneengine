@@ -37,6 +37,18 @@ try{
      AND old.field_api='CartSession'
      AND newer.reference_record_id IS DISTINCT FROM m.cart_id`,[tenant]);
    if(badLines.rows[0].total)checks.push(badLines.rows[0].total+' CartLines not migrated');
+   // Never strand old open/held carts in the user-filtered Card Grid.
+   const unowned=await db.query(`
+    SELECT COUNT(*)::int AS total FROM md_cart_session_migration_map m
+    JOIN md_records r ON r.tenant_id=m.tenant_id AND r.id=m.legacy_session_id
+    JOIN md_record_values status ON status.tenant_id=m.tenant_id
+      AND status.record_id=r.id AND status.object_api='CartSession' AND status.field_api='Status'
+    LEFT JOIN md_record_values owner ON owner.tenant_id=m.tenant_id
+      AND owner.record_id=m.cart_id AND owner.object_api='Cart' AND owner.field_api='UserId'
+    WHERE m.tenant_id=$1 AND status.value_text IN ('Open','Held')
+      AND owner.reference_record_id IS NULL`,[tenant]);
+   if(unowned.rows[0].total)checks.push(unowned.rows[0].total+' open/held Carts have no UserId');
+
   }
   const otherLinks=await db.query(`
    SELECT object_api,api_name FROM md_field_definitions
@@ -70,7 +82,11 @@ try{
    }
   }
   reports.push({tenant,ready:checks.length===0,checks});
-  if(!apply||checks.length)continue;
+ }
+ // All-or-none preflight: do not retire any tenant when another tenant is blocked.
+ if(apply&&reports.some(r=>!r.ready))
+  throw Error('CartSession retirement blocked. '+JSON.stringify(reports));
+ if(apply)for(const {tenant} of reports){
   await db.transaction(async client=>{
    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['cart-session-retirement:'+tenant]);
    await client.query(`
@@ -82,7 +98,5 @@ try{
     WHERE tenant_id=$1 AND api_name='CartSession' AND deleted_at IS NULL`,[tenant]);
   });
  }
- if(apply&&reports.some(r=>!r.ready))
-  throw Error('CartSession retirement blocked. '+JSON.stringify(reports));
  console.log(JSON.stringify({mode:apply?'retired':'preflight',reports},null,2));
 }finally{await db.close();}
