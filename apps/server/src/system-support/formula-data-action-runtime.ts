@@ -98,7 +98,8 @@ export async function executeServerDataAction(
  db:Sql,records:Records,actor:Actor,formula:string,scope:Record<string,unknown>,dataSteps:number
 ):Promise<{supported:true;error?:string;changes?:Array<{key:string;value:unknown}>;
  recordChanged?:boolean;mutatedObjectApiNames?:string[];variables?:Record<string,unknown>;
- completedActionCount?:number;recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>}>{
+ completedActionCount?:number;plannedRecordWrites?:number;skippedRecordWrites?:number;noRecordWriteReason?:string;
+ recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>}>{
  const split=splitServerDataActionPlan(formula);
  if(!split||dataSteps!==split.dataSteps)
   throw Error('Invalid Formula data segment');
