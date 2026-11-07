@@ -885,7 +885,7 @@ function MetadataBoundPageComponent({
     try {
       const configured=actionFlows[action.event];
       const dependencyObjects=configured&&typeof configured==='object'&&!Array.isArray(configured)
-       ?planReadWriteObjects(configured as Record<string,unknown>,objectApiName):[];
+       ?planReadWriteObjects(configured as Record<string,unknown>,objectApiName,objects):[];
       const result=dependencyObjects.length
        ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,
           ()=>executeAction(action))
