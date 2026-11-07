@@ -161,3 +161,13 @@ test('published component formulas show safe errors rather than silently swallow
  assert.match(source,/bindingErrors\.push\('Cannot evaluate formula for '/);
  assert.match(source,/role="alert"/);
 });
+
+
+test('formula dependency discovery ignores record payload values but keeps authored bindings',()=>{
+ const source={textSource:'=$component.Cart.Total',
+  actionFlows:{click:{formula:'=$component.Selected.Id'}},
+  record:{Name:'$component.Private.Field'},
+  records:Array.from({length:100},(_,index)=>({Id:String(index),Name:'$component.Other.Secret'})),
+  pageState:{caption:'$component.State.Value'}};
+ assert.deepEqual(componentFormulaDependencies(source),['Cart.Total','Selected.Id']);
+});
