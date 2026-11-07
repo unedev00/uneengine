@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ const read = path => readFileSync(new URL('../src/' + path, import.meta.url), 'u
 
 test('Smart Button supports compact icon-only sizing on canvas and template layouts', () => {
   const component = JSON.parse(read('component-libraries/smart_button/component.json'));
-  const builder = read('core/builders/PageBuilder/pageBuilderView.tsx');
+  const builder = readPageBuilderModules();
   const runtime = read('component-libraries/smart/shared/SmartRuntime.jsx');
 
   assert.equal(component.resize.minWidth, 32);

@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
@@ -56,6 +57,6 @@ test('Flow mapping UI is hidden in Actions but saved metadata helpers remain ava
  const actionRibbon=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
  assert.doesNotMatch(actionRibbon,/CompactActionFlowBindings|onInputsChange|onOutputsChange/);
  assert.match(actionRibbon,/inputs:asBinding\(previous.inputs\)/);
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  assert.doesNotMatch(view,/mode="actions-inline"/);
 });

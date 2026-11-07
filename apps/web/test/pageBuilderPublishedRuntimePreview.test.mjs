@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ const source = relative => readFileSync(new URL(relative, import.meta.url), 'utf
 
 test('interactive preview uses the same lazy-loaded runtime as published App Pages', () => {
   const app = source('../src/core/workspace/App/App.tsx');
-  const builder = source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const builder = source('../src/core/builders/PageBuilder/editor/canvas/PageCanvasStage.tsx');
   assert.match(app, /createPageBuilder\(MetadataComponentProperties, runtime\.MetadataBoundPageComponent, runtime\.LightningAppRuntime\)/);
   assert.match(builder, /previewMode && page\.pageType !== 'Record Page' \? <div className="page-builder-live-runtime"/);
   assert.match(builder, /<LightningAppRuntime[\s\S]*?previewPage=\{page\}/);
@@ -28,7 +29,7 @@ test('preview renders draft metadata without fetching or caching a published pag
 
 test('unbound Image and Smart Image load the same tenant assets in preview and published runtime', () => {
   const runtime = source('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
-  const builder = source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const builder = source('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
   const tenantImage = source('../src/component-libraries/shared/TenantImage.jsx');
   assert.match(runtime, /const loadPageMediaAsset = \(id:string\) =>/);
   assert.match(runtime, /Promise.reject\(new Error\('Invalid media asset ID'\)\)/);
@@ -44,7 +45,7 @@ test('unbound Image and Smart Image load the same tenant assets in preview and p
 });
 
 test('live preview has no editor drag and resize handlers or canvas movement cursor', () => {
-  const builder = source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const builder = readPageBuilderModules();
   const css = source('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css');
   assert.match(builder, /onPointerDown=\{!previewMode && !libraryPreview && page\.layoutMode === 'free-canvas'/);
   assert.match(builder, /onPointerMove=\{!previewMode && !libraryPreview && page\.layoutMode === 'free-canvas'/);

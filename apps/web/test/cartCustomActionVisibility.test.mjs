@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -27,7 +28,7 @@ test('cart quantity icon eye settings hide controls without changing numeric fie
 
 test('Action ribbon eye controls are cart-only and stay compact',()=>{
  const action=read('core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
- const view=read('core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const css=read('core/builders/PageBuilder/PageBuilderActionRibbonCompact.css');
  assert.match(action,/members\.every\(member=>member==='smart_cart'\)/);
  assert.match(action,/page-action-visibility-toggle/);

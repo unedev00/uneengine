@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=(path)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 test('Page Manager exposes different Edit and Design actions',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/management/PageManagerView.tsx');
  assert.match(builder,/aria-label=\{'Edit page properties for '/);
  const split=read('../src/core/builders/PageBuilder/PageDesignSplitAction.tsx');
  assert.match(builder,/PageDesignSplitAction label=\{item\.label\}/);
@@ -52,7 +52,7 @@ test('new API names typed manually are normalized to lowercase across metadata e
 
 test('Edit Page selects the device draft and respects saved-layout switching boundaries',()=>{
  const dialog=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/management/usePageLayoutActions.tsx');
  const migration=read('../../server/src/system-support/migrations/20270309-page-device-layout-page-properties.sql');
  assert.match(dialog,/aria-label="Device layout to design"/);
  assert.match(dialog,/setDesignVariant\(e\.target\.value as Variant\)/);

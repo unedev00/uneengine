@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from '../../../web/test/helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -35,7 +36,7 @@ test('Page identity remains canonical through drafts, published layouts and futu
  assert.doesNotMatch(runtime,/UPDATE md_page_definitions SET title=\$3/);
 });
 test('Page Details dialog appears in Page Manager and editor, without changing API identity',()=>{
- const view=read('../../../web/src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const dialog=read('../../../web/src/core/builders/PageBuilder/PageDetailsDialog.tsx');
  const presentation=read('../../../web/src/core/workspace/SetupShell/setupShellPresentation.tsx');
  const shell=read('../../../web/src/core/workspace/SetupShell/setupAppShell.tsx');

@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -161,14 +162,14 @@ test('legacy position-lock values do not block movement and the ribbon no longer
   const aligned=alignCanvasComponents(components,['a','b'],'x','start',{width:800,height:600});
   assert.equal(aligned[0].position?.x,0);
   assert.equal(aligned[1].position?.x,0,'saved canvasLocked no longer blocks alignment');
-  const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=await readFile(new URL('../src/core/builders/PageBuilder/editor/canvas/PageCanvasStage.tsx',import.meta.url),'utf8');
   const interactions=await readFile(new URL('../src/core/builders/PageBuilder/canvasInteractions.ts',import.meta.url),'utf8');
   assert.doesNotMatch(source,/canvasLocked|Lock position|Unlock position/);
   assert.doesNotMatch(interactions,/canvasLocked/);
 });
 
 test('Page Builder records and restores selection state with undo and redo', async () => {
-  const source = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/core/builders/PageBuilder/editor/usePageComponentActions.tsx', import.meta.url), 'utf8');
   assert.match(source, /setSelectionUndoStack\(current =>/);
   assert.match(source, /selectionIds: \[\.\.\.selectionIds\]/);
   assert.match(source, /const snapshot = selectionRedoStack\[selectionRedoStack\.length - 1\]/);
@@ -176,7 +177,7 @@ test('Page Builder records and restores selection state with undo and redo', asy
 });
 
 test('Free Canvas uses clean component objects and a compact ribbon-based palette', async () => {
-  const source = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+  const source = readPageBuilderModules();
   const styles = await readModularCss(new URL('../src/core/builders/PageBuilder/styles-md227.css', import.meta.url));
 
   assert.doesNotMatch(source, /className="record-component-head"/);
@@ -202,7 +203,7 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
 });
 
 test('Page Builder property editors filter controls by selected component capabilities', async () => {
-  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+  const builder = await readFile(new URL('../src/core/builders/PageBuilder/editor/inspector/usePageComponentProperties.tsx', import.meta.url), 'utf8');
   const visual = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentVisualEditor.tsx', import.meta.url), 'utf8');
   const advanced = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentStyleEditor.tsx', import.meta.url), 'utf8');
   const capabilities = await readFile(new URL('../src/core/builders/ComponentStyleEditor/componentAppearanceCapabilities.ts', import.meta.url), 'utf8');
@@ -274,7 +275,7 @@ test('Appearance targets the control without creating a rounded outer shell', ()
 
 test('builder and published runtime use the same appearance targeting and preserve native control defaults', async () => {
   const root = new URL('../src/core/',import.meta.url);
-  const builder = await readFile(new URL('builders/PageBuilder/pageBuilderView.tsx',root),'utf8');
+  const builder = readPageBuilderModules('pageBuilderView', 'createPageCanvasRenderer');
   const runtime = await readFile(new URL('pages/PageRuntime/pageRuntimeViews.tsx',root),'utf8');
   const css = await readFile(new URL('pages/TemplatePageRuntime/pageComponentAppearance.css',root),'utf8');
   const editor = await readFile(new URL('builders/ComponentStyleEditor/PageComponentVisualEditor.tsx',root),'utf8');
@@ -390,7 +391,7 @@ test('native/common component settings style actual controls without outer chrom
   assert.equal((style as unknown as Record<string,string>)['--md-page-opacity'],'0.7');
 
   const path=new URL('../src/core/',import.meta.url);
-  const builder=await readFile(new URL('builders/PageBuilder/pageBuilderView.tsx',path),'utf8');
+  const builder=readPageBuilderModules();
   const runtime=await readFile(new URL('pages/PageRuntime/pageRuntimeViews.tsx',path),'utf8');
   assert.match(builder,/layoutTransparent props=\{/);
   assert.match(runtime,/layoutTransparent props=\{/);
@@ -399,7 +400,7 @@ test('native/common component settings style actual controls without outer chrom
 
 test('Page Builder Office ribbon keeps each control in one permanent logical group', async () => {
   const root = new URL('../src/core/builders/', import.meta.url);
-  const builder = await readFile(new URL('PageBuilder/pageBuilderView.tsx', root), 'utf8');
+  const builder = readPageBuilderModules();
   const styles = await readModularCss(new URL('PageBuilder/styles-md227.css', root));
   const presentation = await readFile(new URL('ComponentProperties/ComponentPresentationProperties.tsx', root), 'utf8');
   const data = await readFile(new URL('ComponentProperties/componentPropertiesView.tsx', root), 'utf8');
@@ -458,7 +459,7 @@ test('Grouping selected canvas components preserves children and absolute bounds
 
 test('Page Builder contextual ribbon respects the fixed-height no-scroll contract',async()=>{
   const root=new URL('../src/core/builders/',import.meta.url);
-  const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
+  const builder=await readFile(new URL('PageBuilder/editor/ribbon/createPageRibbon.tsx',root),'utf8');
   const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
   const filters=await readFile(new URL('PageBuilder/PageBuilderRibbonEditors.tsx',root),'utf8');
   const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
@@ -485,7 +486,7 @@ test('Page Builder contextual ribbon respects the fixed-height no-scroll contrac
 
 test('Page Builder contextual ribbon is generated from aligned three-row groups',async()=>{
   const root=new URL('../src/core/builders/',import.meta.url);
-  const builder=await readFile(new URL('PageBuilder/pageBuilderView.tsx',root),'utf8');
+  const builder=readPageBuilderModules();
   const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
   const responsive=await readFile(new URL('ComponentStyleEditor/PageComponentStyleEditor.tsx',root),'utf8');
   assert.doesNotMatch(builder,/office-ribbon-inline-options/);
@@ -543,7 +544,7 @@ test('Page Runtime produces typed native line-height and letter-spacing tokens',
 
 test('Page Builder no longer offers redundant Show component controls', async () => {
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const builder = readPageBuilderModules();
 
 
 
@@ -553,7 +554,7 @@ test('Page Builder no longer offers redundant Show component controls', async ()
 });
 
 test('Page Builder authors shared visibility rules without replacing conditional appearance actions', async () => {
-  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const builder = readPageBuilderModules();
   const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
   assert.match(builder,/PageBuilderVisibilityDialog/);
   assert.doesNotMatch(builder,/Edit visibility rules/);
@@ -575,7 +576,9 @@ test('each Smart component is explicitly mapped for Page Runtime appearance',()=
 });
 
 test('PowerPoint-style canvas gestures move selected shapes together and keep resize grips visible', async () => {
-  const builder = await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+  const builder = readPageBuilderModules(
+    'useCanvasGestures', 'usePageComponentActions', 'createPageCanvasRenderer'
+  );
   const handles = await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css', import.meta.url), 'utf8');
   const move = builder.slice(builder.indexOf('  const startCanvasMove = '), builder.indexOf('  const reorderLayer = '));
   const resize = builder.slice(builder.indexOf('  const startCanvasResize = '), builder.indexOf('  const hasOverlappingPageAssignment = '));
@@ -683,7 +686,7 @@ test('UI Image corners share one native clip and Page Builder uses no square sel
   const image=await readFile(new URL('../src/component-libraries/ui_image/UiImage.jsx',import.meta.url),'utf8');
   const css=await readFile(new URL('../src/component-libraries/ui_image/UiImage.css',import.meta.url),'utf8');
   const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
-  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const builder=await readFile(new URL('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx',import.meta.url),'utf8');
   const first=await readFile(new URL('../src/core/workspace/WorkspaceTheme/sections/07-workspace.css',import.meta.url),'utf8');
   const second=await readFile(new URL('../src/core/workspace/WorkspaceTheme/sections/08-workspace.css',import.meta.url),'utf8');
   assert.match(image,/borderRadius:safe\(p\.radius,12\),overflow:"hidden"/);
@@ -713,7 +716,7 @@ test('group resize scales geometry proportionally while leaving unrelated compon
   assert.deepEqual(items[0].position,{x:10,y:20,width:30,height:20});
 });
 test('placement controls, component finder and full-width workspace are builder-only',async()=>{
-  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const builder=readPageBuilderModules();
   const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
   const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
   const arrange=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
@@ -734,7 +737,7 @@ test('placement controls, component finder and full-width workspace are builder-
 
 
 test('Free Canvas image clicks select the image instead of the overlapping tab',async()=>{
-  const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=await readFile(new URL('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx',import.meta.url),'utf8');
   const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
   const click=source.slice(source.indexOf('onClickCapture={libraryPreview'),source.indexOf('onDoubleClick={!libraryPreview'));
   assert.match(click,/event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*selectCanvasComponent\(event\)/);
@@ -745,7 +748,7 @@ test('Free Canvas image clicks select the image instead of the overlapping tab',
 });
 
 test('Free Canvas move cursor and directional resize handles remain usable',async()=>{
-  const source=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=readPageBuilderModules();
   const handles=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
   const overlay=await readFile(new URL('../src/core/builders/PageBuilder/CanvasFloatingResizeHandles.tsx',import.meta.url),'utf8');
   const chrome=await readFile(new URL('../src/core/builders/PageBuilder/CanvasFloatingActions.css',import.meta.url),'utf8');
@@ -788,7 +791,7 @@ test('UI Image obeys free-canvas frame resizing in edit and published runtime wi
 
 test('Arrange offers front and backward controls without duplicate order buttons',async()=>{
  const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
- const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const view=await readFile(new URL('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx',import.meta.url),'utf8');
  const css=await readFile(new URL('../src/core/builders/PageBuilder/SmartCanvasHandles.css',import.meta.url),'utf8');
  assert.doesNotMatch(ribbon,/label:'Bring forward'/);
  assert.doesNotMatch(ribbon,/label:'Send to back'/);
@@ -819,7 +822,7 @@ test('Grouped components move together in both layer directions and obey locks',
 });
 
 test('Group outline passes clicks through; only move and resize handles accept pointer events',async()=>{
- const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const view=readPageBuilderModules();
  const css=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css',import.meta.url),'utf8');
  assert.match(view,/className="canvas-group-move-handle"/);
  assert.match(view,/onPointerDown=\{event=>startCanvasGroupGesture\(event,'move'\)\}/);
@@ -887,7 +890,7 @@ test('Actions group enables common Flow slots but disables event slots unsupport
  assert.match(unsupported,/aria-label="On Session Start flow" disabled/);
 });
 test('Group icon picker and group locking share edits instead of updating only the primary',async()=>{
- const view=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const view=readPageBuilderModules();
  const gallery=await readFile(new URL('../src/core/builders/PageBuilder/SmartIconGallery.tsx',import.meta.url),'utf8');
  assert.match(view,/disabled=\{ribbonSelectedMembers\.some\(item=>item\.type!=='Custom:smart_icon'/);
  assert.match(gallery,/disabled=\{disabled\}/);
@@ -1001,7 +1004,7 @@ test('arrow movement treats 50 selected shapes as one rigid bounded edit',()=>{
 });
 
 test('Page Builder exposes modifier selection, Layers selection and one arrow handler',async()=>{
-  const builder=await readFile(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const builder=readPageBuilderModules();
   const navigator=await readFile(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
   assert.match(builder,/event\.ctrlKey\|\|event\.metaKey\|\|event\.shiftKey\?'toggle'/);
   assert.match(builder,/startCanvasMarquee/);

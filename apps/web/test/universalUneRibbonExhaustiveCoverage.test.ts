@@ -35,7 +35,7 @@ test('coverage checker fails for omitted, duplicate and unexpected properties',(
 });
 test('builder-managed position, dimensions, visibility and data links remain available',()=>{
  const catalog=readFileSync(new URL('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx',import.meta.url),'utf8');
- const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const view=readFileSync(new URL('../src/core/builders/PageBuilder/editor/canvas/PageCanvasStage.tsx',import.meta.url),'utf8');
  for(const token of ['Canvas locked','Component visible','Canvas '+String(''), 'Source mappings','Filter conditions','Visibility rules'])
    assert.ok(catalog.includes(token),token);
  assert.match(view,/onPositionChange:position=>updateComponent/);

@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -60,7 +61,7 @@ test('cycles and orphaned parents cannot suppress components or loop indefinitel
 });
 
 test('View tab wires the navigator into existing selection, persisted rename and hidden canvas ancestors',()=>{
-  const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const view=readPageBuilderModules();
   const navigator=readFileSync(new URL('../src/core/builders/PageBuilder/PageComponentNavigator.tsx',import.meta.url),'utf8');
   assert.match(view,/<PageComponentNavigator components=\{page.components\}/);
   assert.match(view,/selectCanvasIds\(page\.components,selectionIds,id,mode,selectedId\)/,

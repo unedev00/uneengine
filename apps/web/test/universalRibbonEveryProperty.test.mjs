@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -30,7 +31,7 @@ test('all UNE component settings are owned by app source, not the Component Libr
 
 test('UNE settings stay out of public catalog, ribbon and registration UI',()=>{
  const build=read(new URL('../build-component-library.mjs',import.meta.url));
- const builder=read(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url));
+ const builder=readPageBuilderModules();
  const css=read(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonPolish.css',import.meta.url));
  const library=read(new URL('../src/core/components/ComponentLibrary/ComponentLibrary.tsx',import.meta.url));
  const palette=read(new URL('../src/core/builders/PageBuilder/pageBuilderPalette.ts',import.meta.url));

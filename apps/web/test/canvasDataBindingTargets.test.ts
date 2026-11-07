@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -34,7 +35,7 @@ test('stale tab binding ids never redirect an edit to another tab',()=>{
 });
 test('one builder-only overlay routes selected icons to SQL-approved expressions',()=>{
  const icons=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
- const builder=source('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  const ribbon=source('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const sql=source('../../server/src/system-support/migrations/20271113-canvas-formula-binding-icons.sql');
  const cart=source('../src/component-libraries/smart_cart/SmartCart.jsx');

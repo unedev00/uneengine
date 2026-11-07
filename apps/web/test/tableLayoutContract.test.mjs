@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
@@ -21,7 +22,7 @@ test('page list keeps sortable identity and reachable actions at narrow widths',
   const styles = source('core/workspace/WorkspaceTheme/styles.css');
   const css = source('core/workspace/WorkspaceTheme/adminTableControls.css');
   const responsive = source('core/workspace/WorkspaceTheme/setupUsability.css');
-  const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
+  const pages = readPageBuilderModules();
   const imports = [...styles.matchAll(/@import\s+["']([^"']+)["']/g)].map(match => match[1]);
   assert.equal(imports.at(-1), './adminTableControls.css', 'must load last so it wins the cascade');
   assert.match(css, /\.page-manager-table-scroll\s*\{[^}]*max-height/);
@@ -82,7 +83,7 @@ test('left-docked Page Builder tabs have a light rail and readable active and in
 });
 
 test('independent values have independent labelled table columns', () => {
-  const pages = source('core/builders/PageBuilder/pageBuilderView.tsx');
+  const pages = source('core/builders/PageBuilder/editor/management/PageManagerView.tsx');
   assert.match(pages, /\['label','Page name'\],\['apiName','API name'\]/);
   assert.doesNotMatch(pages, /page-manager-page-link[^\n]*<small>\{item\.apiName\}/);
 

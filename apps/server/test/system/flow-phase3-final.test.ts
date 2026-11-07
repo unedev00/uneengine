@@ -148,7 +148,7 @@ test('Flow Builder formula catalog shares executable signatures and contexts',()
 
 test('Provider message Actions are exposed only through the browser metadata editor',async()=>{
  const {readFileSync}=await import('node:fs');
- const text=readFileSync(new URL('../../../web/src/core/builders/FlowBuilder/FlowBuilder.tsx',
+ const text=readFileSync(new URL('../../../web/src/core/builders/FlowBuilder/editor/settings/renderActionSettings.tsx',
   import.meta.url),'utf8');
  assert.match(text,/<option>Outbound Message<\/option>/);
  assert.match(text,/Outbound Message operation/);

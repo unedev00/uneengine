@@ -10,14 +10,18 @@ export function layoutFlowGraph(flow: FlowDefinitionMetadata, freeformLayout: bo
   const start = flow.elements.find((element) => element.type === 'Start');
   const pending = start ? [start.id] : [];
   if (start) graphLayers.set(start.id, 0);
-  while (pending.length) {
-    const from = pending.shift();
-    if (from === undefined) continue;
-    for (const connector of flow.connectors.filter((item) => item.from === from)) {
-      if (!graphLayers.has(connector.to)) {
-        graphLayers.set(connector.to, (graphLayers.get(from) ?? 0) + 1);
-        pending.push(connector.to);
-      }
+  const targetsBySource = new Map<number, number[]>();
+  for (const {from, to} of flow.connectors) {
+    const targets = targetsBySource.get(from);
+    if (targets) targets.push(to);
+    else targetsBySource.set(from, [to]);
+  }
+  for (let index = 0; index < pending.length; index++) {
+    const from = pending[index];
+    for (const to of targetsBySource.get(from) ?? []) {
+      if (graphLayers.has(to)) continue;
+      graphLayers.set(to, (graphLayers.get(from) ?? 0) + 1);
+      pending.push(to);
     }
   }
   const lastGraphLayer = Math.max(-1, ...graphLayers.values()) + 1;
@@ -27,7 +31,9 @@ export function layoutFlowGraph(flow: FlowDefinitionMetadata, freeformLayout: bo
   const elementsByLayer = new Map<number, FlowDefinitionMetadata['elements']>();
   flow.elements.forEach((element) => {
     const layer = graphLayers.get(element.id) ?? 0;
-    elementsByLayer.set(layer, [...(elementsByLayer.get(layer) ?? []), element]);
+    const elements = elementsByLayer.get(layer);
+    if (elements) elements.push(element);
+    else elementsByLayer.set(layer, [element]);
   });
   const graphColumns = Math.max(1, ...Array.from(elementsByLayer.values(), (elements) => elements.length));
   const graphRows = Math.max(1, elementsByLayer.size);

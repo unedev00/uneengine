@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
@@ -23,7 +24,7 @@ test('all 34 registered UNE components own a separate valid lightweight SVG ribb
 
 test('the Insert ribbon resolves registered UNE SVGs and keeps legacy icon fallback',()=>{
   const resolver=readFileSync(new URL('../src/core/builders/PageBuilder/uneRibbonIcon.tsx',import.meta.url),'utf8');
-  const page=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const page=readPageBuilderModules();
   assert.match(resolver,/bundledUneIcons\.has\(id\)/);
   assert.match(resolver,/if\(!bundledUneIcons\.has\(id\)\) return fallback/);
   assert.match(resolver,/import\.meta\.env\.BASE_URL/);

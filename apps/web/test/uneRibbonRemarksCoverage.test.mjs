@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -45,7 +46,7 @@ test('the complete approved remarks inventory is checked rather than screenshot 
 });
 
 test('legacy standard properties marked delete are absent from Page Builder controls',()=>{
- const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const source=readPageBuilderModules();
  assert.ok(!source.includes('page-component-accordion-content'),'Accordion content editor is still visible');
  assert.ok(!source.includes('page-component-dashboard'),'Published dashboard editor is still visible');
  assert.ok(!source.includes('toggleCanvasLock(component)'),'Lock position toolbar is still visible');

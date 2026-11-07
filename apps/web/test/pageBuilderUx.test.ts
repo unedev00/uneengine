@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -34,7 +35,7 @@ test('recent blocks are bounded, deduplicated and reject invalid preferences', (
 });
 
 test('journey mounts record filters inline and saves draft separately from publishing', () => {
-  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=readPageBuilderModules();
   const engine=readFileSync(new URL('../src/core/builders/ComponentProperties/componentPropertiesView.tsx',import.meta.url),'utf8');
   assert.match(source,/Component Content/);
   assert.match(source,/ribbonTab==='Component Action' &&\s*<PageBuilderActionRibbon/);
@@ -59,7 +60,7 @@ test('ribbon inline labels wrap and controls stay within their group dividers',(
 });
 
 test('ribbon keeps accessible component tabs without Home and Parity',()=>{
-  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=readPageBuilderModules();
   for(const label of ['Insert','Data','Design','Actions','Advanced','View'])
     assert.ok(source.includes(`'${label}'`),label+' tab label remains available');
   for(const icon of ['Puzzle','Database','Type','SlidersHorizontal','Layers3','Smartphone','Workflow','Eye'])
@@ -117,7 +118,7 @@ test('Card Grid Add button remains compatible with saved values without exposing
 });
 
 test('Page canvas controls live in Design and Quick Access stays on topbar',()=>{
-  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=readPageBuilderModules();
   const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('{!designInPanel && renderRibbonPanel()}'));
   assert.doesNotMatch(content,/aria-label="Page name"/);
   assert.match(content,/office-ribbon-quick-access/);
@@ -163,7 +164,7 @@ test('colour pickers share a single accessible, metadata-backed palette',()=>{
 });
 
 test('design canvas selects Button and other live controls without firing actions',()=>{
-  const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const view=readFileSync(new URL('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx',import.meta.url),'utf8');
   const css=readFileSync(new URL('../src/core/builders/PageBuilder/sections/01-page-builder.css',import.meta.url),'utf8');
   const button=readFileSync(new URL('../src/core/components/SharedRuntime/SharedButton.jsx',import.meta.url),'utf8');
   assert.match(view,/const selectOnlyInDesigner = !previewMode && !libraryPreview/);
@@ -183,7 +184,7 @@ test('design canvas selects Button and other live controls without firing action
 });
 
 test('Quick Access commands are real buttons, remain on the top rail, and Layout includes page settings',()=>{
- const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const view=readPageBuilderModules();
  const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css',import.meta.url),'utf8');
  for(const [key,label] of [['save','Save'],['activate','Activate'],['resetIcon','Reset component'],
   ['undo','Undo'],['redo','Redo'],['cut','Cut'],['copy','Copy'],['paste','Paste']]){
@@ -204,7 +205,7 @@ test('Quick Access commands are real buttons, remain on the top rail, and Layout
 });
 
 test('Ctrl/Cmd+A selects every component in the active Page Builder layout without editing metadata', () => {
-  const view=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const view=readPageBuilderModules();
   const handler=view.slice(view.indexOf('const onKey = (event: KeyboardEvent) => {'),
     view.indexOf("window.addEventListener('keydown', onKey, true);"));
   assert.ok(handler.length>0);
@@ -238,7 +239,7 @@ test('layout labels say what each layout holds and which one a page opens in',()
 });
 test('Design opens the page\'s own layout and the layout is kept in the route',()=>{
   const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
-  const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const builder=readPageBuilderModules();
   const shell=read('../src/core/workspace/SetupShell/setupShellPresentation.tsx');
   const details=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
   const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');

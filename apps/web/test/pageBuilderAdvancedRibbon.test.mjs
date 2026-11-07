@@ -1,9 +1,10 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+const page=readPageBuilderModules();
 const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
 const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
 const dialog=read('../src/core/builders/PageBuilder/PageBuilderVisibilityDialog.tsx');

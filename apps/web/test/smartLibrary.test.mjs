@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import vm from 'node:vm';
 import React from 'react';
@@ -45,14 +46,14 @@ test('Smart SQL library matches approved table and retains Home',()=>{
  assert.match(migration,/component_api='smart_lookup' AND property_key='label'/);
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_page_(?:definitions|components)/i);
  assert.doesNotMatch(migration,/DELETE\s+FROM\s+md_builder_shared_properties\s+WHERE\s+tab='Home'/i);
- const ui=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const ui=readPageBuilderModules();
  assert.match(ui,/design-canvas-settings/);
  assert.match(ui,/office-ribbon-quick-access/);
  assert.match(ui,/<SmartRibbon/);
 });
 
 test('Insert Ribbon exposes visible Smart components without requiring a selected canvas component',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartInsertRibbon.css');
  assert.match(view,/ribbonTab==='Add Block' && insertRibbon/);
@@ -110,7 +111,7 @@ test('Layout hides exact Design 2 duplicates and retired ribbon-only colours',()
 });
 
 test('unrequested Row, Column and Card layout tiles are hidden without breaking existing pages',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=read('../src/core/builders/PageBuilder/editor/ribbon/usePagePalette.tsx');
  const layouts=read('../src/core/pages/TemplatePageRuntime/pageComponentLayout.ts');
  assert.match(view,/layoutTypes\.filter\(type=>!\['Row','Column','Card','Container'\]\.includes\(type\)\)/);
  const manifest=JSON.parse(read('../src/component-libraries/manifest.json'));
@@ -142,7 +143,7 @@ test('Smart visual/property fixes are registered without changing historic SQL m
 });
 
 test('Smart canvas positions remain the source of truth for rendered sizes',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  assert.ok(view.includes('canvasFrameSized:true'));
  assert.ok(view.includes("target.type==='Custom:smart_toggle'&&update.position"));
 });
@@ -270,7 +271,7 @@ test('Image, Tabs, Navigation, Text and Container have editor-only empty preview
 });
 
 test('all editor previews are ephemeral and never stored or visible in published runtime',()=>{
- const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const canvas=read('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
  const bound=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
  const css=read('../src/core/builders/PageBuilder/PageBuilderEditorPreview.css');
  assert.match(canvas,/builderPreview: !previewMode/);
@@ -284,7 +285,7 @@ test('edited Smart Button label renders instead of metadata component name',asyn
  const html=await renderSmart('smart_button',{label:'Pay now',builderPreview:true});
  assert.match(html,/Pay now/);
  assert.doesNotMatch(html,/>Button<\/button>/);
- const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const canvas=readPageBuilderModules();
  const runtime=read('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
  assert.match(canvas,/component\.type\.startsWith\('Custom:smart_'\) && typeof component\.properties\.label/);
  assert.match(runtime,/component\.type\.startsWith\('Custom:smart_'\) && typeof resolvedProperties\.label/);
@@ -535,7 +536,7 @@ test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and ac
 });
 
 test('Quick Access Delete uses one guarded removal for all selected draft components',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  assert.match(builder,/case 'delete':return <button/);
  assert.match(builder,/aria-label="Delete selected component"/);
  assert.match(builder,/disabled=\{!selected\|\|previewMode\|\|deleteBlockedByLock\}/);
@@ -547,7 +548,7 @@ test('Quick Access Delete uses one guarded removal for all selected draft compon
  assert.match(builder,/setSelectionIds\(\[\]\)/);
 });
 test('Clicking canvas releases any focused ribbon formula editor and closes field suggestions',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/canvas/PageCanvasStage.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  assert.match(builder,/className="page-stage" key=\{canvasRefreshKey\}\s*onPointerDownCapture=/);
  assert.match(builder,/active\.closest\('\.office-builder-ribbon'\)/);
@@ -557,7 +558,7 @@ test('Clicking canvas releases any focused ribbon formula editor and closes fiel
 });
 test('Smart Event ribbon matches On Click and Qty Icon component support',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.ok(ribbon.includes("'smart_card_grid'"));
  assert.match(ribbon,/key:'qtyIcon',label:'Qty icon',enabled:members.every\(member=>member==='smart_cart'\)/);
@@ -677,7 +678,7 @@ test('Smart Icon has 71 local monochrome SVG assets and a safe persisted icon se
 test('Smart Icon uses black default recolourable SVG and existing ribbon colour glyphs',()=>{
  const component=read('../src/component-libraries/smart_icon/SmartComponent.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const gallery=read('../src/core/builders/PageBuilder/SmartIconGallery.tsx');
  assert.match(component,/#000000/);
  assert.match(component,/iconFillColor/);
@@ -725,7 +726,7 @@ test('Smart Button and Input Box own visible configured dimensions, not outer ca
  const css=read('../src/component-libraries/smart/shared/smart.css');
  assert.match(css,/smart_text>\.smart-input-box/);
  assert.match(css,/smart_image>\.smart-card/);
- const canvas=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const canvas=readPageBuilderModules();
  const dataRuntime=read('../src/core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
  assert.match(canvas,/customDefinition\.apiName\.startsWith\('smart_'\) && component\.position/);
  assert.match(canvas,/canvasFrameSized:true/);
@@ -763,7 +764,7 @@ test('Smart Image upload opens native file chooser directly and reuses tenant up
  assert.match(picker,/apiRequest<Asset>\('\/media-assets'/);
 });
 test('Independent components avoid automatic overlap and have Office-style shape gestures',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
  const placement=read('../src/core/builders/PageBuilder/canvasInsertPlacement.ts');
  assert.match(builder,/placeNewCanvasComponent\(\{/);
@@ -889,7 +890,7 @@ test('Calendar selected value colour fills date and Shadow uses shared three pre
  assert.match(migration,/value_key=NULL/);
 });
 test('Page Builder keyboard shortcuts and visible PowerPoint-style resize cursor handles',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/usePageComponentActions.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
  assert.match(builder,/command && key === 'x'/);
  assert.match(builder,/command && key === 'c'/);
@@ -1014,7 +1015,7 @@ test('Shared @ binding and canvas fill are metadata-driven for arbitrary objects
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const filter=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=read('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  const sql=read('../../server/src/system-support/migrations/20270202-canvas-fill-color.sql');
  assert.match(read('../src/core/builders/PageBuilder/relationshipFormulaFields.ts'),/mentionGroups\(objects,root/);
  assert.match(mentions,/resolveCollectionMentionRows/);
@@ -1072,7 +1073,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
  const sql=read('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  const arrange=read('../src/core/builders/PageBuilder/ArrangeRibbon.tsx');
  const visual=read('../src/core/builders/PageBuilder/PageBuilderEightTabRibbon.css');
@@ -1176,7 +1177,7 @@ test('Cart visible-row setting constrains item region, not header and summary',a
 test('Design source scopes @ fields to explicitly selected metadata objects and preserves SQL ownership',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
- const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=readPageBuilderModules();
  const sql=read('../../server/src/system-support/migrations/20270207-page-builder-ribbon-sources-layout.sql');
  const styles=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
  assert.match(ribbon,/sourceKey=\(index:number\)=>index===1\?'objectApiName':'objectApiName'\+index/);
@@ -1294,7 +1295,7 @@ test('collection-driven Smart Card Grid renders authorised record title and othe
 });
 
 test('Smart Textbox stays directly visible in the Insert gallery without a search control',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const insert=read('../src/core/builders/PageBuilder/SmartInsertRibbon.tsx');
  assert.match(view,/component\.apiName==='smart_textbox'\?'Smart Textbox'/);
  assert.match(insert,/const visible=items\.filter\(isSmartInsertItem\)/);
@@ -1373,7 +1374,7 @@ test('Action ribbon retains all existing supported events while fixing component
  assert.match(css,/grid-template-columns:repeat\(2,225px\)/);
 });
 test('Visibility ribbon keeps disabled controls in place without a selected component',()=>{
- const markup=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const markup=read('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  assert.match(markup,/checked=\{selected\?\.visible\?\?false\} disabled=\{!selected\}/);
  assert.match(markup,/title="Edit conditional visibility" disabled=\{!selected\}/);
  assert.match(markup,/<button type="button" disabled=\{!selected\} onClick=\{openVisibilityEditor\}>Conditions<\/button>/);

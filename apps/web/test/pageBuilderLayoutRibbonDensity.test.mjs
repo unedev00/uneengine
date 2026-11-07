@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -6,7 +7,7 @@ const file = name => readFileSync(new URL(name,import.meta.url),'utf8');
 const migration = file('../../server/src/system-support/migrations/20270208-page-builder-layout-ribbon-density.sql');
 const css = file('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
 const ribbon = file('../src/core/builders/PageBuilder/SmartRibbon.tsx');
-const builder = file('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+const builder = readPageBuilderModules();
 const layout = [...migration.matchAll(/\('([^']+)',\s*'([^']+)',\s*([123]),\s*(\d+)\)/g)]
   .map(([,key,section,row,width])=>({key,section,row:Number(row),width:Number(width)}));
 const property = key => layout.find(item=>item.key===key);

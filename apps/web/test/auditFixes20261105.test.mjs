@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -37,7 +38,7 @@ test('Object Manager has sortable, paginated semantic links and empty state',()=
 });
 
 test('Page Builder list actions and editor dialogs have accessible controls',()=>{
-  const builder=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const builder=readPageBuilderModules();
   const details=source('src/core/builders/PageBuilder/PageDetailsDialog.tsx');
   assert.match(builder,/pageListSort/);
   assert.match(builder,/aria-label=\{"Download component inventory for "/);
@@ -92,7 +93,7 @@ test('Sign-in reveal state and autofill maintain accessible light controls',()=>
 
 test('Cramped desktop admin widths render cards with every action still available',()=>{
  const responsive=source('src/core/records/ResponsiveDataList/ResponsiveDataList.tsx');
- const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=source('src/core/builders/PageBuilder/editor/management/PageManagerView.tsx');
  const apps=source('src/core/applications/AppManagerList/AppManagerList.tsx');
  const styles=source('src/core/workspace/WorkspaceTheme/setupUsability.css');
  assert.match(responsive,/includeNarrowDesktop/);
@@ -120,7 +121,7 @@ test('Second pass sign in uses actual build version and configurable safe legal 
 
 test('Second pass shows sort direction and explicit utility checkbox associations',()=>{
  const apps=source('src/core/applications/AppManagerList/AppManagerList.tsx');
- const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=source('src/core/builders/PageBuilder/editor/management/PageManagerView.tsx');
  const manager=source('src/core/applications/AppManager/AppManager.tsx');
  assert.match(apps,/md-sort-indicator/);
  assert.match(page,/md-sort-indicator/);
@@ -225,7 +226,7 @@ test('UX-0054 Excel export has its own announced pending state',()=>{
  assert.match(loader,/setNotice\('Downloaded '\+downloadedName/);
 });
 test('UX-0057 Page Builder card sort offers a direction control',()=>{
- const page=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=source('src/core/builders/PageBuilder/editor/management/PageManagerView.tsx');
  assert.match(page,/page-manager-sort-direction/);
  assert.match(page,/page-manager-card-sort/);
  assert.match(page,/setPageListSortDescending\(value=>!value\)/);
@@ -340,7 +341,7 @@ test('UX-0026 and UX-0029 security panel shows up to three distinct rows and ign
 });
 
 test('UX-0067 Page Builder CSV filter shrinks within the available header width',()=>{
- const builder=source('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=source('src/core/builders/PageBuilder/editor/management/PageManagerView.tsx');
  assert.match(builder,/Inventory CSV device layout/);
  assert.match(builder,/width:'min\(172px, 100%\)',minWidth:0,maxWidth:'100%'/);
  assert.doesNotMatch(builder,/style=\{\{width:172\}\} value=\{inventoryExportVariant\}/);

@@ -1,9 +1,10 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+const page=readPageBuilderModules();
 const design=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
 const migration=read('../../server/src/system-support/migrations/20271114-page-builder-retire-layout-ribbon.sql');

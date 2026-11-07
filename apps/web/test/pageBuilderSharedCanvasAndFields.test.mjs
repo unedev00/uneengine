@@ -1,9 +1,10 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+const builder=readPageBuilderModules();
 const handles=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
 const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const formulaCss=read('../src/core/builders/PageBuilder/SmartRibbonDataFormula.css');
