@@ -55,6 +55,30 @@ try{
    if(unowned.rows[0].total)checks.push(unowned.rows[0].total+' open/held Carts have no UserId');
 
   }
+  // Detect literal legacy record IDs in live metadata, not just the old API name.
+  if(exists.rows[0]?.name){
+   const oldPointers=await db.query(`
+    SELECT 1 FROM md_cart_session_migration_map m
+    WHERE m.tenant_id=$1 AND (
+     EXISTS(SELECT 1 FROM md_flow_editor_values v JOIN md_flow_definitions f
+       ON f.tenant_id=v.tenant_id AND f.id=v.flow_id
+       WHERE f.tenant_id=m.tenant_id AND f.active=true AND f.archived=false
+         AND strpos(COALESCE(v.value_text,''),m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_field_definitions d WHERE d.tenant_id=m.tenant_id
+       AND d.deleted_at IS NULL
+       AND strpos(COALESCE(d.formula_expression,''),m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_field_default_formulas d WHERE d.tenant_id=m.tenant_id
+       AND strpos(d.expression,m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_validation_rules d WHERE d.tenant_id=m.tenant_id
+       AND strpos(d.expression,m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_page_layout_heads h
+       JOIN md_page_layout_version_properties p ON p.tenant_id=h.tenant_id
+        AND p.page_id=h.page_id AND p.variant=h.variant AND p.version=h.published_version
+       WHERE h.tenant_id=m.tenant_id
+        AND strpos(COALESCE(p.value_text,''),m.legacy_session_id::text)>0)
+    ) LIMIT 1`,[tenant]);
+   if(oldPointers.rows.length)checks.push('active metadata still references a legacy CartSession record ID');
+  }
   const otherLinks=await db.query(`
    SELECT object_api,api_name FROM md_field_definitions
    WHERE tenant_id=$1 AND related_object='CartSession' AND deleted_at IS NULL
