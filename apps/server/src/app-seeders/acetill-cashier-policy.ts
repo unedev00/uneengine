@@ -17,7 +17,7 @@ export async function seedAcetillCashierPolicy(client:PoolClient,tenantId:string
   ...['Cart','CartLine','MenuCategory','Invoice','InvoiceLine','Product'].map(name=>[name,'read'] as [string,string]),
   ['create'],['CartLine','delete'],
   ...['Cart','CartLine'].flatMap(name=>[[name,'create'],[name,'edit']] as Array<[string,string]>),
-  ...['Status','Subtotal','Total','HoldReference','HeldBy'].map(name=>['Cart.'+name,'edit'] as [string,string]),
+  ...['Status','Subtotal','Total','HoldReference','HoldLabel','HeldBy'].map(name=>['Cart.'+name,'edit'] as [string,string]),
   ...['Name','Status','SessionKey','UserId'].flatMap(name=>
     ['read','create'].map(action=>['Cart.'+name,action] as [string,string])),
   ...['Name','Active','IsVisiblePOS'].map(name=>['MenuCategory.'+name,'read'] as [string,string]),

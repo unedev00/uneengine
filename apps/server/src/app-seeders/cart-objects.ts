@@ -8,6 +8,7 @@ export const CART_OBJECTS = [
     {apiName:'SessionKey',label:'Session Key',dataType:'text'},
     {apiName:'UserId',label:'Cart User',dataType:'reference',relatedObject:'User'},
     {apiName:'HoldReference',label:'Hold Reference',dataType:'text'},
+    {apiName:'HoldLabel',label:'Hold Label',dataType:'text'},
     {apiName:'HeldBy',label:'Held By',dataType:'reference',relatedObject:'User'},
     {apiName:'Status',label:'Status',dataType:'text'},
     {apiName:'ServiceMode',label:'Service Mode',dataType:'text'},
