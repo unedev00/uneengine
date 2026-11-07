@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
+import {rewriteLegacyCartPage} from './cart-legacy-references.mjs';
 
 const conn=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!conn)throw Error('DATABASE_URL is required');
@@ -95,15 +96,16 @@ try{
    }
    if(!Array.isArray(current.components))continue;
    const components=current.components.map(patchComponent);
-   if(JSON.stringify(components)===JSON.stringify(current.components))continue;
-   const legacy=components.filter(c=>c.properties?.objectApiName==='CartLine'
+   const {page:converted,changed}=rewriteLegacyCartPage({...current,components});
+   if(!changed&&JSON.stringify(components)===JSON.stringify(current.components))continue;
+   const legacy=converted.components.filter(c=>c.properties?.objectApiName==='CartLine'
      &&(c.properties?.relatedFieldApiName==='CartSession'||c.properties?.relatedFilterKey==='cartSessionId'));
    assert.equal(legacy.length,0,'Legacy CartLine binding remains');
-   output.push({tenant,page,variant,changed:components.filter((c,i)=>JSON.stringify(c)!==JSON.stringify(current.components[i])).length});
+   output.push({tenant,page,variant,changed:converted.components.filter((c,i)=>JSON.stringify(c)!==JSON.stringify(current.components[i])).length});
    if(!apply)continue;
    const reloaded=await runtime.editor(tenant,page,variant);
    assert.deepEqual(reloaded,current,'Page draft changed during migration');
-   await runtime.saveLayoutDraft(tenant,page,variant,{...current,components});
+   await runtime.saveLayoutDraft(tenant,page,variant,converted);
    if(publish)await runtime.publishLayout(tenant,page,variant);
   }
  }

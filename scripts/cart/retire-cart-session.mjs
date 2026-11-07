@@ -68,6 +68,19 @@ try{
     AND (v.value_text LIKE '%CartSession%' OR v.value_text LIKE '%cartSessionId%')`,[tenant]);
   if(activeFlows.rows.length)checks.push('active legacy Flows: '+
     activeFlows.rows.map(f=>f.api_name).join(','));
+  // Metadata formulas can refer to CartSession even without a Flow or page action.
+  const formulaReferences=await db.query(
+   "SELECT 'field' AS source,object_api AS object,api_name AS name FROM md_field_definitions WHERE tenant_id=$1 AND deleted_at IS NULL AND formula_expression LIKE '%CartSession%'"+
+   " UNION ALL SELECT 'default',object_api,field_api FROM md_field_default_formulas WHERE tenant_id=$1 AND expression LIKE '%CartSession%'"+
+   " UNION ALL SELECT 'validation',object_api,api_name FROM md_validation_rules WHERE tenant_id=$1 AND expression LIKE '%CartSession%'",[tenant]);
+  if(formulaReferences.rows.length)checks.push('legacy Formula references: '+
+   formulaReferences.rows.map(x=>x.source+':'+x.object+'.'+x.name).join(','));
+  const stateReferences=await db.query(
+   "SELECT 'field' AS source,object_api AS object,api_name AS name FROM md_field_definitions WHERE tenant_id=$1 AND deleted_at IS NULL AND formula_expression LIKE '%cartSessionId%'"+
+   " UNION ALL SELECT 'default',object_api,field_api FROM md_field_default_formulas WHERE tenant_id=$1 AND expression LIKE '%cartSessionId%'"+
+   " UNION ALL SELECT 'validation',object_api,api_name FROM md_validation_rules WHERE tenant_id=$1 AND expression LIKE '%cartSessionId%'",[tenant]);
+  if(stateReferences.rows.length)checks.push('legacy Formula state references: '+
+   stateReferences.rows.map(x=>x.source+':'+x.object+'.'+x.name).join(','));
   const pages=await db.query(`
    SELECT DISTINCT p.api_name FROM md_page_definitions p
    JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
