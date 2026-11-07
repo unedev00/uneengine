@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {shouldInvalidatePageComponent,pageComponentReadObjectNames,applyCompleteRecordMutation} from '../src/core/pages/PageRuntime/pageMutationScope';
-import {visibleSessionRelatedQuery} from '../src/core/pages/PageRuntime/usePageSessionRelatedQuery';
+import {shouldRevalidateSessionParent,visibleSessionRelatedQuery} from '../src/core/pages/PageRuntime/usePageSessionRelatedQuery';
 import {createRecordPageCoalescer} from '../src/core/authentication/Client/recordPageCoalescer';
 
 const page='Sales:Checkout',session='session-1';
@@ -202,4 +202,16 @@ test('unknown aggregate Object never creates a data permission or false source',
  assert.deepEqual(pageComponentReadObjectNames('Cart',{
   textSource:'=COUNTIFS(SecretData, Status, "Open")'
  },known),['Cart']);
+});
+
+
+test('CartLine mutations do not refetch Cart parent SessionKey, but Cart and unknown Flow writes do',()=>{
+ const parents=['Cart'];
+ const mutation=(objectApiNames?:string[])=>({pageSessionKey:page,sessionId:session,objectApiNames});
+ assert.equal(shouldRevalidateSessionParent(mutation(['CartLine']),page,session,parents),false);
+ assert.equal(shouldRevalidateSessionParent(mutation(['Cart']),page,session,parents),true);
+ assert.equal(shouldRevalidateSessionParent(mutation(),page,session,parents),true);
+ assert.equal(shouldRevalidateSessionParent(mutation([]),page,session,parents),true);
+ assert.equal(shouldRevalidateSessionParent({pageSessionKey:'Other',objectApiNames:['Cart']},page,session,parents),false);
+ assert.equal(shouldRevalidateSessionParent({...mutation(['Cart']),sessionId:'other'},page,session,parents),false);
 });
