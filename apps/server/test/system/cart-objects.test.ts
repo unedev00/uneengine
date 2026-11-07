@@ -5,6 +5,10 @@ import {CART_OBJECTS,seedCartObjects,seedCartObjectsForExistingTenants} from '..
 
 test('Cart and CartLine metadata have a usable parent and Product lookup',()=>{
   assert.deepEqual(CART_OBJECTS.map(object=>object.apiName),['Cart','CartLine']);
+  const parent=CART_OBJECTS[0].fields;
+  assert.ok(parent.some(field=>field.apiName==='SessionKey'));
+  assert.ok(parent.some(field=>field.apiName==='Status'));
+  assert.ok(parent.some(field=>field.apiName==='UserId'&&field.dataType==='text'));
   const lines=CART_OBJECTS[1].fields;
   assert.ok(lines.some(field=>field.apiName==='Cart' && 'relatedObject' in field && field.relatedObject==='Cart'));
   assert.ok(lines.some(field=>field.apiName==='Product' && 'relatedObject' in field && field.relatedObject==='Product'));

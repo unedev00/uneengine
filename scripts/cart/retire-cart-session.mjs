@@ -20,7 +20,12 @@ try{
  for(const {tenant_id:tenant} of tenants.rows){
   const checks=[];
   const exists=await db.query("SELECT to_regclass('md_cart_session_migration_map') AS name");
-  if(!exists.rows[0]?.name)checks.push('CartSession copy has not run');
+  if(!exists.rows[0]?.name){
+   const remaining=await db.query(`
+    SELECT COUNT(*)::int AS total FROM md_records
+    WHERE tenant_id=$1 AND object_api='CartSession' AND is_deleted=false`,[tenant]);
+   if(remaining.rows[0].total)checks.push('CartSession copy has not run');
+  }
   if(exists.rows[0]?.name){
    const missing=await db.query(`
     SELECT COUNT(*)::int AS total FROM md_records r LEFT JOIN md_cart_session_migration_map m
@@ -46,7 +51,7 @@ try{
     LEFT JOIN md_record_values owner ON owner.tenant_id=m.tenant_id
       AND owner.record_id=m.cart_id AND owner.object_api='Cart' AND owner.field_api='UserId'
     WHERE m.tenant_id=$1 AND status.value_text IN ('Open','Held')
-      AND owner.reference_record_id IS NULL`,[tenant]);
+      AND NULLIF(owner.value_text,'') IS NULL`,[tenant]);
    if(unowned.rows[0].total)checks.push(unowned.rows[0].total+' open/held Carts have no UserId');
 
   }

@@ -48,6 +48,8 @@ trap rollback ERR
 bash "$SOURCE/scripts/oracle/backup-production-sql.sh"
 bash "$SOURCE/scripts/oracle/deploy-api.sh" "$SOURCE" "$SHA"
 API_ACTIVATED=1
+# Cart fields are seeded by the new API; finish one-time data and metadata retirement.
+bash "$SOURCE/scripts/oracle/apply-cart-session-retirement.sh" "$SOURCE"
 # Never publish the SQL-backed Page Builder frontend unless the API and
 # worker have been activated from this exact immutable release. A protected
 # endpoint returning HTTP 401 cannot prove that it exists, so do not mistake
