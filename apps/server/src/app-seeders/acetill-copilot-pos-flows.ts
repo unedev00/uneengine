@@ -9,14 +9,16 @@ const variable=(name:string,dataType='Text',input=false,output=false)=>({
  ...(output?{availableForOutput:true}:{})
 });
 const readSession=n(2,'Get Records','Find current till session',{
- object:'CartSession',recordLimit:'1',outputVariable:'existingSession',
- conditions:[{field:'SessionKey',operator:'Equals',value:'{!sessionKey}'}]});
+ object:'Cart',recordLimit:'1',outputVariable:'existingSession',
+ conditions:[{field:'Id',operator:'Equals',value:'{!cartId}'},
+  {field:'UserId',operator:'Equals',value:'{!$User.Id}'},
+  {field:'Status',operator:'Equals',value:'Open'}]});
 const sessionChoice=n(3,'Decision','Session exists?',{outcomes:[{
  name:'Found',label:'Found',conditionLogic:'All',
  conditions:[{field:'{!existingSession}',operator:'IsNotNull'}]}]});
 const basket=(id:number)=>n(id,'Get Records','Retrieve basket lines',{
  object:'CartLine',recordLimit:'all',outputVariable:'cartItems',
- conditions:[{field:'CartSession',operator:'Equals',value:'{!cartSessionId}'}]});
+ conditions:[{field:'Cart',operator:'Equals',value:'{!cartId}'}]});
 const summaries=(begin:number)=>({
  elements:[
   n(begin,'Assignment','Clear subtotal',{variable:'subtotal',operator:'Assign',value:0}),
@@ -28,8 +30,8 @@ const summaries=(begin:number)=>({
   e(begin+2,begin+1),e(begin+1,begin+3,'After Last')]
 });
 const resources=[
- variable('sessionKey','Text',true),variable('cartSessionId','Text',false,true),
- {name:'existingSession',type:'Record',dataType:'CartSession'},
+ variable('sessionKey','Text',true),variable('cartId','Text',true,true),
+ {name:'existingSession',type:'Record',dataType:'Cart'},
  {name:'cartItems',type:'Record Collection',dataType:'CartLine',availableForOutput:true},
  {name:'cartLine',type:'Record',dataType:'CartLine'},
  {name:'calculatedLineTotal',type:'Formula',dataType:'Number',
@@ -45,11 +47,11 @@ const graph=(apiName:string,label:string,elements:ReturnType<typeof n>[],
 const addTotal=summaries(10);
 export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add authorised product',[
  n(1,'Start','Start'),readSession,sessionChoice,
- n(4,'Assignment','Use current session',{variable:'cartSessionId',operator:'Assign',value:'{!existingSession.Id}'}),
+ n(4,'Assignment','Use current session',{variable:'cartId',operator:'Assign',value:'{!existingSession.Id}'}),
  n(5,'Create Records','Open basket session',{
-  object:'CartSession',recordSource:'fields',resultVariable:'cartSessionId',
-  uniqueInputGuard:{field:'SessionKey'},
+  object:'Cart',recordSource:'fields',resultVariable:'cartId',
   fieldValues:[{field:'Name',value:'Till basket'},{field:'SessionKey',value:'{!sessionKey}'},
+   {field:'UserId',value:'{!$User.Id}'},
    {field:'Status',value:'Open'}]}),
  n(6,'Get Records','Load authoritative product',{
   object:'Product',recordLimit:'1',outputVariable:'product',
@@ -60,7 +62,7 @@ export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add autho
    {field:'{!product.Price}',operator:'GreaterThanOrEqualTo',value:0}]}]}),
  n(8,'Create Records','Add basket line',{object:'CartLine',recordSource:'fields',
   resultVariable:'cartLineId',fieldValues:[
-   {field:'CartSession',value:'{!cartSessionId}'},{field:'Product',value:'{!product.Id}'},
+   {field:'Cart',value:'{!cartId}'},{field:'Product',value:'{!product.Id}'},
    {field:'Name',value:'{!product.Name}'},{field:'Quantity',value:1},
    {field:'UnitPrice',value:'{!product.Price}'},
    {field:'OriginalUnitPrice',value:'{!product.Price}'},
@@ -78,18 +80,18 @@ export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add autho
 const readTotal=summaries(6);
 export const copilotReadCart=graph('AcetillCopilotReadCart','Till: read current session and total',[
  n(1,'Start','Start'),readSession,sessionChoice,
- n(4,'Assignment','Use current session',{variable:'cartSessionId',operator:'Assign',value:'{!existingSession.Id}'}),
+ n(4,'Assignment','Use current session',{variable:'cartId',operator:'Assign',value:'{!existingSession.Id}'}),
  basket(5),...readTotal.elements,n(10,'End','Basket loaded')
 ],[e(1,2),e(2,3),e(3,4,'Found'),e(3,10,'Default'),
  e(4,5),e(5,6),...readTotal.links,e(9,10)]);
 const qtyTotal=summaries(11);
 export const copilotChangeQuantity=graph('AcetillCopilotChangeQuantity','Till: change authorised basket quantity',[
  n(1,'Start','Start'),readSession,sessionChoice,
- n(4,'Assignment','Current session',{variable:'cartSessionId',operator:'Assign',value:'{!existingSession.Id}'}),
+ n(4,'Assignment','Current session',{variable:'cartId',operator:'Assign',value:'{!existingSession.Id}'}),
  n(5,'Get Records','Read this session line',{
   object:'CartLine',recordLimit:'1',outputVariable:'selectedLine',
   conditions:[{field:'Id',operator:'Equals',value:'{!cartLineId}'},
-   {field:'CartSession',operator:'Equals',value:'{!cartSessionId}'}]}),
+   {field:'Cart',operator:'Equals',value:'{!cartId}'}]}),
  n(6,'Decision','Only one-item increment/decrement?',{outcomes:[
   {name:'Increment',label:'Increment',conditionLogic:'All',conditions:[
    {field:'{!selectedLine}',operator:'IsNotNull'},
@@ -116,6 +118,14 @@ export const copilotChangeQuantity=graph('AcetillCopilotChangeQuantity','Till: c
  {name:'selectedLine',type:'Record',dataType:'CartLine'},
  {name:'nextQuantity',type:'Formula',dataType:'Number',value:'selectedLine.Quantity + delta'},
  {name:'nextLineTotal',type:'Formula',dataType:'Number',value:'nextQuantity * selectedLine.UnitPrice'}]);
+export const copilotNewCart=graph('AcetillCopilotNewCart','Till: open a new independent cart',[
+ n(1,'Start','Start'),
+ n(2,'Create Records','Open cart',{object:'Cart',recordSource:'fields',resultVariable:'cartId',
+  fieldValues:[{field:'Name',value:'Till basket'},{field:'UserId',value:'{!$User.Id}'},
+   {field:'SessionKey',value:'{!sessionKey}'},{field:'Status',value:'Open'}]}),
+ n(3,'End','Cart ready')
+],[e(1,2),e(2,3)],[variable('sessionKey','Text',true),variable('cartId','Text',false,true)]);
+
 export const copilotDefaultCategory=graph('AcetillCopilotDefaultCategory','Till: choose available POS category',[
  n(1,'Start','Start'),
  n(2,'Get Records','Read active POS category',{
@@ -153,14 +163,14 @@ export const copilotVerifyPin={
  connectors:[e(1,2),e(2,3),e(3,4),e(4,5,'Verified'),e(4,6,'Default')],
  resources:[variable('pin'),variable('verified','Boolean',false,true)],tests:[]
 };
-export const copilotPosGraphs=[copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory,copilotVerifyPin];
+export const copilotPosGraphs=[copilotNewCart,copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory,copilotVerifyPin];
 
 /** Only Acetill's independent seeder writes graphs; skip existing versions. */
 export async function seedAcetillCopilotPosFlows(client:Pick<PoolClient,'query'>,tenant:string){
  const prerequisites=await client.query<{object_api:string;api_name:string}>(
-  "SELECT object_api,api_name FROM md_field_definitions WHERE tenant_id=$1 AND object_api IN ('Product','CartSession','CartLine','MenuCategory')",[tenant]);
- const required=['MenuCategory.Active','MenuCategory.IsVisiblePOS','Product.Name','Product.Price','Product.Active','CartSession.SessionKey',
-  'CartSession.Name','CartSession.Status','CartLine.CartSession','CartLine.Product',
+  "SELECT object_api,api_name FROM md_field_definitions WHERE tenant_id=$1 AND object_api IN ('Product','Cart','CartLine','MenuCategory')",[tenant]);
+ const required=['Cart.UserId','Cart.SessionKey','Cart.Status','CartLine.Cart','MenuCategory.Active','MenuCategory.IsVisiblePOS','Product.Name','Product.Price','Product.Active','Cart.SessionKey',
+  'Cart.Name','Cart.Status','CartLine.Cart','CartLine.Product',
   'CartLine.Name','CartLine.Quantity','CartLine.UnitPrice',
   'CartLine.OriginalUnitPrice','CartLine.LineTotal'];
  const available=new Set(prerequisites.rows.map(r=>r.object_api+'.'+r.api_name));

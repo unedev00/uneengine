@@ -16,7 +16,7 @@ export const cash={
  inputRules:{requestId:'NonEmpty'},
  outputs:{status:'checkoutStatus',invoiceId:'invoiceId',total:'checkoutTotal'},
  resetSessionOnSuccess:true,mutatesData:true,
- successState:{cartSessionId:null,subtotal:0,total:0}
+ successState:{activeCartId:null,subtotal:0,total:0}
 };
 assert.equal(cash.inputs.cashReceived.value,'$state.total','Cash tender must equal displayed total');
 assert.equal(cash.inputs.requestId,'$session','Must use idempotent session key');

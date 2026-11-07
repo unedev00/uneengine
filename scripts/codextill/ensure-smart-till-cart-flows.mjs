@@ -14,8 +14,8 @@ const variable=(name,dataType='Text',input=false,output=false)=>({
 });
 const resource=[
  variable('sessionKey','Text',true),
- variable('cartSessionId','Text',false,true),
- {name:'currentSession',type:'Record',dataType:'CartSession'},
+ variable('cartId','Text',true,true),
+ {name:'currentSession',type:'Record',dataType:'Cart'},
  {name:'cartItems',type:'Record Collection',dataType:'CartLine',availableForOutput:true},
  {name:'cartLine',type:'Record',dataType:'CartLine'},
  {name:'calculatedLineTotal',type:'Formula',dataType:'Number',
@@ -35,13 +35,14 @@ const totals=start=>({
   edge(start+2,start+1),edge(start+1,start+3,'After Last')]
 });
 const readSession=(id)=>node(id,'Get Records','Read session',{
- object:'CartSession',recordLimit:'1',outputVariable:'currentSession',
- conditions:[{field:'SessionKey',operator:'Equals',value:'{!sessionKey}'},
+ object:'Cart',recordLimit:'1',outputVariable:'currentSession',
+ conditions:[{field:'Id',operator:'Equals',value:'{!cartId}'},
+  {field:'UserId',operator:'Equals',value:'{!$User.Id}'},
   {field:'Status',operator:'Equals',value:'Open'}]
 });
 const readLines=(id)=>node(id,'Get Records','Read cart lines',{
  object:'CartLine',recordLimit:'all',outputVariable:'cartItems',
- conditions:[{field:'CartSession',operator:'Equals',value:'{!cartSessionId}'}]
+ conditions:[{field:'Cart',operator:'Equals',value:'{!cartId}'}]
 });
 const decision=(id,label,conditions,outcome='Valid')=>node(id,'Decision',label,{
  outcomes:[{name:outcome,label:outcome,conditionLogic:'All',conditions}]
@@ -66,16 +67,16 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
   {field:'{!product.Price}',operator:'GreaterThanOrEqualTo',value:0}]),
  readSession(6),
  decision(7,'Open session found?',exists('{!currentSession}'),'Found'),
- node(8,'Assignment','Use existing CartSession',{
-  variable:'cartSessionId',operator:'Assign',value:'{!currentSession.Id}'}),
- node(9,'Create Records','Create CartSession when missing',{
-  object:'CartSession',recordSource:'fields',resultVariable:'cartSessionId',
-  uniqueInputGuard:{field:'SessionKey'},
+ node(8,'Assignment','Use existing Cart',{
+  variable:'cartId',operator:'Assign',value:'{!currentSession.Id}'}),
+ node(9,'Create Records','Create Cart when missing',{
+  object:'Cart',recordSource:'fields',resultVariable:'cartId',
   fieldValues:[{field:'Name',value:'Smart Till cart'},
-   {field:'SessionKey',value:'{!sessionKey}'},{field:'Status',value:'Open'}]}),
+   {field:'SessionKey',value:'{!sessionKey}'},{field:'UserId',value:'{!$User.Id}'},
+   {field:'Status',value:'Open'}]}),
  node(10,'Create Records','Create CartLine for clicked product',{
   object:'CartLine',recordSource:'fields',resultVariable:'cartLineId',
-  fieldValues:[{field:'CartSession',value:'{!cartSessionId}'},
+  fieldValues:[{field:'Cart',value:'{!cartId}'},
    {field:'Product',value:'{!product.Id}'},
    {field:'Name',value:'{!product.Name}'},
    {field:'Quantity',value:1},
@@ -97,13 +98,13 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
  variable('cartLineId','Text',false,true)]);
 
 export const SMART_TILL_OUTPUTS={
- cartSessionId:'cartSessionId',cartItems:'cartItems',
+ cartId:'cartId',cartItems:'cartItems',
  subtotal:'subtotal',total:'total'
 };
 export const SMART_TILL_CLICK={
  actionType:'Flow',flowType:'Autolaunched Flow',
  flowApiName:'SmartTillAddProduct',
- inputs:{sessionKey:'$session',productId:'$event.recordId'},
+ inputs:{sessionKey:'$session',cartId:'$session.cartId',productId:'$event.recordId'},
  outputs:SMART_TILL_OUTPUTS
 };
 const isBound=(b,name)=>b&&typeof b==='object'&&!Array.isArray(b)&&b.flowApiName===name;
@@ -132,12 +133,12 @@ export function smartTillCartBindings(layout){
    const actions=isObject(c.properties.actionFlows)?c.properties.actionFlows:{};
    const start=actions.start;
    // The shared Smart Cart runtime fetches CartLine by its authorised
-   // CartSession relation. It prefers pageState.cartSessionId returned by
+   // Cart relation. It prefers pageState.cartId returned by
    // AddProduct and resolves browser SessionKey on reload without a read Flow.
    if((!start||isBound(start,'AcetillCopilotReadCart')
        ||isBound(start,'SmartTillReadCart'))
-     &&(!c.properties.relatedFilterKey||c.properties.relatedFilterKey==='cartSessionId')
-     &&(!c.properties.relatedFieldApiName||c.properties.relatedFieldApiName==='CartSession')){
+     &&(!c.properties.relatedFilterKey||c.properties.relatedFilterKey==='cartId')
+     &&(!c.properties.relatedFieldApiName||c.properties.relatedFieldApiName==='Cart')){
     const nextActions={...actions};
     delete nextActions.start;
     const props={...c.properties,autoRecordScope:true,actionFlows:nextActions};
@@ -159,7 +160,7 @@ export function validateSmartTillGraph(){
   const ids=new Set(flow.elements.map(n=>n.id));
   assert.equal(ids.size,flow.elements.length);
   for(const e of flow.connectors)assert(ids.has(e.from)&&ids.has(e.to));
-  assert(flow.resources.some(r=>r.name==='cartSessionId'&&r.availableForOutput));
+  assert(flow.resources.some(r=>r.name==='cartId'&&r.availableForOutput));
  }
  const product=SMART_TILL_ADD.elements.find(n=>n.id===3);
  assert.equal(product.config.conditions.length,1,'Never hardcode Card Grid Active filters into server Flow');
@@ -244,12 +245,12 @@ try{
   await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['smarttill:cart-flows:'+tenant]);
   const prerequisites={
    Product:['Id','Name','Price'],
-   CartSession:['Name','Status','SessionKey'],
-   CartLine:['CartSession','Product','Name','Quantity','UnitPrice','OriginalUnitPrice','LineTotal']
+   Cart:['Name','Status','SessionKey','UserId'],
+   CartLine:['Cart','Product','Name','Quantity','UnitPrice','OriginalUnitPrice','LineTotal']
   };
   const fields=await client.query(`SELECT object_api,api_name
     FROM md_field_definitions WHERE tenant_id=$1
-    AND object_api IN ('Product','CartSession','CartLine')`,[tenant]);
+    AND object_api IN ('Product','Cart','CartLine')`,[tenant]);
   const known=new Set(fields.rows.map(r=>r.object_api+'.'+r.api_name));
   for(const [object,names] of Object.entries(prerequisites))
    for(const field of names.filter(f=>f!=='Id'))

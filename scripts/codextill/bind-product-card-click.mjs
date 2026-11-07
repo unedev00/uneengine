@@ -10,8 +10,8 @@ const VERSION='codextill-product-card-click-20261101-v1';
 export const CARD_CLICK={
  actionType:'Flow',flowType:'Autolaunched Flow',
  flowApiName:'AcetillCopilotAddProduct',
- inputs:{sessionKey:'$session',productId:'$event.recordId'},
- outputs:{cartSessionId:'cartSessionId',cartItems:'cartItems',
+ inputs:{sessionKey:'$session',cartId:'$session.cartId',productId:'$event.recordId'},
+ outputs:{activeCartId:'activeCartId',cartItems:'cartItems',
   subtotal:'subtotal',total:'total'}
 };
 const checksum=createHash('sha256').update(JSON.stringify(CARD_CLICK)).digest('hex');

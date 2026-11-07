@@ -51,6 +51,10 @@ function evaluateDataNode(node:Expression,scope:Record<string,unknown>,
  const resolve=(path:string):unknown=>{
   if(path==='$session')return scope.sessionId??'';
   if(path==='$session.id')return scope.sessionId??'';
+  if(path==='$session.cartId'){
+   const id=state?.activeCartId??(scope.state as Record<string,unknown>|undefined)?.activeCartId;
+   return typeof id==='string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id)?id:'';
+  }
   if(path.startsWith('$session.')){
    const key=path.slice('$session.'.length);
    if(!/^(?:user\.(?:id|name|email|timeZone|locale|currencyIsoCode)|tenant\.(?:id|name|logo))$/.test(key))

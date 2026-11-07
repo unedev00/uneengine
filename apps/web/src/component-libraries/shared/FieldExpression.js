@@ -337,6 +337,10 @@ export function evaluateParsedExpression(expression,record,formulaContext){
    if(reference==='$session'||reference==='$session.id')
     return typeof formulaContext.sessionId==='string'?formulaContext.sessionId:'';
    if(reference.startsWith('$session.')){
+    if(reference==='$session.cartId'){
+     const id=formulaContext.pageState?.activeCartId;
+     return typeof id==='string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id)?id:'';
+    }
     // Session identity is not an Object field and cannot be traversed freely.
     const identity=authenticatedSessionIdentity(formulaContext);
     const userKey=reference.startsWith('$session.user.')
