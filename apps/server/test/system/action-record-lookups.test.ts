@@ -203,6 +203,9 @@ test('server execution denies missing actor record permission without a second w
  const output=await executeServerDataAction(db,records,{tenant_id:'t1',user_id:'u-without-update'},formula,{},2);
  assert.match(output.error??'',/UPDATERECORD failed after 1 confirmed action\(s\). Permission denied/);
  assert.deepEqual(calls,['CREATE Item','DENIED UPDATE Item']);
+ assert.equal(output.recordChanged,true,'prior server write must remain visible to reconciliation');
+ assert.deepEqual(output.mutatedObjectApiNames,['Item']);
+ assert.equal(output.completedActionCount,1);
 });
 
 test('tenant server executor is default-off and tenant-isolated',async()=>{
