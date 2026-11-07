@@ -93,16 +93,18 @@ export default function RegisteredComponent({ definition, props, formulaInstance
    return()=>observer.disconnect();
   },[deferRenderer,enteredViewport]);
   const assetApiName=(definition as LibraryComponentMetadata & {legacyAssetApiName?:string}).legacyAssetApiName ?? definition.apiName;
-  // Session storage is origin/tenant-domain scoped. Shared runtime pilots are
-  // explicitly OFF until the tenant operator opts in on that tenant origin.
-  let sharedOptIn=false;
+  // Prefer one reviewed Smart runtime for matching, content-hashed wrappers.
+  // A tenant can opt out immediately; a missing/corrupt shared asset falls back
+  // to the standalone release asset without altering saved component metadata.
+  let sharedDisabled=false;
   if(typeof window!=='undefined'){
-   try{sharedOptIn=window.sessionStorage.getItem('metadrive:shared-smart-runtime')==='1';}
-   catch{/* Storage can be blocked; use the existing renderer. */}
+   try{sharedDisabled=window.sessionStorage.getItem('metadrive:shared-smart-runtime')==='0';}
+   catch{/* Protected browser storage: keep the reviewed default. */}
   }
+  const configuredPath=(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
   const sharedPath=(definition as LibraryComponentMetadata & {sharedAssetPath?:unknown}).sharedAssetPath;
-  const selectedPath=sharedOptIn&&typeof sharedPath==='string'&&assetApiName.startsWith('smart_')
-    ?sharedPath:(definition as LibraryComponentMetadata & {assetPath?:unknown}).assetPath;
+  const selectedPath=!sharedDisabled&&typeof sharedPath==='string'&&assetApiName.startsWith('smart_')
+    ?sharedPath:configuredPath;
   useEffect(() => {
     if (!definition.trustedBundled || definition.compiledJs || deferRenderer&&!enteredViewport) {
       setAsset(null); setAssetError(''); return;
@@ -110,46 +112,51 @@ export default function RegisteredComponent({ definition, props, formulaInstance
     let active=true;
     setAsset(null);
     setAssetError('');
-    // Content hashes are immutable; legacy URLs are shared only in-flight.
-    const publishedPath=selectedPath;
-    const match=typeof publishedPath==='string'
-      ?/^component-library\/components\/([A-Za-z][A-Za-z0-9_]*)\.([0-9a-f]{16})\.json$/.exec(publishedPath)
-      :null;
-    const trustedHashed=match?.[1]===assetApiName;
-    const assetPath=trustedHashed?publishedPath:
-      'component-library/components/'+encodeURIComponent(assetApiName)+'.json';
-    // The cache owns the request. Unmounting a single repeated component cannot
-    // cancel the shared fetch required by sibling components on the same page.
-    const key=assetPath+'@'+definition.version;
-    void loadBundledRenderer(key,()=>fetch(`${import.meta.env.BASE_URL}${assetPath}`,
-      {cache:trustedHashed?'force-cache':'no-cache'})
-      .then(async response=>{
-        if(!response.ok)throw Error('Bundled renderer is unavailable');
-        return response.json();
-      }).then(async(value:unknown)=>{
-        if(!value||typeof value!=='object')throw Error('Invalid bundled renderer');
-        const entry=value as Record<string,unknown>;
-        if(entry.apiName!==assetApiName||entry.version!==definition.version||
-          typeof entry.compiledJs!=='string'||typeof entry.scopedCss!=='string')
-          throw Error('Bundled renderer revision mismatch');
-        if(entry.sharedSmartRuntime===true){
-          if(!assetApiName.startsWith('smart_')||entry.compiledJs!=='')
-            throw Error('Invalid shared Smart renderer');
-          entry.compiledJs=await loadSharedSmartRenderer(entry.sharedRuntimePath,
-            import.meta.env.BASE_URL);
-        }else if(!entry.compiledJs)throw Error('Bundled renderer revision mismatch');
-        if(entry.defaultProps!==undefined&&(!entry.defaultProps||
-          typeof entry.defaultProps!=='object'||Array.isArray(entry.defaultProps)))
-          throw Error('Invalid application component defaults');
-        return entry as {apiName:string;version:number;compiledJs:string;scopedCss:string;
-          defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string};
-      }),trustedHashed).then(value=>{if(active)setAsset(value);})
+    type Asset={apiName:string;version:number;compiledJs:string;scopedCss:string;
+      defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string};
+    const loadPath=(publishedPath:unknown):Promise<Asset>=>{
+      const match=typeof publishedPath==='string'
+        ?/^component-library\/components\/([A-Za-z][A-Za-z0-9_]*)\.([0-9a-f]{16})\.json$/.exec(publishedPath)
+        :null;
+      const trustedHashed=match?.[1]===assetApiName;
+      const assetPath=trustedHashed?publishedPath as string:
+        'component-library/components/'+encodeURIComponent(assetApiName)+'.json';
+      const key=assetPath+'@'+definition.version;
+      return loadBundledRenderer(key,()=>fetch(`${import.meta.env.BASE_URL}${assetPath}`,
+        {cache:trustedHashed?'force-cache':'no-cache'})
+        .then(async response=>{
+          if(!response.ok)throw Error('Bundled renderer is unavailable');
+          return response.json();
+        }).then(async(value:unknown)=>{
+          if(!value||typeof value!=='object')throw Error('Invalid bundled renderer');
+          const entry=value as Record<string,unknown>;
+          if(entry.apiName!==assetApiName||entry.version!==definition.version||
+            typeof entry.compiledJs!=='string'||typeof entry.scopedCss!=='string')
+            throw Error('Bundled renderer revision mismatch');
+          if(entry.sharedSmartRuntime===true){
+            if(!assetApiName.startsWith('smart_')||entry.compiledJs!=='')
+              throw Error('Invalid shared Smart renderer');
+            entry.compiledJs=await loadSharedSmartRenderer(entry.sharedRuntimePath,
+              import.meta.env.BASE_URL);
+          }else if(!entry.compiledJs)throw Error('Bundled renderer revision mismatch');
+          if(entry.defaultProps!==undefined&&(!entry.defaultProps||
+            typeof entry.defaultProps!=='object'||Array.isArray(entry.defaultProps)))
+            throw Error('Invalid application component defaults');
+          return entry as Asset;
+        }),trustedHashed);
+    };
+    // Never leave a published component blank merely because the shared
+    // optimisation is unavailable in a partially upgraded deployment.
+    void loadPath(selectedPath)
+      .catch(error=>selectedPath!==configuredPath
+        ?loadPath(configuredPath):Promise.reject(error))
+      .then(value=>{if(active)setAsset(value);})
       .catch((error:unknown)=>{
         if(active)setAssetError(error instanceof Error?error.message:'Renderer load failed');
       });
     return()=>{active=false;};
   }, [definition.apiName,assetApiName,definition.version,definition.trustedBundled,
-    definition.compiledJs,selectedPath,deferRenderer,enteredViewport]);
+    definition.compiledJs,selectedPath,configuredPath,deferRenderer,enteredViewport]);
   if (definition.status === 'Draft') return <div role="status" className="registered-component-error">Component is a draft. Publish it before use.</div>;
   if(deferRenderer&&!enteredViewport)return <div ref={placeholderRef}
     className="registered-component-lazy-placeholder"
