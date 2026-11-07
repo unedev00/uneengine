@@ -9,7 +9,7 @@ export type SessionCollection={name:string;items:unknown[]};
  * Unknown shapes are treated as changed rather than risking stale UI.
  */
 export function equalSessionCollection(a:SessionCollection|undefined,b:SessionCollection|null):boolean{
- if(a===b)return true;
+ if(a===b||!a&&!b)return true;
  if(!a||!b||a.name!==b.name)return false;
  let budget=6000;
  const same=(left:unknown,right:unknown,depth:number):boolean=>{
