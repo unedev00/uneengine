@@ -14,7 +14,7 @@ import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-per
 
 const connectionString=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!connectionString)throw Error('DATABASE_URL is required');
-const db=new SqlPersistence({connectionString});
+const db=new SqlPersistence(connectionString);
 const apply=process.argv.includes('--apply');
 const eligible=['Name','SessionKey','Status','ServiceMode','ExpiresAt'];
 try{

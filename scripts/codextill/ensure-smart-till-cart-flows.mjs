@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
@@ -222,7 +223,8 @@ function validateBindings(){
  assert.equal(first.layout.components[1].properties.objectApiName,'CartLine');
  assert.deepEqual(first.layout.components[1].position,layout.components[1].position);
 }
-validateBindings();
+if(process.argv[1] && process.argv[1]===fileURLToPath(import.meta.url)){
+ validateBindings();
 
 if(process.argv.includes('--preflight')){
  console.log('Smart Till standalone Flow and Page metadata preflight passed');
@@ -319,3 +321,5 @@ try{
   if(patch.skipped.length)console.log('Preserved customizations: '+patch.skipped.join('; '));
  }
 }finally{await db.pool.end();}
+
+}
