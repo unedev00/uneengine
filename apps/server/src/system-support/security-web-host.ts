@@ -29,7 +29,15 @@ export function registerSecurityWebHost(app:Express,db:SqlPersistence,folder:str
    next();
   }catch(error){next(error);}
  });
- app.use((req,res,next)=>express.static(root(),{index:false,redirect:false})(req,res,next));
+ // PERFORMANCE FIX: files whose name contains a content hash never change, so browsers may keep
+ // them for a year. Everything else (index, catalog-index.json, old-style component files) is
+ // still re-checked with its ETag on each visit.
+ const hashedFile=/\/(?:assets\/.+-[A-Za-z0-9_-]{8}\.[A-Za-z0-9]+|component-library\/components\/[A-Za-z][A-Za-z0-9_]*\.[0-9a-f]{16}\.json)$/;
+ app.use((req,res,next)=>express.static(root(),{index:false,redirect:false,
+  setHeaders:(response,filePath)=>{
+   if(hashedFile.test(filePath.replace(/\\/g,'/')))
+    response.setHeader('Cache-Control','public, max-age=31536000, immutable');
+  }})(req,res,next));
  app.get('*',(req,res,next)=>{
   if(req.path.startsWith('/api/')||req.path.startsWith('/services/')){next();return;}
   res.setHeader('Cache-Control','no-store');res.sendFile(resolve(root(),'index.html'));
