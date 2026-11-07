@@ -37,7 +37,7 @@ export function componentFormulaDependencies(source:unknown):string[]{
  const visit=(value:unknown,depth:number):void=>{
   if(depth>8||value===null||value===undefined)return;
   if(typeof value==='string'){
-   for(const match of value.matchAll(/\\$component\\.([A-Za-z_][A-Za-z0-9_]*)\\.([A-Za-z_][A-Za-z0-9_]*)/g))
+   for(const match of value.matchAll(/\$component\.([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)/g))
     found.add(match[1]+'.'+match[2]);
   }else if(typeof value==='object'){
    if(seen.has(value))return;
