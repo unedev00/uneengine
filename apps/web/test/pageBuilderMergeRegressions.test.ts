@@ -41,70 +41,63 @@ test('selected parent becomes an independent server query scope and missing sele
  assert.equal(pageComponentRelatedQuery({...properties,relatedFieldApiName:'Missing'},fields,'parent-2').blocked,true);
 });
 
-test('active record scoping requires an authorised Flow parent and never falls back to all CartLines',()=>{
+test('a Cart is the sole active parent of CartLine and never falls back to all lines',()=>{
  const fields=[
   {...field('Cart','Lookup(Cart)'),relationship:{targetObject:'Cart'}},
-  {...field('CartSession','Lookup(CartSession)'),relationship:{targetObject:'CartSession'}},
-  {...field('Product','Lookup(Product)'),relationship:{targetObject:'Product'}},
+  {...field('Product','Lookup(Product)'),relationship:{targetObject:'Product'}}
  ] as FieldMetadata[];
  assert.deepEqual(pageComponentActiveRecordQuery(fields,{}),{blocked:true});
- assert.deepEqual(pageComponentActiveRecordQuery(fields,{cartSessionId:'session-one'}),{
-  blocked:false,filter:{field:'CartSession',value:'session-one',related:true}
+ assert.deepEqual(pageComponentActiveRecordQuery(fields,{activeCartId:'cart-a'}),{
+  blocked:false,filter:{field:'Cart',value:'cart-a',related:true}
  });
- // New sale has a new parent ID; no stale rows can match the old cart.
- assert.deepEqual(pageComponentActiveRecordQuery(fields,{cartSessionId:'session-two'}),{
-  blocked:false,filter:{field:'CartSession',value:'session-two',related:true}
+ assert.deepEqual(pageComponentActiveRecordQuery(fields,{activeCartId:'cart-b'}),{
+  blocked:false,filter:{field:'Cart',value:'cart-b',related:true}
  });
- assert.deepEqual(pageComponentActiveRecordQuery(fields,{cartSessionId:''}),{blocked:true});
- assert.deepEqual(pageComponentActiveRecordQuery(fields,{cartSessionId:1}),{blocked:true});
- assert.deepEqual(pageComponentActiveRecordQuery([field('CartSession','Text')],{
-  cartSessionId:'session-one'}),{blocked:true});
+ assert.deepEqual(pageComponentActiveRecordQuery(fields,{activeCartId:''}),{blocked:true});
+ assert.deepEqual(pageComponentActiveRecordQuery(fields,{activeCartId:42}),{blocked:true});
+ assert.deepEqual(pageComponentActiveRecordQuery([field('Cart','Text')],{activeCartId:'cart-a'}),{blocked:true});
 });
 
-test('held-sale resume chooses active cart over stale session and rejects competing parents',()=>{
- const fields=[
-  {...field('Cart','Lookup(Cart)'),relationship:{targetObject:'Cart'}},
-  {...field('CartSession','Lookup(CartSession)'),relationship:{targetObject:'CartSession'}}
- ] as FieldMetadata[];
+test('selecting a held Cart uses its own ID and ignores an unrelated page token',()=>{
+ const fields=[{...field('Cart','Lookup(Cart)'),relationship:{targetObject:'Cart'}}] as FieldMetadata[];
  assert.deepEqual(pageComponentActiveRecordQuery(fields,{
-  cartSessionId:'prior-session',activeCartId:'resumed-cart'}),{
+  cartId:'previous-cart',activeCartId:'resumed-cart'}),{
    blocked:false,filter:{field:'Cart',value:'resumed-cart',related:true}
  });
  assert.deepEqual(pageComponentActiveRecordQuery(fields,{
-  cartSessionId:'prior-session',activeCartId:'cart-a',activeCartSessionId:'cart-session-b'}),{blocked:true});
- assert.deepEqual(pageComponentActiveRecordQuery(fields,{
-  heldCartId:'historical-cart'}),{blocked:true});
+  cartId:'another-cart',activeCartId:''}),{blocked:true});
+ assert.deepEqual(pageComponentActiveRecordQuery(fields,{heldCartId:'historical-cart'}),{blocked:true});
 });
 
-test('session discovery scopes authorised parent and never treats session token as a Cart Id',async()=>{
- const fields=[{...field('CartSession','Lookup(CartSession)'),relationship:{targetObject:'CartSession'}}] as FieldMetadata[];
- const objects=[{apiName:'CartSession',fields:[field('SessionKey','Text')]}];
+test('session discovery blocks multiple Carts sharing a browser session key',async()=>{
+ const fields=[{...field('Cart','Lookup(Cart)'),relationship:{targetObject:'Cart'}}] as FieldMetadata[];
+ const objects=[{apiName:'Cart',fields:[field('SessionKey','Text')]}];
  const calls:string[]=[];
  const load=async(object:string,session:string)=>{
   calls.push(object+':'+session);
-  return {records:[{Id:'authorised-parent'}],total:1};
+  return {records:[{Id:'only-cart'}],total:1};
  };
  assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'browser-session',load),{
-  blocked:false,filter:{field:'CartSession',value:'authorised-parent',related:true}
+  blocked:false,filter:{field:'Cart',value:'only-cart',related:true}
  });
- assert.deepEqual(calls,['CartSession:browser-session']);
+ assert.deepEqual(calls,['Cart:browser-session']);
  assert.equal(hasPageActiveRecordSelection(fields,{}),false);
- assert.equal(hasPageActiveRecordSelection(fields,{cartSessionId:''}),true);
+ assert.equal(hasPageActiveRecordSelection(fields,{activeCartId:''}),true);
  assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'',load),{blocked:true});
  assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'browser-session',
   async()=>({records:[],total:0})),{blocked:true});
  assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'browser-session',
-  async()=>({records:[{Id:'a'},{Id:'b'}],total:2})),{blocked:true});
+  async()=>({records:[{Id:'first-cart'},{Id:'second-cart'}],total:2})),{blocked:true});
 });
 
-test('session parent resolver blocks ambiguous and permission-denied lookups',async()=>{
+test('generic session parent resolver denies ambiguous and unauthorised discovery',async()=>{
  const fields=[
   {...field('Cart','Lookup(Cart)'),relationship:{targetObject:'Cart'}},
-  {...field('CartSession','Lookup(CartSession)'),relationship:{targetObject:'CartSession'}}
+  {...field('Order','Lookup(Order)'),relationship:{targetObject:'Order'}}
  ] as FieldMetadata[];
  const objects=[
   {apiName:'Cart',fields:[field('SessionKey','Text')]},
-  {apiName:'CartSession',fields:[field('SessionKey','Text')]}
+  {apiName:'Order',fields:[field('SessionKey','Text')]}
  ];
  const both=async(name:string)=>({records:[{Id:name}],total:1});
  assert.deepEqual(await pageComponentSessionRelatedQuery(fields,objects,'same-session',both),{blocked:true});
