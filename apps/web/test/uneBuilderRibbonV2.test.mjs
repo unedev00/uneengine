@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -11,7 +12,7 @@ import {evaluateFieldExpression} from '../src/component-libraries/shared/FieldEx
 
 
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
+const sql=readRetiredMigration('20270122-global-shared-builder-ribbon.sql');
 const components=['ui_button','ui_toggle','ui_lookup','ui_tabs','ui_input','ui_item_grid','ui_image','ui_calendar','ui_navigation','ui_container'];
 const slots=[...sql.matchAll(/^\\s*\\('([a-z][A-Za-z0-9_]*)','([^']+)','(Home|Data|Design|Layout)','([^']+)','([^']+)',(\\d+),/gm)]
  .map(m=>({id:m[1],label:m[2],tab:m[3],group:m[4],kind:m[5],order:Number(m[6])}));

@@ -1,10 +1,11 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=path=>readFileSync(new URL('../src/core/builders/PageBuilder/'+path,import.meta.url),'utf8');
-const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql',import.meta.url),'utf8');
+const sql=readRetiredMigration('20270211-eight-tab-ribbon-geometry.sql');
 
 // The checked shared SQL geometry is the input for every selected Smart component.
 // A group uses its widest of three rows, not the sum of the rows.
@@ -54,7 +55,7 @@ test('Layout groups plus Page and Canvas fit desktop and keep narrow-screen navi
 });
 
 test('edited Design and Layout placements are applied through SQL without recolouring',()=>{
-  const placement=readFileSync(new URL('../../server/src/system-support/migrations/20270213-compact-page-builder-ribbon-placements.sql',import.meta.url),'utf8');
+  const placement=readRetiredMigration('20270213-compact-page-builder-ribbon-placements.sql');
   const required=[
     ['Design','labelAlignment','Typography',1],['Design','defaultValueColor','Typography',2],
     ['Design','textSize','Typography',3],['Design','selectedTabColor','Tabs',1],

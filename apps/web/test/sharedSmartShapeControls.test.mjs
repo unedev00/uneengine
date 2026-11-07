@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +17,7 @@ async function renderSmart(apiName,props={}){
  return renderToStaticMarkup(React.createElement(sandbox.module.exports.default,props));
 }
 test('global Shape is SQL owned, enabled only for requested components, and icons only for Button',()=>{
- const sql=read('../../server/src/system-support/migrations/20270213-global-smart-shapes.sql');
+ const sql=readRetiredMigration('20270213-global-smart-shapes.sql');
  for(const api of ['smart_button','smart_container','smart_text','smart_toggle','smart_lookup'])
   assert.match(sql,new RegExp("'"+api+"'"));
  assert.match(sql,/'shapeId','Shape','Layout','Shape','choice'/);
@@ -66,7 +67,7 @@ test('Container, Input Box, Toggle and Lookup Record share the same shape render
 });
 
 test('Shape and Shape Fill occupy exact Design tracks and reuse effective surface colours',()=>{
- const placement=read('../../server/src/system-support/migrations/20270215-design-shape-fill-ribbon.sql');
+ const placement=readRetiredMigration('20270215-design-shape-fill-ribbon.sql');
  assert.match(placement,/SET tab='Design', section_group='Shape'/);
  assert.match(placement,/design_row=1, design_order=1, design_width=94, design_height=26/);
  assert.match(placement,/'shapeFill','Shape Fill','Design','Shape','color'/);
