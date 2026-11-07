@@ -134,6 +134,8 @@ export default function MetadataBoundPageComponent({
   const [dataError, setDataError] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionPending,setActionPending]=useState(0);
+  const actionAttemptRef=useRef(0);
+  const latestActionFailureRef=useRef(0);
   const [selectedCategories, setSelectedCategories] = useState<Record<string,string>>({});
   const [selectedFilterRecords, setSelectedFilterRecords] = useState<Record<string,{
     recordId:string;label:string;sourceObjectApiName:string
@@ -555,7 +557,6 @@ export default function MetadataBoundPageComponent({
     const outputMappings:Record<string,unknown>={};
     if(binding.outputs!==undefined)Object.assign(outputMappings,binding.outputs);
     resolveFlowOutputBindings({},outputMappings);
-    setActionError('');
     if (['Screen Flow','In-Screen Flow'].includes(selected.flowType)) {
       const requestId=crypto.randomUUID();
       if(pendingFlowOutputs.current.size>=10)throw new Error('Too many pending Flow output mappings.');
@@ -601,6 +602,7 @@ export default function MetadataBoundPageComponent({
     }
   };
   const onAction = async (action: {event:string;value?:unknown}) => {
+    const attempt=++actionAttemptRef.current;
     // Opt-in action trace includes queue wait, execution time and outcome, but
     // never an authored formula, record values, request URLs or user inputs.
     let trace=false;
@@ -625,7 +627,8 @@ export default function MetadataBoundPageComponent({
         ?configured as {actionType?:unknown;formula?:unknown}:null;
       if(recordWrite===false&&planned?.actionType==='Formula'
         &&typeof planned.formula==='string'&&isActionPlan(planned.formula))outcome='no-record-write';
-      setActionError('');
+      // An earlier action completing late must not clear a newer failure.
+      if(attempt>=latestActionFailureRef.current)setActionError('');
       return result;
     } catch(error) {
       outcome='failed';
@@ -636,7 +639,10 @@ export default function MetadataBoundPageComponent({
        window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
         detail:{pageSessionKey,sessionId,objectApiNames:error.mutatedObjectApiNames}
        }));
-      setActionError(error instanceof Error?error.message:'Action failed');
+      if(attempt>=latestActionFailureRef.current){
+        latestActionFailureRef.current=attempt;
+        setActionError(error instanceof Error?error.message:'Action failed');
+      }
       throw error;
     } finally {
       if(trace){
