@@ -80,7 +80,7 @@ export function shouldInvalidatePageComponent(detail:PageMutationDetail|undefine
  */
 export function applyCompleteRecordMutation(
  rows:ReadonlyArray<Record<string,unknown>>,objectApiName:string,
- detail:PageMutationDetail|undefined
+ detail:PageMutationDetail|undefined,stableFilterFields:readonly string[]=[]
 ):Record<string,unknown>[]|null{
  const changes=detail?.recordChanges;
  if(!Array.isArray(changes)||!changes.length||!rows.length)return null;
@@ -95,6 +95,11 @@ export function applyCompleteRecordMutation(
   if(index<0)return null;
   const old=next[index];
   if(Object.keys(old).some(field=>!Object.hasOwn(change.record,field)))return null;
+  // Preserve a filtered page only when its relationship, filter and sort values
+  // remain unchanged. Unknown or hidden fields must force server revalidation.
+  if(stableFilterFields.some(field=>!Object.hasOwn(old,field)
+    ||!Object.hasOwn(change.record,field)
+    ||!Object.is(old[field],change.record[field])))return null;
   next[index]={...old,...change.record};
  }
  return next;
