@@ -118,6 +118,9 @@ export default function RegisteredComponent({ definition, props, formulaInstance
     const trustedHashed=match?.[1]===assetApiName;
     const assetPath=trustedHashed?publishedPath:
       'component-library/components/'+encodeURIComponent(assetApiName)+'.json';
+    // FIX: the key already includes the component version, so the result is safe to
+    // keep for the whole session (even for the old non-hashed URL). Without this,
+    // every mount/click re-downloaded the same ~200 KB renderer file.
     // The cache owns the request. Unmounting a single repeated component cannot
     // cancel the shared fetch required by sibling components on the same page.
     const key=assetPath+'@'+definition.version;
@@ -143,7 +146,7 @@ export default function RegisteredComponent({ definition, props, formulaInstance
           throw Error('Invalid application component defaults');
         return entry as {apiName:string;version:number;compiledJs:string;scopedCss:string;
           defaultProps?:Record<string,unknown>;sharedSmartRuntime?:boolean;sharedRuntimePath?:string};
-      }),trustedHashed).then(value=>{if(active)setAsset(value);})
+      }),true).then(value=>{if(active)setAsset(value);})
       .catch((error:unknown)=>{
         if(active)setAssetError(error instanceof Error?error.message:'Renderer load failed');
       });
