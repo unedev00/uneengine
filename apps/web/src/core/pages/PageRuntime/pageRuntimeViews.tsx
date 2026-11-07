@@ -401,7 +401,7 @@ function MetadataBoundPageComponent({
   const relatedKey=String(properties.relatedFilterKey??'');
   const {relatedQuery,relatedField,parentId:selectedId}=usePageComponentRelatedScope(
     properties,component.type,fields,objects,pageState,sessionId,revision,
-    loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions);
+    loadFlowScreenRecordPage,relatedKey?pageState[relatedKey]:undefined,disableActions,pageSessionKey);
   const recordQueryKey=JSON.stringify([recordQuery,relatedQuery]);
   const recordDataKey=JSON.stringify([objectApiName,recordQueryKey,recordOffset,sessionId]);
   const readObjectApiNames=pageComponentReadObjectNames(objectApiName,properties,objects);
