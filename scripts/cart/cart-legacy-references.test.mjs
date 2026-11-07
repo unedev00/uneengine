@@ -90,3 +90,16 @@ test('page draft migration preserves Date metadata and other non-plain runtime v
  assert.equal(page.updatedAt.toISOString(),updatedAt.toISOString());
  assert.equal(page.components[0].properties.formula,'=Cart.Status');
 });
+
+test('all-carts Flow keeps multiple carts but filters by signed-in user',()=>{
+ const graph={apiName:'ListMyCarts',resources:[],elements:[{id:1,type:'Get Records',
+  config:{object:'CartSession',recordLimit:'all',conditions:[
+   {field:'Status',operator:'NotEqual',value:'Completed'}]}}]};
+ const {graph:updated}=rewriteLegacyCartFlow(graph);
+ assert.equal(updated.elements[0].config.object,'Cart');
+ assert.equal(updated.elements[0].config.recordLimit,'all');
+ assert.deepEqual(updated.elements[0].config.conditions,[
+  {field:'Status',operator:'NotEqual',value:'Completed'},
+  {field:'UserId',operator:'Equals',value:'{!$User.Id}'}
+ ]);
+});
