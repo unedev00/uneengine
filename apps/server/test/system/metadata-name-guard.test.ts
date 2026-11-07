@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {requireAvailableMetadataName,validateMetadataName} from '../../src/system-support/metadata-name-guard.js';
@@ -26,7 +27,7 @@ test('allows a new name without a conflicting SQL row',async()=>{
 
 test('case-insensitive metadata uniqueness is enforced by idempotent SQL indexes',async()=>{
   const {readFile}=await import('node:fs/promises');
-  const sql=await readFile(new URL('../../src/system-support/migrations/20261026-metadata-api-name-casefold-uniqueness.sql',import.meta.url),'utf8');
+  const sql=await readRetiredMigration('20261026-metadata-api-name-casefold-uniqueness.sql');
   for(const table of ['md_custom_labels','md_custom_metadata_types','md_custom_settings',
     'md_custom_metadata_fields','md_custom_setting_fields','md_global_value_sets',
     'md_matching_rules','md_validation_rules','md_object_definitions',
@@ -91,7 +92,7 @@ test('webhook and named credential identifiers use separate tenant-scoped tables
 
 test('late inbound endpoint index is migration ordered and preserves existing data',async()=>{
  const {readFile}=await import('node:fs/promises');
- const sql=await readFile(new URL('../../src/system-support/migrations/20261224-inbound-webhook-api-name-uniqueness.sql',import.meta.url),'utf8');
+ const sql=await readRetiredMigration('20261224-inbound-webhook-api-name-uniqueness.sql');
  assert.match(sql,/CREATE UNIQUE INDEX IF NOT EXISTS md_inbound_webhook_endpoints_api_name_ci_uq/);
  assert.match(sql,/CREATE UNIQUE INDEX IF NOT EXISTS md_webhook_subscriptions_api_name_ci_uq/);
  assert.equal((sql.match(/CREATE UNIQUE INDEX IF NOT EXISTS/g)??[]).length,2);
@@ -101,7 +102,7 @@ test('late inbound endpoint index is migration ordered and preserves existing da
 
 test('legacy tenant metadata migration detects case-only collisions without mutating records',async()=>{
  const {readFile}=await import('node:fs/promises');
- const sql=await readFile(new URL('../../src/system-support/migrations/20261026-metadata-api-name-casefold-uniqueness.sql',import.meta.url),'utf8');
+ const sql=await readRetiredMigration('20261026-metadata-api-name-casefold-uniqueness.sql');
  assert.match(sql,/GROUP BY %s HAVING count\(\*\) > 1/);
  assert.match(sql,/RAISE EXCEPTION 'Case-insensitive API Name conflicts/);
  assert.match(sql,/tenant_id, object_api, lower\(api_name\)/);

@@ -1,5 +1,6 @@
 node_modules
 apps/*/dist
+apps/server/dist-system/
 apps/*/node_modules
 coverage
 *.log

@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
@@ -21,7 +22,7 @@ try{
   await db.query("INSERT INTO md_permission_rules VALUES($1,$2,'*','*','allow')",[t,p.id]);
   await db.query('INSERT INTO md_permission_assignments VALUES($1,$2,$3)',[t,user,p.id]);return p.id;};
  const one=await set('TenantDeveloper',developer),superSet=await set('Supervisor',supervisor);
- const identity=readFileSync(new URL('../src/system-support/migrations/20261018-zzzzzz-oneengine-identity.sql',import.meta.url),'utf8');
+ const identity=readRetiredMigration('20261018-zzzzzz-oneengine-identity.sql');
  await db.query(identity);await db.query(identity);
  assert.equal((await db.query('SELECT api_name FROM md_permission_sets WHERE tenant_id=$1 AND id=$2',[t,one])).rows[0].api_name,'OneEngine');
  assert.equal((await db.query('SELECT count(*)::int AS n FROM md_permission_assignments WHERE tenant_id=$1 AND user_id=$2 AND permission_set_id=$3',[t,developer,one])).rows[0].n,1);

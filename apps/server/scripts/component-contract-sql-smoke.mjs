@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
@@ -41,7 +42,7 @@ export async function componentContractSqlSmoke(db,tenant,user,permissionSet){
  assert.deepEqual(restored.eventDefinitions,eventDefinitions);
  assert.deepEqual(await readComponentContract(db,randomUUID(),input.apiName,restored.version),{});
  // Replaying the additive DDL preserves populated, version-owned schema rows.
- const ddl=await readFile(new URL('../src/system-support/migrations/20270107-component-property-contract.sql',import.meta.url),'utf8');
+ const ddl=await readRetiredMigration('20270107-component-property-contract.sql');
  await db.query(ddl);await db.query(ddl);
  assert.deepEqual(await readComponentContract(db,tenant,input.apiName,restored.version),{propertyDefinitions,eventDefinitions});
  console.info('Component contract SQL lifecycle, RBAC, tenant isolation and DDL replay: passed');

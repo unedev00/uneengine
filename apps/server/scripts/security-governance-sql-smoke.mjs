@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
@@ -15,6 +16,11 @@ import {once} from 'node:events';
 import {AsyncLocalStorage} from 'node:async_hooks';
 const digest=v=>createHash('sha256').update(v).digest('hex');
 const migrations=new URL('../src/system-support/migrations/',import.meta.url);
+// Preserve per-migration replay checks against the original sections without shipping
+// hundreds of standalone SQL migration files in the application.
+const retiredNames=readdirSync(migrations).filter(name=>name.endsWith('.sql')).sort()
+ .flatMap(name=>[...readFileSync(new URL(name,migrations),'utf8')
+  .matchAll(/^-- BEGIN LEGACY ([0-9a-z-]+\.sql)$/gm)].map(match=>match[1]));
 export async function verifySecurityGovernanceSql(db){
  const schema='governance_test_'+Date.now();await db.query(`CREATE SCHEMA ${schema}`);
  try{
@@ -26,8 +32,8 @@ export async function verifySecurityGovernanceSql(db){
   // Adapt only this test's full-schema replay; never rewrite an applied migration
   // (production validates each applied file's immutable SHA-256 checksum).
   const replay=async(minVersion='')=>{
-   for(const n of readdirSync(migrations).filter(n=>n.endsWith('.sql')&&n>=minVersion).sort()){
-    let source=sql(new URL(n,migrations));
+   for(const n of retiredNames.filter(n=>n>=minVersion)){
+    let source=readRetiredMigration(n).replace(/CREATE EXTENSION IF NOT EXISTS pgcrypto;/g,'');
     if(n==='20261127-credential-webhooks.sql'){
      source=source.replace(
       /ALTER TABLE md_inbound_webhook_endpoints\s+ADD CONSTRAINT md_inbound_webhook_credential_fk\s+FOREIGN KEY \(tenant_id,credential_id\)\s+REFERENCES md_named_credentials\(tenant_id,id\) ON DELETE CASCADE;/,

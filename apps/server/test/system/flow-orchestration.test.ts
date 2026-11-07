@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {resolveFlowApprovalOutcome,finishFlowOrchestrationDecision} from
@@ -65,8 +66,7 @@ test('completed stages never resubmit or enqueue new work',async()=>{
  assert.equal(statements.length,1);
 });
 test('Flow orchestration uses additive relational SQL metadata with no JSON state column',()=>{
- const migration=readFileSync(new URL('../../src/system-support/migrations/20261116-flow-orchestration.sql',
-  import.meta.url),'utf8');
+ const migration=readRetiredMigration('20261116-flow-orchestration.sql');
  assert.match(migration,/CREATE TABLE IF NOT EXISTS md_flow_approval_stages/);
  assert.match(migration,/ON CONFLICT\(element_type,flow_type\) DO NOTHING/);
  assert.match(migration,/registry_version=1/);

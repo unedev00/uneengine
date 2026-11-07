@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -102,7 +103,7 @@ test('user landing preference opens the assigned app without granting access',()
   const app=readFileSync(new URL('../../src/core/workspace/App/App.tsx',import.meta.url),'utf8');
   const server=readFileSync(new URL('../../../server/src/system-files/session-metadata.ts',import.meta.url),'utf8');
   const auth=readFileSync(new URL('../../../server/src/system-support/server.ts',import.meta.url),'utf8');
-  const schema=readFileSync(new URL('../../../server/src/system-support/migrations/20261021-user-landing-app.sql',import.meta.url),'utf8');
+  const schema=readRetiredMigration('20261021-user-landing-app.sql');
   assert.match(app,/landingAppApi\?: string/);
   assert.match(app,/entryTiming\?\.landingAppApi\?\?/);
   assert.match(app,/standaloneEntryForAppId\(landingApp\)/);

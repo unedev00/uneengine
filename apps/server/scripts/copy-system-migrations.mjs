@@ -1,4 +1,4 @@
-import {cpSync,mkdirSync} from 'node:fs';
+import {cpSync,mkdirSync,copyFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 const root=new URL('./',import.meta.url);
 const input=fileURLToPath(new URL('../src/system-support/migrations/',root));
@@ -16,3 +16,7 @@ const mailWorker=fileURLToPath(new URL('./mail-protocol.py',root));
 const mailOutput=fileURLToPath(new URL('../dist-system/scripts/mail-protocol.py',root));
 mkdirSync(fileURLToPath(new URL('../dist-system/scripts/',root)),{recursive:true});
 cpSync(mailWorker,mailOutput,{force:true});
+
+// The compiled migration runner bootstraps fresh PostgreSQL from this checked-in schema.
+copyFileSync(fileURLToPath(new URL('../src/system-files/schema.sql',root)),
+ fileURLToPath(new URL('../dist-system/system-files/schema.sql',root)));

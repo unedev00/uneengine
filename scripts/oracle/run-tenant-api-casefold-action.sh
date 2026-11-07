@@ -36,7 +36,7 @@ active="$(systemctl show metadrive-api.service -p WorkingDirectory --value)"
   echo "OCI API does not run this main commit; deploy full stack first" >&2
   exit 1
 }
-test -r "$active/apps/server/dist-system/system-support/migrations/20270210-tenant-api-casefold.sql"
+test -r "$active/apps/server/dist-system/system-support/migrations/0002-current-platform.sql"
 sql() { runuser -u postgres -- psql -X -Atq -v ON_ERROR_STOP=1 -d "$DB" "$@"; }
 [[ "$(sql -c "SELECT to_regprocedure('md_casefold_tenant_api_names(uuid)') IS NOT NULL")" == t ]] || {
   echo "Casefold migration is not installed" >&2; exit 1;

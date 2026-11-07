@@ -1,8 +1,9 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const migration=readFileSync(new URL('../../src/system-support/migrations/20261021-typed-record-values.sql',import.meta.url),'utf8');
+const migration=readRetiredMigration('20261021-typed-record-values.sql');
 const record=readFileSync(new URL('../../src/system-files/record-engine.ts',import.meta.url),'utf8');
 const routes=readFileSync(new URL('../../src/api/ObjectApiController.ts',import.meta.url),'utf8');
 const worker=readFileSync(new URL('../../src/system-support/job-worker-entrypoint.ts',import.meta.url),'utf8');

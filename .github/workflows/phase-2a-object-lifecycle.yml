@@ -8,7 +8,7 @@ on:
       - 'apps/server/src/system-files/object-schema-lifecycle.ts'
       - 'apps/server/src/system-files/schema.sql'
       - 'apps/server/src/system-support/server.ts'
-      - 'apps/server/src/system-support/migrations/20270118-object-schema-lifecycle.sql'
+      - 'apps/server/src/system-support/migrations/**'
       - 'apps/server/scripts/object-schema-lifecycle-sql-smoke.mjs'
       - '.github/workflows/phase-2a-object-lifecycle.yml'
   workflow_dispatch:

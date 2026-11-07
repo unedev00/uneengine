@@ -1,10 +1,11 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import type {SqlPersistence} from '../../src/system-files/sql-persistence.js';
 import {seedPlatformOneEngineDeploymentPermission} from '../../src/app-seeders/platform-oneengine-deployment.js';
 
-const migration=readFileSync(new URL('../../src/system-support/migrations/20261129-oneengine-oci-deployment.sql',import.meta.url),'utf8');
+const migration=readRetiredMigration('20261129-oneengine-oci-deployment.sql');
 
 test('migration grants platform operations only to canonical platform OneEngine without overwriting deny',()=>{
  assert.match(migration,/p\.api_name='OneEngine'/);

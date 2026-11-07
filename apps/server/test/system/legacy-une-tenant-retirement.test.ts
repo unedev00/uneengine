@@ -1,10 +1,11 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
-const migrationUrl=new URL('../../src/system-support/migrations/20270124-retire-legacy-une-app-tenants.sql',import.meta.url);
+const migrationSql=readRetiredMigration('20270124-retire-legacy-une-app-tenants.sql');
 test('legacy tenant migration only rewrites explicitly owned, active installed app pages',async()=>{
- const sql=await readFile(migrationUrl,'utf8');
+ const sql=migrationSql;
  for(const app of ['Acetill','AceAssist','OneChatter','UNEAceChatter'])
   assert.ok(sql.includes("'"+app+"'"),'missing app '+app);
  for(const renderer of ['acetill_input','acetill_cart','acetill_item_grid',
@@ -20,7 +21,7 @@ test('legacy tenant migration only rewrites explicitly owned, active installed a
  assert.doesNotMatch(sql,/\bUPDATE\s+md_flow_(?:editor_values|node_properties)\b/i);
 });
 test('legacy SQL registry is deactivated, not erased, only without references',async()=>{
- const sql=await readFile(migrationUrl,'utf8');
+ const sql=migrationSql;
  assert.match(sql,/UPDATE md_component_definitions d SET enabled=false/);
  for(const ref of ['md_page_components','md_lightning_page_nodes','md_page_layout_version_nodes',
     'md_component_library_versions','md_component_properties','md_flow_editor_values',

@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {RecordMatching,DuplicateMatchError} from '../../src/system-files/record-matching.js';
@@ -134,7 +135,7 @@ test('cross-object matching fails closed when target field is unreadable',async(
 
 test('cross-object matching migration preserves old records and tenant keys',async()=>{
  const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../../src/system-support/migrations/20270110-cross-object-matching.sql',import.meta.url),'utf8');
+ const source=await readRetiredMigration('20270110-cross-object-matching.sql');
  assert.match(source,/ADD COLUMN IF NOT EXISTS target_object_api/);
  assert.match(source,/FOREIGN KEY\(tenant_id,matched_record_id,matched_object_api\)/);
  assert.match(source,/FOREIGN KEY\(tenant_id,record_id,object_api\)/);

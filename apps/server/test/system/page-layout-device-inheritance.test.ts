@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
@@ -79,7 +80,7 @@ test('Deep overrides do not freeze unchanged nested properties or lose explicit 
 test('Desktop parent draft/publish separation is enforced by the SQL runtime',()=>{
  const path=new URL('../../src/system-files/page-layout-version-runtime.ts',import.meta.url);
  const service=readFileSync(path,'utf8');
- const migration=readFileSync(new URL('../../src/system-support/migrations/20270211-page-device-inheritance.sql',import.meta.url),'utf8');
+ const migration=readRetiredMigration('20270211-page-device-inheritance.sql');
  assert.match(migration,/inherits_desktop boolean NOT NULL DEFAULT false/);
  assert.match(service,/view==='draft'\?desktopHeads\[0\]\?\.draft_version:desktopHeads\[0\]\?\.published_version/);
  assert.match(service,/Desktop parent changed; reload this device layout before saving/);

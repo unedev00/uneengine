@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
@@ -163,8 +164,7 @@ try{
  assert.equal(replayedPages.rows[0].count,2,'Idempotent Record Page migration duplicated pages');
  // Existing Object Page Layouts are migrated only into untouched scaffold pages,
  // with four isolated versions; a second execution must not create new versions.
- const migrationSql=readFileSync(fileURLToPath(new URL(
-   '../src/system-support/migrations/20270104-unified-record-page-layouts.sql',import.meta.url)),'utf8');
+ const migrationSql=readRetiredMigration('20270104-unified-record-page-layouts.sql');
  // Existing customers may have several legacy layouts assigned to different
  // profiles/record types. Do not silently replace those with one default.
  await objects.create(tenantId,'LegacySegment__c','Legacy Segment',[
@@ -729,9 +729,7 @@ try{
    VALUES($1,$2,'Communication','Body',$3)`,
    [tenantId,clearMarker,'Retain message body inside recovery archive']);
  });
- const requestedClearSql=readFileSync(fileURLToPath(new URL(
-  '../src/system-support/migrations/20270102-user-requested-communication-history-clear.sql',
-  import.meta.url)),'utf8');
+ const requestedClearSql=readRetiredMigration('20270102-user-requested-communication-history-clear.sql');
  await db.transaction(client=>client.query(requestedClearSql));
  await db.transaction(client=>client.query(requestedClearSql));
  const oldVisible=await db.query(
@@ -783,9 +781,7 @@ try{
    }
   }
  });
- const normalizeSubjects=readFileSync(fileURLToPath(new URL(
-  '../src/system-support/migrations/20261204-communication-subject-normalization.sql',
-  import.meta.url)),'utf8');
+ const normalizeSubjects=readRetiredMigration('20261204-communication-subject-normalization.sql');
  await db.transaction(client=>client.query(normalizeSubjects));
  await db.transaction(client=>client.query(normalizeSubjects));
  const historical=await db.query(`SELECT record_id,value_text FROM md_record_values

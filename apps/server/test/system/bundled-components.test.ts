@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
@@ -63,7 +64,7 @@ test('retired UNE Badge has no app placement, system manifest, or insert registr
   assert.doesNotMatch(app,/ui_badge|OneBadge/);
   const catalog=JSON.parse(await readFile(new URL('../../../web/src/component-libraries/manifest.json',import.meta.url),'utf8')) as {components:string[]};
   assert.ok(!catalog.components.includes('ui_badge/component.json'));
-  const migration=await readFile(new URL('../../src/system-support/migrations/20270118-retire-une-badge.sql',import.meta.url),'utf8');
+  const migration=await readRetiredMigration('20270118-retire-une-badge.sql');
   for(const clause of ['DELETE FROM md_lightning_page_nodes','DELETE FROM md_page_layout_version_nodes',
    'DELETE FROM md_page_components','DELETE FROM md_app_package_page_component_templates',
    "UPDATE md_component_definitions SET enabled=false"])

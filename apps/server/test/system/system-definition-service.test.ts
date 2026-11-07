@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -118,8 +119,7 @@ test('Platform Event metadata rejects malformed fields before writing',async()=>
 });
 
 test('Platform Event migration validates and backfills legacy JSON before removing it',()=>{
- const migration=readFileSync(new URL(
-  '../../src/system-support/migrations/20261102-platform-event-fields.sql',import.meta.url),'utf8');
+ const migration=readRetiredMigration('20261102-platform-event-fields.sql');
  assert.match(migration,/RAISE EXCEPTION 'Platform Event metadata must be repaired before relational migration'/);
  assert.match(migration,/INSERT INTO md_platform_event_details/);
  assert.match(migration,/INSERT INTO md_platform_event_fields/);
@@ -183,8 +183,7 @@ test('Email Alert metadata is listed from relational details',async()=>{
 });
 
 test('Email Alert migration preserves existing definitions in relational metadata',()=>{
- const migration=readFileSync(new URL(
-  '../../src/system-support/migrations/20261104-email-alert-details.sql',import.meta.url),'utf8');
+ const migration=readRetiredMigration('20261104-email-alert-details.sql');
  assert.match(migration,/RAISE EXCEPTION 'Email Alert metadata or SMTP credentials must be repaired before relational migration'/);
  assert.match(migration,/INSERT INTO md_email_alert_details/);
  assert.match(migration,/UPDATE md_system_definitions SET properties='{}'::jsonb WHERE kind='email-alerts'/);

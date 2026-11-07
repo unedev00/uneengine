@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -38,7 +39,7 @@ test('Smart registry remains enabled through Core bundled-component cleanup',()=
  assert.match(content,/\.\.\.UI_COMPONENTS,\.\.\.SMART_COMPONENTS/);
 });
 test('Smart SQL library matches approved table and retains Home',()=>{
- const migration=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
+ const migration=readRetiredMigration('20270124-smart-component-library.sql');
  const rows=migration.split('\n').filter(s=>/^\('(?:backgroundColor|borderColor|shadow|label|labelAlignment|labelColor|defaultValueColor|radius|textSize|placeholderSize|width|height|x|y|defaultValue|tabHeight|tabWidth|tabCount|selectedTabColor|tabColor|cardsPerRow|cardsPerColumn|imageHeight|headerBoxHeight|wrapText|imagePlacement|imageBorderColor|headerBorderColor|headerAlignment|headerBold|objectApiName|imageSource|textSource|badgeText|badgeAlignment|badgeTextSize|badgeBold|badgeTextColor|badgeVisible|showDays|firstDay|navigationDirection|imageFill)'/.test(s));
  assert.equal(rows.length,43);
  assert.match(migration,/'headerBold','Bold','Design','Header'/);
@@ -78,11 +79,11 @@ test('Insert Ribbon exposes visible Smart components without requiring a selecte
 test('Layout hides exact Design 2 duplicates and retired ribbon-only colours',()=>{
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const visibility=read('../src/core/builders/PageBuilder/layoutRibbonVisibility.ts');
- const matrix=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
- const parity=read('../../server/src/system-support/migrations/20271106-design2-functional-control-parity.sql');
- const imageParity=read('../../server/src/system-support/migrations/20271108-design2-four-control-parity.sql');
- const rowZero=read('../../server/src/system-support/migrations/20271106-design2-row0-xy-position.sql');
- const inventory=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
+ const matrix=readRetiredMigration('20271104-zz-design2-exact-approved-matrix.sql');
+ const parity=readRetiredMigration('20271106-design2-functional-control-parity.sql');
+ const imageParity=readRetiredMigration('20271108-design2-four-control-parity.sql');
+ const rowZero=readRetiredMigration('20271106-design2-row0-xy-position.sql');
+ const inventory=readRetiredMigration('20270124-smart-component-library.sql');
  const registered=['smart_button','smart_toggle','smart_lookup','smart_tabs','smart_text',
    'smart_textbox','smart_card_grid','smart_image','smart_calendar','smart_navigation',
    'smart_container','smart_cart','smart_icon','smart_table'];
@@ -125,7 +126,7 @@ test('Smart visual/property fixes are registered without changing historic SQL m
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
- const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
+ const sql=readRetiredMigration('20270125-smart-ribbon-property-corrections.sql');
  assert.match(runtime,/className="smart-switch"/);
  assert.match(runtime,/p.defaultCheck/);
  assert.match(runtime,/textAlign:p.labelAlignment/);
@@ -149,7 +150,7 @@ test('Smart canvas positions remain the source of truth for rendered sizes',()=>
 });
 
 test('Default Check SQL uses globally unique order allocation',()=>{
- const sql=read('../../server/src/system-support/migrations/20270125-smart-ribbon-property-corrections.sql');
+ const sql=readRetiredMigration('20270125-smart-ribbon-property-corrections.sql');
  assert.match(sql,/COALESCE\(MAX\(sort_order\),0\)\+1 FROM md_builder_shared_properties/);
  assert.doesNotMatch(sql,/Default Check[^\n]*'choice',44,/);
 });
@@ -174,7 +175,7 @@ test('Smart ribbon keeps all shared properties and renders the approved compact 
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/#page-builder-tab-content\.office-ribbon-content/);
  assert.match(read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css'),/--page-ribbon-scroll-strip-height: 127px/);
  assert.match(css,/input\.smart-office-number/);
- const metadata=read('../../server/src/system-support/migrations/20270126-une-ribbon-requirements.sql');
+ const metadata=readRetiredMigration('20270126-une-ribbon-requirements.sql');
  assert.match(metadata,/WHEN property_key IN \('label','defaultValue'\) THEN 'Data'/);
  assert.match(metadata,/WHEN property_key IN \('tabHeight','tabWidth','headerBoxHeight','imageHeight'\) THEN 'Layout'/);
 });
@@ -192,7 +193,7 @@ test('Smart ribbon compact corrections preserve visibility and size controls cor
 });
 
 test('shared SQL ribbon moves Default Check into Data Values and shortens Header labels',()=>{
- const sql=read('../../server/src/system-support/migrations/20270127-smart-ribbon-compact-property-placement.sql');
+ const sql=readRetiredMigration('20270127-smart-ribbon-compact-property-placement.sql');
  assert.match(sql,/SET tab='Data', section_group='Values'\s+WHERE property_key='defaultCheck'/);
  assert.match(sql,/WHEN 'headerBorderColor' THEN 'Border'/);
  assert.match(sql,/WHEN 'headerAlignment' THEN 'Alignment'/);
@@ -332,7 +333,7 @@ test('Smart Container displays children only and Card Grid uses Badge Body Color
  assert.match(grid,/#123456/i);
 });
 test('SQL Smart applicability is disabled without hiding global slots or erasing values',()=>{
- const sql=read('../../server/src/system-support/migrations/20270128-smart-renderer-property-alignment.sql');
+ const sql=readRetiredMigration('20270128-smart-renderer-property-alignment.sql');
  assert.match(sql,/UPDATE md_builder_ribbon_component_rules/);
  assert.match(sql,/SET enabled=false/);
  for(const name of ['smart_card_grid','smart_calendar','smart_container'])
@@ -414,7 +415,7 @@ test('Smart Label is a read-only Smart Input Box with the same binding and styli
  assert.doesNotMatch(await renderSmart('smart_label',{}),/>Label</);
  // The existing Smart Input Box is unchanged.
  assert.match(await renderSmart('smart_text',{label:'Name'}),/<input/);
- const sql=read('../../server/src/system-support/migrations/20271112-smart-label-component.sql');
+ const sql=readRetiredMigration('20271112-smart-label-component.sql');
  assert.match(sql,/WHERE r\.component_api='smart_text' AND r\.property_key<>'displayMode'/);
  assert.match(sql,/'one-bundled:smart_label'/);
  assert.doesNotMatch(sql,/DELETE\s+FROM/i);
@@ -492,7 +493,7 @@ test('Smart compact rows share measured tracks and align related controls, witho
 });
 
 test('Smart Badge and Image short names come only from forward-only SQL metadata',()=>{
- const sql=read('../../server/src/system-support/migrations/20270129-smart-ribbon-short-section-labels.sql');
+ const sql=readRetiredMigration('20270129-smart-ribbon-short-section-labels.sql');
  for(const [key,label] of Object.entries({
    badgeAlignment:'Alignment',badgeVisible:'Visible',badgeTextSize:'Text Size',
    imagePlacement:'Placement',imageBorderColor:'Border',imageFill:'Fill'
@@ -510,7 +511,7 @@ test('Smart Cart ribbon is SQL-driven and visual preview defers cart data and ac
  assert.ok(manifest.components.includes('smart_cart/component.json'));
  const descriptor=JSON.parse(read('../src/component-libraries/smart_cart/component.json'));
  assert.deepEqual(descriptor.propertyDefinitions,[]);
- const sql=read('../../server/src/system-support/migrations/20270130-smart-cart-ribbon.sql');
+ const sql=readRetiredMigration('20270130-smart-cart-ribbon.sql');
  for(const k of ['headerTextColor','supportingBoxHeight','supportingBorderColor','supportingAlignment',
  'supportingBold','supportingTextColor','tableBackgroundColor','tableBorderColor','tableShadow',
  'tableRadius','rowBorderColor','rowLabelColor','rowRadius','rowHeight','summaryBackgroundColor',
@@ -609,7 +610,7 @@ test('Smart Cart only renders amounts supplied by metadata/Flow and shows no fab
   totalValue:'@Quantity * @UnitPrice',currencyCode:'GBP'
  });
  assert.ok(formula.includes('£10.00'),'ribbon formula should calculate from the authorised row');
- const sql=read('../../server/src/system-support/migrations/20270210-smart-cart-summary-bindings.sql');
+ const sql=readRetiredMigration('20270210-smart-cart-summary-bindings.sql');
  for(const field of ['subtotalValue','discountValue','taxValue','totalValue'])
   assert.ok(sql.includes("'"+field+"'"));
  assert.doesNotMatch(sql,/DELETE FROM md_page_|UPDATE md_page_/i);
@@ -697,7 +698,7 @@ test('Smart Icon uses black default recolourable SVG and existing ribbon colour 
  assert.match(gallery,/shapeGroups/);
 });
 test('Smart Icon SQL enables only approved appearance and layout properties',()=>{
- const sql=read('../../server/src/system-support/migrations/20270130-smart-icon-library.sql');
+ const sql=readRetiredMigration('20270130-smart-icon-library.sql');
  for(const name of ['backgroundColor','borderColor','shadow','radius','x','y','width','height','iconFillColor'])
   assert.match(sql,new RegExp("'"+name+"'"));
  assert.match(sql,/'iconFillColor','Icon Fill Color','Design','Icon','color'/);
@@ -807,7 +808,7 @@ test('Smart Tabs uses first actual Object tab rather than deprecated synthetic f
  assert.match(runtime,/const tabs=dynamic\|\|hasCollection\?recordTabs:recordTabs\.map/);
 });
 test('SQL and ribbon retire the three first-tab properties without deleting saved metadata',()=>{
- const sql=read('../../server/src/system-support/migrations/20270305-retire-smart-tabs-custom-first-tab.sql');
+ const sql=readRetiredMigration('20270305-retire-smart-tabs-custom-first-tab.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const server=read('../../server/src/system-support/server.ts');
  for(const property of ['firstTabCustom','firstTabCaption','firstTabValue']){
@@ -843,7 +844,7 @@ test('named COLLECTION mixes manual items with authorised Object.Field values',a
  for(const label of ['a22','none','Burgers','Drinks'])assert.match(markup,new RegExp(label));
  assert.equal((markup.match(/role="tab"/g)??[]).length,4);
  assert.ok(markup.indexOf('>a22</button>')<markup.indexOf('>none</button>'));
- const sql=read('../../server/src/system-support/migrations/20270303-universal-named-collection-formula.sql');
+ const sql=readRetiredMigration('20270303-universal-named-collection-formula.sql');
  assert.match(sql,/'collectionFormula','Collection','Data','Source','expression'/);
  assert.doesNotMatch(sql,/All items|MenuCategory|CODEXTILL|UPDATE md_page_/i);
 });
@@ -885,7 +886,7 @@ test('Calendar selected value colour fills date and Shadow uses shared three pre
  assert.match(markup,/color:#fff/);
  assert.match(markup,/0 3px 9px/);
  const ui=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- const migration=read('../../server/src/system-support/migrations/20270131-smart-calendar-shadow-control.sql');
+ const migration=readRetiredMigration('20270131-smart-calendar-shadow-control.sql');
  assert.match(ui,/api==='smart_calendar'&&property.id==='shadow'/);
  assert.match(migration,/value_key=NULL/);
 });
@@ -977,7 +978,7 @@ test('Smart Cart ribbon packs Header Supporting, Table and Row without hidden ed
 
 test('Smart Cart Summary and Summary 2 use compact separate icon-first rows',()=>{
  const css=read('../src/core/builders/PageBuilder/SmartRibbon.css');
- const sql=read('../../server/src/system-support/migrations/20270201-smart-cart-summary2-ribbon.sql');
+ const sql=readRetiredMigration('20270201-smart-cart-summary2-ribbon.sql');
  const section=css.slice(css.indexOf('/* Smart Cart Summary:'));
  assert.match(section,/data-smart-api="smart_cart"/);
  assert.match(section,/grid-template-columns:repeat\(3,78px\) 10px 126px 80px/);
@@ -1016,7 +1017,7 @@ test('Shared @ binding and canvas fill are metadata-driven for arbitrary objects
  const filter=read('../src/component-libraries/shared/primitives/RecordFilterEditor/RecordFilterEditor.tsx');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const view=read('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
- const sql=read('../../server/src/system-support/migrations/20270202-canvas-fill-color.sql');
+ const sql=readRetiredMigration('20270202-canvas-fill-color.sql');
  assert.match(read('../src/core/builders/PageBuilder/relationshipFormulaFields.ts'),/mentionGroups\(objects,root/);
  assert.match(mentions,/resolveCollectionMentionRows/);
  assert.match(mentions,/MAX_HOPS = 3/);
@@ -1070,7 +1071,7 @@ test('Current three-row renderer keeps disabled metadata slots and numerical SVG
 });
 
 test('SQL-backed eight-tab ribbon retains existing controls and correct geometry',()=>{
- const sql=read('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql');
+ const sql=readRetiredMigration('20270211-eight-tab-ribbon-geometry.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const css=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
  const view=readPageBuilderModules();
@@ -1104,7 +1105,7 @@ test('SQL-backed eight-tab ribbon retains existing controls and correct geometry
 });
 
 test('Cart Data group reuses SQL property registry; only Smart Cart has the five new enabled controls',()=>{
- const sql=read('../../server/src/system-support/migrations/20270207-smart-cart-column-bindings.sql');
+ const sql=readRetiredMigration('20270207-smart-cart-column-bindings.sql');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const multi=read('../src/core/builders/PageBuilder/SmartMultiSelect.tsx');
  const css=read('../src/component-libraries/smart_cart/SmartComponent.css');
@@ -1178,7 +1179,7 @@ test('Design source scopes @ fields to explicitly selected metadata objects and 
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const formula=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  const page=readPageBuilderModules();
- const sql=read('../../server/src/system-support/migrations/20270207-page-builder-ribbon-sources-layout.sql');
+ const sql=readRetiredMigration('20270207-page-builder-ribbon-sources-layout.sql');
  const styles=read('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
  assert.match(ribbon,/sourceKey=\(index:number\)=>index===1\?'objectApiName':'objectApiName'\+index/);
  assert.match(ribbon,/sourceObjectKeys=Object\.keys\(properties\)/);
@@ -1203,7 +1204,7 @@ test('Design source scopes @ fields to explicitly selected metadata objects and 
 
 
 test('Layout Image Background uses SQL fill palette for only Image and Container',()=>{
- const sql=read('../../server/src/system-support/migrations/20270212-image-container-background-fill.sql');
+ const sql=readRetiredMigration('20270212-image-container-background-fill.sql');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  const palette=read('../src/core/builders/PageBuilder/RibbonColorPalette.tsx');
@@ -1324,7 +1325,7 @@ test('Smart Textbox renders one left caption and one right field value using rem
  assert.doesNotMatch(html,/onchange=|onclick=/i);
 });
 test('Smart Textbox SQL enables only approved properties and User pilot requires explicit single-tenant opt-in',()=>{
- const sql=read('../../server/src/system-support/migrations/20270309-smart-textbox-shared-ribbon.sql');
+ const sql=readRetiredMigration('20270309-smart-textbox-shared-ribbon.sql');
  const allowed=['label','textSource','backgroundColor','labelColor','shadow','borderColor','radius',
   'wrapText','headerTextColor','headerAlignment','headerBodyColor','headerBold',
   'supportingBorderColor','supportingBold','supportingTextColor','supportingAlignment',
@@ -1409,7 +1410,7 @@ test('Card Grid description uses Header Supporting text and price uses Footer te
  assert.match(plain,/<strong class="smart-card-value">\$2\.99<\/strong>/);
 });
 test('Smart Cart quantity buttons take shape and colour from Button 2/3 properties',async()=>{
- const sql=read('../../server/src/system-support/migrations/20271113-kiosk-text-button-ribbon-extensions.sql');
+ const sql=readRetiredMigration('20271113-kiosk-text-button-ribbon-extensions.sql');
  for(const key of ['qtyIncreaseFill','qtyDecreaseShape','qtyIncreaseTextColor','customButton1Radius'])
   assert.match(sql,new RegExp("'"+key+"'"));
  assert.match(sql,/\('smart_cart','Button 2','text','qtyIncreaseTextColor'\)/);
@@ -1504,7 +1505,7 @@ test('All installed component definitions are independent of displayMode metadat
   assert.ok(!(component.propertyDefinitions??[]).some(p=>p.propertyKey==='displayMode'),
    component.apiName+' must not require displayMode');
  }
- const sql=read('../../server/src/system-support/migrations/20271119-smart-formula-display-runtime.sql');
+ const sql=readRetiredMigration('20271119-smart-formula-display-runtime.sql');
  assert.match(sql,/DELETE FROM md_builder_shared_properties/);
  assert.match(sql,/WHERE property_key='displayMode'/);
 });

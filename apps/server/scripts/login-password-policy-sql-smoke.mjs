@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
@@ -30,10 +31,10 @@ export async function verifyLoginPasswordSql(db,additionalChecks){
    CREATE TABLE md_password_recovery_settings(tenant_id uuid,smtp_credential_id uuid,from_email text);`);
   const tenant=(await db.query('INSERT INTO md_tenants DEFAULT VALUES RETURNING id')).rows[0].id;
   const other=(await db.query('INSERT INTO md_tenants DEFAULT VALUES RETURNING id')).rows[0].id;
-  const migration=readFileSync(new URL('../src/system-support/migrations/20261121-login-password-policy.sql',import.meta.url),'utf8');
+  const migration=readRetiredMigration('20261121-login-password-policy.sql');
   await db.query(migration);
-  await db.query(readFileSync(new URL('../src/system-support/migrations/20261023-mfa-identity.sql',import.meta.url),'utf8'));
-  await db.query(readFileSync(new URL('../src/system-support/migrations/20261122-identity-session-controls.sql',import.meta.url),'utf8'));
+  await db.query(readRetiredMigration('20261023-mfa-identity.sql'));
+  await db.query(readRetiredMigration('20261122-identity-session-controls.sql'));
   await db.query('UPDATE md_password_policies SET min_length=16 WHERE tenant_id=$1',[tenant]);
   await db.query(migration);
   assert.equal((await db.query('SELECT min_length FROM md_password_policies WHERE tenant_id=$1',[tenant])).rows[0].min_length,16);

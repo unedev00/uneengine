@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {generateKeyPair,exportJWK,SignJWT} from 'jose';
@@ -36,8 +37,8 @@ export async function verifyIdentitySessionSql(db){
    }
   };
   const sessions=new SessionPolicyService(db,allow),mfa=new MfaService(db,allow,auth,vault),backups=new MfaBackupService(db,auth,mfa,allow);
-  const migration=readFileSync(new URL('../src/system-support/migrations/20261122-identity-session-controls.sql',import.meta.url),'utf8');
-  const federationCredentialsMigration=readFileSync(new URL('../src/system-support/migrations/20261201-federation-named-credentials.sql',import.meta.url),'utf8');
+  const migration=readRetiredMigration('20261122-identity-session-controls.sql');
+  const federationCredentialsMigration=readRetiredMigration('20261201-federation-named-credentials.sql');
   await db.query(migration);await db.query(federationCredentialsMigration);await db.query('UPDATE md_password_policies SET max_age_days=0 WHERE tenant_id=$1',[tenant]);
   await db.query('UPDATE md_users SET password_changed_at=now() WHERE id=$1',[user]);
   await db.query('CREATE TABLE md_tenant_domains(domain text PRIMARY KEY,tenant_id uuid)');

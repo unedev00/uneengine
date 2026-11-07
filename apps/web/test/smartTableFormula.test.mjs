@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -86,7 +87,7 @@ test('Smart Table renders exactly the TABLE columns and metadata-driven buttons'
 });
 
 test('Smart Table metadata extends shared ribbon instead of duplicating properties or engines',()=>{
- const sql=read('../../server/src/system-support/migrations/20270308-smart-table-shared-ribbon.sql');
+ const sql=readRetiredMigration('20270308-smart-table-shared-ribbon.sql');
  const runtime=read('../src/component-libraries/smart_table/SmartComponent.jsx');
  const editor=read('../src/core/builders/PageBuilder/SmartFormulaField.tsx');
  const source=read('../src/core/pages/PageRuntime/usePageCollectionFormula.ts');

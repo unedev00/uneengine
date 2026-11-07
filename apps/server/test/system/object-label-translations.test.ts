@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {test} from 'node:test';
@@ -22,7 +23,7 @@ test('localized object metadata uses exact language then regional fallback',()=>
  assert.equal(requestedLabelLanguage('invalid_locale'),'en');
 });
 test('translation migrations use tenant foreign keys and optimistic revisions',async()=>{
- const source=await readFile(new URL('../../src/system-support/migrations/20270109-object-label-translations.sql',import.meta.url),'utf8');
+ const source=await readRetiredMigration('20270109-object-label-translations.sql');
  assert.match(source,/PRIMARY KEY\(tenant_id,object_api,language,field_api\)/);
  assert.match(source,/FOREIGN KEY\(tenant_id,object_api\)/);
  assert.match(source,/md_object_label_translation_revisions/);

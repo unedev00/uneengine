@@ -1,4 +1,7 @@
--- Fresh, isolated system runtime schema. No legacy tables or JSON state imports.
+-- Core foundation for the current SQL runtime. For the complete final database state,
+-- apply 0001-initial-schema.sql and 0002-current-platform.sql after this foundation.
+-- The migration runner applies all three on a completely empty database.
+-- No legacy tables or JSON state imports.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS md_tenants (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), slug text NOT NULL UNIQUE, name text NOT NULL);
 CREATE TABLE IF NOT EXISTS md_users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid NOT NULL REFERENCES md_tenants(id), email text NOT NULL, password_hash text NOT NULL, enabled boolean NOT NULL DEFAULT true, landing_app_api text NOT NULL DEFAULT 'Setup', UNIQUE(tenant_id,id));

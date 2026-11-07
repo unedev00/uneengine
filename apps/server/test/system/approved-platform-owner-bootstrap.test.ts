@@ -1,8 +1,9 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const sql=readFileSync(new URL('../../src/system-support/migrations/20261128-approved-oci-platform-owner.sql',import.meta.url),'utf8');
+const sql=readRetiredMigration('20261128-approved-oci-platform-owner.sql');
 test('OCI owner approval is a one-time SQL assignment, never a runtime bypass',()=>{
  assert.match(sql,/md_platform_deployment_owner_receipts/);
  assert.match(sql,/SELECT count\(\*\) FROM md_tenants\) <> 1/);

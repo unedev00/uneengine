@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -128,7 +129,7 @@ test('Page canvas controls live in Design and Quick Access stays on topbar',()=>
   assert.match(source,/data-shared-group="Canvas"/);
   assert.match(source,/ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"/);
   assert.doesNotMatch(source,/className="office-ribbon-page-layout-groups"/);
-  const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
+  const sql=readRetiredMigration('20270122-global-shared-builder-ribbon.sql');
   assert.match(sql,/md_builder_shared_properties/);
   for(const property of ['backIcon','pageName','deviceLayout','canvasMode','canvasWidth','canvasHeight',
     'selectVersion','resetIcon','cut','copy','paste','undo','redo','save','activate'])

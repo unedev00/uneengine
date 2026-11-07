@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -8,7 +9,7 @@ const server=(relative:string)=>readFileSync(new URL('apps/server/src/'+relative
 
 test('Every Setup destination has a registered OneEngine navigation permission',()=>{
   const resourceMap=server('system-support/permission-resource-map.ts');
-  const sql=server('system-support/migrations/20261105-setup-menu-permissions.sql');
+  const sql=readRetiredMigration('20261105-setup-menu-permissions.sql');
   for(const [label,tokens] of Object.entries(setupMenuTokens)){
     assert.ok(tokens.length>0,label);
     for(const token of tokens){

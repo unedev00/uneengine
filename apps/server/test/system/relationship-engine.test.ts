@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
@@ -51,8 +52,8 @@ test('lookup cascade is explicit and still forbids restrictive or unsafe deletio
 
 
 test('already-applied relationship SQL is immutable and row lock is an additive migration',()=>{
- const immutable=readFileSync(new URL('../../src/system-support/migrations/20270120-relationship-target-integrity.sql',import.meta.url),'utf8');
- const forward=readFileSync(new URL('../../src/system-support/migrations/20270209-relationship-target-row-lock.sql',import.meta.url),'utf8');
+ const immutable=readRetiredMigration('20270120-relationship-target-integrity.sql');
+ const forward=readRetiredMigration('20270209-relationship-target-row-lock.sql');
  const gitHash=createHash('sha1').update('blob '+Buffer.byteLength(immutable)+'\0'+immutable).digest('hex');
  assert.equal(gitHash,'3120c886437d0aa2a4d42a038e9daf2d9905549d','previously applied migration was modified; use a new migration');
  assert.doesNotMatch(immutable,/FOR SHARE/);

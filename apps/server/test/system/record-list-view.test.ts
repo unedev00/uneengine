@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {PoolClient} from 'pg';
@@ -124,7 +125,7 @@ test('record list widths are scoped by user and validated through OneEngine',asy
   }),/Invalid view preferences/);
 });
 test('record presentation migration uses additive tenant/user relational keys',()=>{
-  const migration=readFileSync(new URL('../../src/system-support/migrations/20270103-record-view-preferences.sql',import.meta.url),'utf8');
+  const migration=readRetiredMigration('20270103-record-view-preferences.sql');
   assert.match(migration,/CREATE TABLE IF NOT EXISTS md_record_view_preferences/);
   assert.match(migration,/PRIMARY KEY\(tenant_id,user_id,object_api\)/);
   assert.match(migration,/CHECK\(split_width_px BETWEEN 320 AND 800\)/);

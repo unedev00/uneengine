@@ -1,14 +1,15 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {PAGE_LAYOUT_VARIANTS,pageLayoutVariant,runtimeLayoutVariant,
  mergePublishedPageActivation} from '../../src/system-files/page-layout-version-runtime.js';
 
-const schema=readFileSync(new URL('../../src/system-support/migrations/20261215-page-layout-versions.sql',import.meta.url),'utf8');
+const schema=readRetiredMigration('20261215-page-layout-versions.sql');
 const runtime=readFileSync(new URL('../../src/system-files/page-runtime.ts',import.meta.url),'utf8');
 const service=readFileSync(new URL('../../src/system-files/page-layout-version-runtime.ts',import.meta.url),'utf8');
 const server=readFileSync(new URL('../../src/system-support/server.ts',import.meta.url),'utf8');
-const customTargets=readFileSync(new URL('../../src/system-support/migrations/20261216-page-layout-custom-targets.sql',import.meta.url),'utf8');
+const customTargets=readRetiredMigration('20261216-page-layout-custom-targets.sql');
 
 
 test('four independent layout identities map to the correct published runtime',()=>{

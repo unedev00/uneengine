@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
-      - 'apps/server/src/system-support/migrations/20270309-design2-contextual-ribbon.sql'
+      - 'apps/server/src/system-support/migrations/**'
       - 'apps/server/src/system-support/server.ts'
       - 'apps/server/scripts/design2-browser-check.mjs'
       - 'apps/server/scripts/builder-browser-smoke.mjs'

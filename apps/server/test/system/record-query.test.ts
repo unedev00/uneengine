@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -134,7 +135,7 @@ test('query inputs validate saved filter arrays and keyset cursors',()=>{
 });
 
 test('record search and saved view migration use weighted SQL indexes and relational state',()=>{
-  const migration=readFileSync(new URL('../../src/system-support/migrations/20261115-list-views-record-search.sql',import.meta.url),'utf8');
+  const migration=readRetiredMigration('20261115-list-views-record-search.sql');
   const query=readFileSync(new URL('../../src/system-files/record-engine.ts',import.meta.url),'utf8');
   for(const table of ['md_list_views','md_list_view_columns','md_list_view_filters',
     'md_list_view_filter_values','md_list_view_groups','md_list_view_pins',

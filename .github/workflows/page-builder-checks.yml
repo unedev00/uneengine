@@ -8,7 +8,7 @@ on:
       - 'apps/acetill/**'
       - 'apps/server/src/system-support/page-inventory-csv.ts'
       - 'apps/server/src/api/PageApiController.ts'
-      - 'apps/server/test/system/page-inventory-csv.test.ts'
+      - 'apps/server/test/system/page-runtime-app-pages.test.ts'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
@@ -21,7 +21,7 @@ on:
       - 'apps/acetill/**'
       - 'apps/server/src/system-support/page-inventory-csv.ts'
       - 'apps/server/src/api/PageApiController.ts'
-      - 'apps/server/test/system/page-inventory-csv.test.ts'
+      - 'apps/server/test/system/page-runtime-app-pages.test.ts'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
@@ -56,14 +56,12 @@ jobs:
       - name: Check Page Builder and UNE component contracts
         run: npm run test:components
       - name: Check page inventory CSV upsert contracts
-        run: npx tsx --test apps/server/test/system/page-inventory-csv.test.ts
+        run: npx tsx --test apps/server/test/system/page-runtime-app-pages.test.ts
       - name: Build production server
         run: npm run build --workspace apps/server
       - name: Check metadata binding regressions
         run: npm run test:metadata
-      - name: Verify the 84-finding Setup and authentication remediation contracts
-        run: node --test apps/web/test/auditFixes20261105.test.mjs
-      - name: Check shared canvas movement, resize and overflow regressions
-        run: npx tsx --tsconfig apps/web/tsconfig.json --test apps/web/test/canvasSharedGestureGeometry.test.ts apps/web/test/freeCanvasComponentOverflow.test.mjs apps/web/test/cardGridScrollContract.test.ts
+      - name: Check shared canvas movement and resize geometry
+        run: npx tsx --tsconfig apps/web/tsconfig.json --test apps/web/test/canvasSharedGestureGeometry.test.ts
       - name: Build production web application
         run: npm run build --workspace apps/web

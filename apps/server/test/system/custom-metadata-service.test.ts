@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {test} from 'node:test';
@@ -142,7 +143,7 @@ test('setting hierarchy writes validate scope and use central setting permission
 });
 
 test('custom metadata migration is additive and exclusively relational',async()=>{
-  const sql=await readFile(new URL('../../src/system-support/migrations/20261023-custom-metadata-foundation.sql',import.meta.url),'utf8');
+  const sql=await readRetiredMigration('20261023-custom-metadata-foundation.sql');
   for(const table of ['md_custom_labels','md_custom_metadata_types','md_custom_metadata_fields',
     'md_custom_metadata_records','md_custom_metadata_values','md_custom_settings',
     'md_custom_setting_fields','md_custom_setting_entries','md_custom_setting_values'])

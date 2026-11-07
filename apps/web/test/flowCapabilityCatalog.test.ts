@@ -1,9 +1,10 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {flowCreateOptions,flowElementAvailable,flowElementInToolbox,type FlowCapabilityCatalog} from '../src/core/builders/FlowBuilder/flowCapabilityCatalog';
 
-const migration=readFileSync(new URL('../../server/src/system-support/migrations/20261112-flow-capability-registry.sql',import.meta.url),'utf8');
+const migration=readRetiredMigration('20261112-flow-capability-registry.sql');
 const permitted=['Screen Flow','Autolaunched Flow','Record-Triggered Flow'];
 const catalog:FlowCapabilityCatalog={registryVersion:1,
  flowTypes:permitted.map((type,index)=>({type:type as FlowCapabilityCatalog['flowTypes'][number]['type'],
@@ -39,7 +40,7 @@ test('Core SQL registry covers historical elements and does not overwrite tenant
  assert.doesNotMatch(migration,/jsonb|ON CONFLICT.+DO UPDATE/i);
 });
 
-const phase1=readFileSync(new URL('../../server/src/system-support/migrations/20261113-flow-builder-phase1-unlock.sql',import.meta.url),'utf8');
+const phase1=readRetiredMigration('20261113-flow-builder-phase1-unlock.sql');
 
 test('Phase 1 SQL unlocks supported flows without changing before-save restrictions',()=>{
  for(const name of ['Record-Triggered Flow','Schedule-Triggered Flow','Platform Event-Triggered Flow',

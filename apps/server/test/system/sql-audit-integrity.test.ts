@@ -1,9 +1,10 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 
 test('record type foreign key scopes both tenant and object and preserves legacy data',()=>{
- const sql=readFileSync(new URL('../../src/system-support/migrations/20261019-record-type-integrity.sql',import.meta.url),'utf8');
+ const sql=readRetiredMigration('20261019-record-type-integrity.sql');
  assert.match(sql,/FOREIGN KEY\s*\(tenant_id,object_api,record_type_id\)/i);
  assert.match(sql,/REFERENCES\s+md_object_record_types\s*\(tenant_id,object_api,record_type_id\)/i);
  assert.match(sql,/NOT VALID/i);

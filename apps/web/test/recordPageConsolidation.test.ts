@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
@@ -47,7 +48,7 @@ test('a draft or page without action controls preserves legacy fallback and perm
   }]),legacy)?.actions,[]);
 });
 test('consolidation never drops old SQL assignments or discards authored Record Page versions',()=>{
-  const migration=readFileSync(new URL('../../server/src/system-support/migrations/20270104-unified-record-page-layouts.sql',import.meta.url),'utf8');
+  const migration=readRetiredMigration('20270104-unified-record-page-layouts.sql');
   assert.match(migration,/md_page_layout_audit/);
   assert.match(migration,/md_object_page_layout_assignments/);
   assert.match(migration,/md_page_layout_version_nodes/);

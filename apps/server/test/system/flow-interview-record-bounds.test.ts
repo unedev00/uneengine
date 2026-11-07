@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
@@ -6,8 +7,7 @@ import type {PoolClient} from 'pg';
 
 test('fresh schema and upgrade migration constrain durable Flow record collection indexes',()=>{
  const schema=readFileSync(new URL('../../src/system-files/schema.sql',import.meta.url),'utf8');
- const migration=readFileSync(new URL(
-  '../../src/system-support/migrations/20261114-flow-interview-record-bounds.sql',import.meta.url),'utf8');
+ const migration=readRetiredMigration('20261114-flow-interview-record-bounds.sql');
  assert.match(schema,/md_flow_interview_records[\s\S]*?sort_order integer NOT NULL CHECK\(sort_order BETWEEN 0 AND 199\)/);
  assert.match(migration,/sort_order>199/);
  assert.match(migration,/CHECK \(sort_order BETWEEN 0 AND 199\)/);

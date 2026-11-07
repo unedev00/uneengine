@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -42,7 +43,7 @@ test('rendered numpad has one header input, 12 keys, three custom buttons',()=>{
  assert.match(markup,/#0033cc/);
 });
 test('numpad uses SQL-backed seven Design sections and shared event routing',()=>{
- const migration=read('../../server/src/system-support/migrations/20271118-smart-numpad.sql');
+ const migration=readRetiredMigration('20271118-smart-numpad.sql');
  const sectionNames=['Body','Header','Focused','Button','Button 2','Button 3','Button 4'];
  for(const area of sectionNames)assert.ok(migration.includes("('"+area+"'"),area+' not mapped');
  for(const item of ['numpadInputMode','numpadDecimalPlaces','numpadMaxDigits',

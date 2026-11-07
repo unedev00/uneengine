@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,7 +27,7 @@ test('page-level handlers remain intact in topbar and Design while Smart Insert 
  assert.match(page,/const quickAccessOrder=\['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
 });
 test('additive SQL migration removes only non-Home shared entries and migrates Acetill Cart without deleting values',()=>{
- const sql=src('../../server/src/system-support/migrations/20270123-ribbon-home-reset-acetill-cart.sql');
+ const sql=readRetiredMigration('20270123-ribbon-home-reset-acetill-cart.sql');
  assert.match(sql,/DELETE FROM md_builder_shared_properties WHERE tab <> 'Home'/);
  assert.doesNotMatch(sql,/DELETE FROM md_page_component_properties|DELETE FROM md_lightning_page_node_properties/);
  assert.match(sql,/UPDATE md_page_components c SET component_api='acetill_cart'/);
@@ -53,11 +54,11 @@ test('Acetill owns its renderer identity and a separate version-3 package',()=>{
 });
 
 test('Device layout moves to Page Details without losing version controls or SQL metadata',()=>{
- const sql=src('../../server/src/system-support/migrations/20270203-page-layout-ribbon-consolidation.sql');
+ const sql=readRetiredMigration('20270203-page-layout-ribbon-consolidation.sql');
  const ui=src('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  const css=src('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css');
  const details=src('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
- const move=src('../../server/src/system-support/migrations/20270309-page-device-layout-page-properties.sql');
+ const move=readRetiredMigration('20270309-page-device-layout-page-properties.sql');
  assert.match(sql,/property_key IN \('deviceLayout','selectVersion'\)/);
  assert.match(sql,/section_group='Page'/);
  assert.match(sql,/section_group IN \('Device','Version'\)/);

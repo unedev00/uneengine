@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../../scripts/read-retired-migration.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {latestOccurrence} from '../../src/system-support/scheduled-flow-dispatcher.js';
@@ -45,7 +46,7 @@ test('Visual formula picker now includes runtime-supported IMAGE and time functi
 });
 
 test('Versioned SQL before-save registration only enables read-only elements',()=>{
- const migration=readFileSync(new URL('../../src/system-support/migrations/20261114-flow-phase3-before-save.sql',import.meta.url),'utf8');
+ const migration=readRetiredMigration('20261114-flow-phase3-before-save.sql');
  for(const name of ['Get Records','Loop','Collection Filter','Collection Sort','Transform'])
   assert.ok(migration.includes("'"+name+"'"),'Missing read-only capability '+name);
  assert.doesNotMatch(migration,/('Create Records'|'Delete Records'|'Update Records')/);
