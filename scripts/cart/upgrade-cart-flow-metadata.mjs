@@ -43,9 +43,19 @@ const legacy=graph=>{
   default:return related(graph);
  }
 };
+const knownLegacyCounts=new Map([
+ ['AcetillCopilotAddProduct',15],['AcetillCopilotReadCart',10],
+ ['AcetillCopilotChangeQuantity',16],['SmartTillAddProduct',17],
+ ['AcetillHoldCart',6],['AcetillListHeldCarts',3],['AcetillResumeHeldCart',7],
+ ['AcetillPaymentCash',23],['AcetillPaymentCard',23]
+]);
 const compatible=(name,graph)=>{
  if(graph.apiName!==name||!Array.isArray(graph.elements))return false;
  const nodes=nodesOf(graph);
+ if(knownLegacyCounts.has(name)&&nodes.length!==knownLegacyCounts.get(name))return false;
+ if(graph.startConfig&&typeof graph.startConfig==='object'&&
+  Object.keys(graph.startConfig).some(k=>!['executionContext','recordAttestationGuard'].includes(k)))
+  return false;
  if(name==='SmartTillAddProduct')return nodes.some(n=>n.type==='Create Records'&&n.config?.object==='CartLine');
  if(name.startsWith('AcetillPayment'))return nodes.some(n=>n.id===12&&n.type==='Create Records'&&n.config?.object==='Invoice')
   &&nodes.some(n=>n.id===19&&n.type==='End');
