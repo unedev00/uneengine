@@ -8,8 +8,9 @@ const catalog = await loadComponentCatalog();
 const components = [];
 const index = [];
 await mkdir('dist/component-library/components', { recursive: true });
-// Off by default: existing renderer format remains available for rollback.
-const sharedSmartEnabled=process.env.METADRIVE_SHARED_SMART_RUNTIME==='1';
+// Ship the reviewed shared renderer by default. METADRIVE_SHARED_SMART_RUNTIME=0
+// is an immediate build rollback; full standalone renderer assets remain bundled.
+const sharedSmartEnabled=process.env.METADRIVE_SHARED_SMART_RUNTIME!=='0';
 let sharedRuntimePath='';
 if(sharedSmartEnabled){
  const source=await buildBundledComponent({
