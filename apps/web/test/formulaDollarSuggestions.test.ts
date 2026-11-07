@@ -28,10 +28,10 @@ test('$ autocomplete lists page-declared keys and nested authenticated session f
  assert.deepEqual(keys,['cartTotal','currentCategory','flowStatus','selectedProduct']);
  const all=formulaDollarSuggestions(choices).map(entry=>entry.reference);
  assert.deepEqual(all,['$session.id','$session.cartId','$session.user.id','$session.user.email','$session.user.name','$session.user.locale','$session.user.timeZone','$session.user.currencyIsoCode','$session.tenant.id','$session.tenant.name','$session.tenant.logo','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
- assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(10));
+ assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(11));
  assert.deepEqual(formulaDollarSuggestions(choices,'tenant').map(x=>x.reference),['$session.tenant.id','$session.tenant.name','$session.tenant.logo']);
- assert.deepEqual(formulaDollarSuggestions(choices,'sess').map(x=>x.reference),all.slice(0,10));
- assert.deepEqual(formulaDollarSuggestions(choices,'session.user.').map(x=>x.reference),all.slice(1,7));
+ assert.deepEqual(formulaDollarSuggestions(choices,'sess').map(x=>x.reference),all.slice(0,11));
+ assert.deepEqual(formulaDollarSuggestions(choices,'session.user.').map(x=>x.reference),all.slice(2,8));
  assert.deepEqual(formulaDollarSuggestions(choices,'state.selected').map(x=>x.reference),['$state.selectedProduct']);
  assert.deepEqual(formulaDollarSuggestions(choices,'unknown'),[]);
  assert.ok(!all.includes('$User.Email'),'only declared page state and session ID are available');

@@ -54,8 +54,8 @@ try{
     )`);
    // Existing Cart records may predate the UserId field; attach their real owner.
    await client.query(`
-    INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,reference_record_id)
-    SELECT r.tenant_id,r.id,'Cart','UserId',r.owner_id FROM md_records r
+    INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,value_text)
+    SELECT r.tenant_id,r.id,'Cart','UserId',r.owner_id::text FROM md_records r
     WHERE r.tenant_id=$1 AND r.object_api='Cart' AND r.owner_id IS NOT NULL
     ON CONFLICT(tenant_id,record_id,field_api) DO NOTHING`,[tenant]);
    const before=await client.query(`
@@ -88,7 +88,7 @@ try{
      ON CONFLICT(tenant_id,record_id,field_api) DO NOTHING`,
      [tenant,row.id,cartId,eligible]);
     if(row.owner_id)await client.query(`
-     INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,reference_record_id)
+     INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,value_text)
      VALUES($1,$2,'Cart','UserId',$3)
      ON CONFLICT(tenant_id,record_id,field_api) DO NOTHING`,[tenant,cartId,row.owner_id]);
    }

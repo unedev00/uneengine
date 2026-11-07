@@ -6,7 +6,7 @@ export const CART_OBJECTS = [
   {apiName:'Cart',label:'Cart',fields:[
     {apiName:'Name',label:'Name',dataType:'text'},
     {apiName:'SessionKey',label:'Session Key',dataType:'text'},
-    {apiName:'UserId',label:'Cart User',dataType:'reference',relatedObject:'User'},
+    {apiName:'UserId',label:'Cart User ID',dataType:'text'},
     {apiName:'HoldReference',label:'Hold Reference',dataType:'text'},
     {apiName:'HoldLabel',label:'Hold Label',dataType:'text'},
     {apiName:'HeldBy',label:'Held By',dataType:'reference',relatedObject:'User'},

@@ -23,7 +23,7 @@ const hold=graph('AcetillHoldCart','Hold active cart without cloning lines',[
  node(4,'Assignment','Assign hold reference',{variable:'holdReference',value:'{!requestId}',operator:'Assign'}),
  node(5,'Update Records','Hold selected cart',{object:'Cart',recordId:'{!cart.Id}',
   fieldValues:[{field:'HoldReference',value:'{!holdReference}'},{field:'HoldLabel',value:'{!label}'},
-   {field:'Status',value:'Held'},{field:'HeldBy',value:'{!$User.Id}'}]}),
+   {field:'Status',value:'Held'}]}),
  node(6,'End','Cart held',{}),
  node(7,'Custom Error','Cannot hold unowned cart',{errorLocation:'Page',
   errorMessage:'Select your open cart before placing it on hold.'})
