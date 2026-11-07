@@ -73,26 +73,6 @@ test('ribbon keeps accessible component tabs without Home and Parity',()=>{
   assert.match(source,/title=\{selected\?\.label\|\|selected\?\.type\|\|'Welcome'\}/);
 });
 
-test('card gallery properties live in application code and are consumed by runtime', async () => {
-  const component={propertyDefinitions:(await import('../src/component-libraries/ui_item_grid/app-properties.mjs')).propertyDefinitions};
-  const registration=JSON.parse(readFileSync(new URL('../src/component-libraries/ui_item_grid/component.json',import.meta.url),'utf8'));
-  assert.deepEqual(registration.propertyDefinitions,[]);
-  const runtime=readFileSync(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
-  const keys=new Set(component.propertyDefinitions.map((definition:{propertyKey:string})=>definition.propertyKey));
-  for(const key of ['imageWidth','imageHeight','imageFit','imageAspectRatio','imageShape',
-    'headingFontSize','headingColor','descriptionFontSize','descriptionColor','valueFontSize']) {
-    assert.equal(keys.has(key),true,key+' must be configurable');
-    const computedTextProperty=/^(heading|description|value)(FontSize|Color|FontWeight|TextAlign|LineLimit)$/.test(key);
-    assert.ok(computedTextProperty
-      ? runtime.includes('p[part+"'+key.replace(/^(heading|description|value)/,'')+'"]')
-        && runtime.includes('textStyleFor("'+key.match(/^(heading|description|value)/)?.[0]+'")')
-      : runtime.includes('p.'+key),key+' must change rendering');
-  }
-  assert.ok(!keys.has('valueColor'),'retired Card Grid value color is not a public setting');
-  for(const part of ['Image','Heading','Supporting text','Value','Card','Gallery'])
-    assert.equal(component.propertyDefinitions.some((definition:{group?:string})=>definition.group===part),true,part);
-});
-
 test('Data ribbon uses friendly field labels, readable values and safe missing-field summaries',()=>{
   const fields=[{apiName:'IsActive',label:'Active',dataType:'Checkbox'},
     {apiName:'Department',label:'Department',dataType:'Picklist'}];
@@ -103,18 +83,6 @@ test('Data ribbon uses friendly field labels, readable values and safe missing-f
     {field:'IsActive',operator:'Equals',value:'true'},
     {field:'Deleted',operator:'Equals',value:'foo'}
   ],fields),'Department is a page value; Active is Yes; +1 more');
-});
-
-test('Card Grid Add button remains compatible with saved values without exposing retired settings',()=>{
-  const component=JSON.parse(readFileSync(new URL('../src/component-libraries/ui_item_grid/component.json',import.meta.url),'utf8'));
-  const runtime=readFileSync(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
-  assert.ok(component.eventDefinitions.some((event:{apiName:string})=>event.apiName==='itemAdd'));
-  assert.ok(!component.propertyDefinitions.some((property:{propertyKey:string})=>property.propertyKey==='separateAddButton'));
-  assert.ok(!component.propertyDefinitions.some((property:{propertyKey:string})=>property.propertyKey==='showAddIcon'));
-  assert.match(runtime,/hasSeparateAddButton=p.showAddIcon===true&&p.separateAddButton===true/);
-  assert.match(runtime,/event.stopPropagation\(\);addSelectedRecord\(\)/);
-  assert.match(runtime,/if\(p.actionFlows\?\.itemAdd\)fire\(p,"itemAdd",r\)/);
-  assert.match(runtime,/onKeyDown=\{event=>/);
 });
 
 test('Page canvas controls live in Design and Quick Access stays on topbar',()=>{

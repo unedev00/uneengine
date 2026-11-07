@@ -20,7 +20,7 @@ export default function ComponentLibrary({
   onPublish: (apiName: string) => Promise<void>;
   onRollback: (apiName: string, version: number) => Promise<void>;
 }) {
-  const visibleComponents=components.filter(component=>!component.apiName.startsWith('ui_') && !(component.trustedBundled && /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName)));
+  const visibleComponents=components.filter(component=>!component.trustedBundled || component.apiName.startsWith('smart_'));
   const [editingApiName, setEditingApiName] = useState('');
   const [apiName, setApiName] = useState('');
   const [manualApiName,setManualApiName]=useState(false);
@@ -181,7 +181,7 @@ export default function ComponentLibrary({
   const visibleDashboardWidgets = standardDashboardComponents.filter(matchesSearch);
   const catalog = uniqueLibraryComponents(visibleComponents);
   const coreComponents = catalog.filter(component => component.scope === 'platform-system');
-  const customComponents = catalog.filter(component => component.scope !== 'platform-system' && !component.apiName.startsWith('ui_'));
+  const customComponents = catalog.filter(component => component.scope !== 'platform-system');
   const visibleCoreComponents = coreComponents.filter(matchesSearch);
   const visibleCustomComponents = customComponents.filter(component => matchesSearch({ ...component, label: libraryComponentLabel(component) }));
   const totalCount = standardPageComponents.length + standardDashboardComponents.length + catalog.length;

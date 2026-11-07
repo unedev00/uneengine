@@ -4,18 +4,10 @@ import TenantManagement from '../src/core/platform/TenantManagement/TenantManage
 import OfflineBriefcaseSettings from '../src/core/platform/OfflineBriefcaseSettings/OfflineBriefcaseSettings';
 import DashboardBuilder from '../src/core/builders/DashboardBuilder/DashboardBuilder';
 import SchemaBuilder from '../src/core/builders/SchemaBuilder/SchemaBuilder';
-import AceKiosk from '../../acekiosk/src/AceKiosk';
-import AcetillTerminal from '../../acetill/src/AcetillTerminal';
-import AceChatterRuntime from '../../acechatter/src/AceChatterRuntime';
-import {AceAssistDashboard} from '../../aceassist/src/AceAssistDashboard';
-import '../../aceassist/src/aceassist.css';
-import UiItemGrid from '../src/component-libraries/ui_item_grid/UiItemGrid';
 import OneTenantImage from '../src/component-libraries/shared/TenantImage.jsx';
 import SmartRuntime from '../src/component-libraries/smart/shared/SmartRuntime.jsx';
 import CanvasFloatingActions from '../src/core/builders/PageBuilder/CanvasFloatingActions';
 import '../src/component-libraries/smart/shared/smart.css';
-import '../src/component-libraries/ui_item_grid/UiItemGrid.css';
-import {FinancialDocumentEditor} from '../../aceassist/src/FinancialDocumentEditor';
 import NamedCredentials from '../src/core/integrations/NamedCredentials/NamedCredentials';
 import FlowLogs from '../src/core/automation/FlowLogs/FlowLogs';
 import FlowBuilder from '../src/core/builders/FlowBuilder/FlowBuilder';
@@ -184,35 +176,21 @@ function Fixture(){
      </div>
    </div>;
  }
- if(view==='card-grid-scroll'){
-   const sampleCards=Array.from({length:42},(_,i)=>({Id:'product-'+i,Name:'Product '+String(i+1),Price:i+1}));
-   const base={records:sampleCards,cardsPerRow:3,desktopColumns:3,tabletColumns:2,mobileColumns:2,
-    showHeading:false,showImage:false,showPrice:true,titleFieldApiName:'Name',priceFieldApiName:'Price',
-    cardPadding:10,gap:8};
-   return <div className="lightning">
-    <div className="free-canvas-component" aria-label="Selected Card Grid" style={{position:'relative',height:320,width:530,maxWidth:'100%',outline:'2px solid #2563eb'}}>
-     <div className="md-card-grid-bound" style={{height:'100%',width:'100%'}}>
-      <div><div className="registered-component metadrive-component-ui_item_grid">
-       <UiItemGrid {...base} boundedViewport/>
-      </div></div>
-     </div>
-    </div>
-    <div aria-label="Unbounded card grid" style={{marginTop:20,width:530,maxWidth:'100%'}}>
-     <UiItemGrid {...base} records={sampleCards.slice(0,6)}/>
-    </div>
-   </div>;
- }
- if(view==='kiosk')return <AceKiosk onLogout={noop}/>;
- if(view==='chatter')return <AceChatterRuntime onLogout={noop}/>;
- if(view==='assist-home')return <div className="lightning"><main className="workspace"><AceAssistDashboard appointments={[]} invoices={[{Id:'inv-1',Status:'Issued',Total:125,AmountPaid:0,CurrencyCode:'GBP'}]} customers={[]} actions={new Set(['AceAssistLoadAppointment','AceAssistLoadInvoice'])} timeZone="Europe/London" invoicesLoading={false} onOpen={noop} onCreate={noop} onCalendar={noop} onBilling={noop}/></main></div>;
- if(view==='till')return <AcetillTerminal/>;
+  if(view==='card-grid-scroll'){
+    const cards=Array.from({length:42},(_,i)=>({Id:'product-'+i,Name:'Product '+(i+1),Price:i+1}));
+    return <div className="lightning"><section aria-label="Selected Card Grid" style={{height:320,width:530,overflow:'auto'}}>
+      <SmartRuntime kind="smart_card_grid" records={cards} cardsPerRow={3} cardsPerColumn={2} textSource="@Name" headerBoxHeight={40}/>
+    </section><section aria-label="Unbounded card grid" style={{width:530}}>
+      <SmartRuntime kind="smart_card_grid" records={cards.slice(0,6)} cardsPerRow={3} cardsPerColumn={2} textSource="@Name"/>
+    </section></div>;
+  }
  let content;
  if(view==='setup-home')content=<SetupHome onNavigate={noop} request={uxRequest} onShowShortcuts={noop}/>;
  else if(view==='data-loader')content=<UniversalDataLoaderWorkspace
     objects={[object]} apiRequest={async(path)=>path==='/metadata/objects'?{objects:[object]}:{}}/>;
  else if(view==='app-manager')content=<AppManager
     apps={[
-      {apiName:'AceAssist',label:'Ace Assist',description:'Assisted workspace',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#1d4ed8'},
+      {apiName:'SmartTill',label:'Smart Till',description:'Smart Point of Sale',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#1d4ed8'},
       {apiName:'Sales',label:'Sales Workspace',description:'Sales records',navigationItems:['Account'],navigationPageApiNames:[],utilityItems:[],brandColor:'#147d74'}
     ]}
     objects={[object]} pages={[]}
@@ -224,7 +202,6 @@ function Fixture(){
    else if(view==='oauth-directory')content=<TenantConnectedApps request={directoryRequest}/>;
    else if(view==='security-history')content=<securityViews.TenantSecurityAudit/>;
    else if(view==='company-profile-fail')content=<securityViews.CompanySettings canManage section="branding"/>;
-   else if(view==='assist-document')content=<FinancialDocumentEditor type="Invoice" operation="Create" document={null} storedLines={[]} metadataFields={[{apiName:'Customer',label:'Customer',type:'Lookup'}]} customers={[]} products={[]} busy={false} error="" onCancel={noop} onSave={async()=>{}} onCreateCustomer={async customer=>({Id:'test-customer',...customer})}/>;
   else if(view==='governance')content=<TenantGovernance request={uxRequest} canManage/>;
    else if(view==='monitoring')content=<TenantGovernance request={uxRequest} canManage initialTab="monitoring"/>;
    else if(view==='licenses')content=<TenantGovernance request={uxRequest} canManage initialTab="licences"/>;
