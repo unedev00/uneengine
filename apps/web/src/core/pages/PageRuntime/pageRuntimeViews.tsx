@@ -1393,9 +1393,9 @@ function LightningAppRuntime({
    dialog.formula-print-preview {position:absolute!important;inset:0!important;width:100%!important;height:auto!important;overflow:visible!important;border:0;padding:0}
    .formula-print-preview > button {display:none} .formula-print-preview tr {break-inside:avoid} .formula-page-break {break-before:page}
   }`}</style>:null;
-  if(page.layoutMode==='free-canvas')return <><ResponsivePageCanvas page={page}>
+  if(page.layoutMode==='free-canvas')return <PageFormulaScope key={appId+":"+page.apiName} components={page.components} catalog={libraryComponents}><ResponsivePageCanvas page={page}>
     {childrenOf(page.components,null).map(component=>renderCanvasComponent(component))}
-  </ResponsivePageCanvas>{paperStyle}{inScreenHost}{screenPopup}</>;
+  </ResponsivePageCanvas>{paperStyle}{inScreenHost}{screenPopup}</PageFormulaScope>;
   const renderRegion = (region: 'header' | 'main' | 'sidebar') =>
     childrenOf(page.components, null).filter((component) => isAppComponentVisible(component) && (component.region ?? 'main') === region).map(component => {
       const content = renderComponent(component);
