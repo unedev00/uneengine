@@ -1,5 +1,6 @@
 import {compileActionPlan,type ActionStep} from '../../../../../server/src/expression-engine/ActionFormulas.js';
 import type {Expression} from '../../../../../server/src/expression-engine/FormulaParser.js';
+import {isFlowActionFormula} from './actionFlowFormula';
 
 /** Logical Object-set mutex, scoped to one page/tenant session.
  * Book all required keys synchronously so multi-Object plans cannot deadlock.
@@ -36,8 +37,13 @@ export function planReadWriteObjects(binding:Readonly<Record<string,unknown>>,
  primaryObject:string,knownObjects:readonly {apiName:string}[]=[]):string[]{
  const kind=String(binding.actionType??'');
  if(kind==='AdjustNumber')return primaryObject?[primaryObject]:[];
- if(kind!=='Formula')return [];
  const formula=typeof binding.formula==='string'?binding.formula:'';
+ // A Flow may write any authorized Object, including objects absent from the
+ // triggering component. Reserve the whole page Object set before it starts.
+ // This also covers a Formula selecting a Flow via IF(..., $flow.A, ...).
+ if(kind==='Flow'||kind==='Formula'&&isFlowActionFormula(formula))
+  return [...new Set([...knownObjects.map(item=>item.apiName),primaryObject].filter(Boolean))];
+ if(kind!=='Formula')return [];
  if(!/\b(?:ACTIONS|CREATERECORD|UPDATERECORD|DELETERECORD|GETRECORD|FOREACH)\s*\(/i.test(formula))
   return [];
  let steps:ActionStep[];
