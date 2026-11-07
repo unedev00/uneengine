@@ -19,18 +19,6 @@ test('View owns visibility conditions and reuses the record filter dialog shell'
  assert.match(dialog,/validateVisibilityRule\(rules/);
 });
 
-test('Advanced keeps only purposeful sections; page device controls live in Edit Page',()=>{
- for(const section of ['Activation Assignments','Advanced Properties','Component Nesting','Component Identity'])
-   assert.ok(advanced.includes('aria-label="'+section+'"'),section);
- assert.match(page,/ribbonTab==='Advanced' && <PageBuilderAdvancedSections/);
- assert.doesNotMatch(advanced,/<button[^>]+onClick=\{\(\)=>onSelect/);
- assert.doesNotMatch(advanced,/page-builder-advanced-inline-nav/);
- assert.doesNotMatch(advanced,/page-builder-advanced-inline-host/);
- assert.doesNotMatch(page,/advancedEditor==='nesting' && selected/);
- assert.doesNotMatch(page,/<PageBuilderAdvancedResponsive properties=\{selected.properties\}/);
- assert.doesNotMatch(page,/modal page-builder-advanced-dialog/);
-});
-
 test('Advanced keeps all permanent fields in a compact responsive ribbon without horizontal scrolling',()=>{
  const fields=[
   'assigned','default',

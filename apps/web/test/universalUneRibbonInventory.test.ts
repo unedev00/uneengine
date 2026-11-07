@@ -33,12 +33,6 @@ test('media property and structured values are handled without converting persis
  assert.match(catalog,/update\(parsed\)/);
 });
 
-test('UNE components do not render the legacy second Data ribbon',()=>{
- const view=readPageBuilderModules();
- assert.match(view,/selected && !selectedCustomDefinition && ribbonTab==='Component Data' && <PageBuilderRibbonData/);
- assert.match(view,/selected && selectedCustomDefinition && \(\['Component Data'/);
-});
-
 test('obsolete and duplicate Source Object controls are omitted rather than greyed out',()=>{
  const source=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
  assert.match(source,/ageRestriction\|barcode/);

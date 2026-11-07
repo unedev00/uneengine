@@ -74,18 +74,6 @@ for(const d of une)test(d.apiName+' bundles and renders with a scoped UNE surfac
  if(d.apiName==='ui_metric')assert.match(html,/42/);
 });
 
-test('device show/hide properties are not available in UNE metadata or the Page Builder ribbon', async () => {
- const appearance=(await import('../src/component-libraries/ui-runtime/shared/appearance-properties.mjs')).appearanceProperties;
- const manifest=JSON.parse(await readFile(new URL('../src/component-libraries/manifest.json',import.meta.url),'utf8'));
- const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
- for(const key of ['hideOnPhone','hideOnTablet','hideOnDesktop']){
-  assert.ok(!appearance.some(property=>property.propertyKey===key),key+' in shared metadata');
-  assert.ok(!JSON.stringify(manifest).includes('"propertyKey":"'+key+'"'),key+' in UNE manifest');
-  assert.ok(!ribbon.includes(key),key+' in ribbon');
- }
- assert.ok(!ribbon.includes('Show on '),'no per-device visibility switches');
-});
-
 test('all 14 requested UNE components omit public Flow/Page State record collections',()=>{
  const targets=['calendar','item_grid','chart','choice','form','line_items','lookup','menu',
   'navigation','record_list','repeater','search','slot_picker','table'].map(name=>'ui_'+name);

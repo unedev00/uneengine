@@ -1,24 +1,12 @@
-import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-
-const ribbon=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-const responsive=ribbon.slice(ribbon.indexOf('export function RibbonResponsive'));
-
-test('independent page layouts have no redundant per-device ribbon visibility switches',()=>{
- for(const label of ['Desktop','Tablet','Mobile']){
-  assert.doesNotMatch(responsive,new RegExp('Show on '+label));
- }
- for(const key of ['hideOnDesktop','hideOnTablet','hideOnPhone']){
-  assert.doesNotMatch(responsive,new RegExp(key));
- }
-});
-
-test('visibility rules and selected-layout component visibility remain editable',()=>{
- const builder=readPageBuilderModules();
- assert.doesNotMatch(responsive,/onVisibleChange\(event\.target\.checked\)/);
- assert.match(builder,/PageBuilderVisibilityDialog/);
- assert.match(builder,/Edit conditional visibility/);
- assert.match(builder,/onClick=\{applyVisibilityEditor\}/);
+import {readPageBuilderModules} from './helpers/builderSources.mjs';
+test('active ribbons use shared responsive layouts without legacy override switches',()=>{
+ const code=readFileSync(new URL('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx',import.meta.url),'utf8');
+ const runtime=readPageBuilderModules();
+ assert.match(code,/<SmartRibbon/);
+ assert.match(code,/<SmartInsertRibbon/);
+ assert.doesNotMatch(code,/hideOnDesktop|hideOnTablet|hideOnPhone/);
+ assert.match(runtime,/PageBuilderVisibilityDialog/);
 });

@@ -3,7 +3,6 @@ import './MobileBuilderReadMode.css';
 import './CanvasFloatingActions.css';
 import './PageBuilderNoCode.css';
 import './SmartFormulaField.css';
-import './PageBuilderRibbonGallery.css';
 import './PageBuilderRibbonBlueprint.css';
 import './PageBuilderRibbonNonDesign.css';
 import './PageBuilderActionRibbonCompact.css';
