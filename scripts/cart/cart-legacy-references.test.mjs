@@ -64,3 +64,16 @@ test('unknown resource collisions stop conversion rather than drop Flow/Page sta
   variables:{cartSessionId:'a',cartId:'b'}}),/collides/);
  assert.throws(()=>rewriteLegacyCartPage({components:[],cartSessionId:'a',activeCartId:'b'}),/collides/);
 });
+
+test('literal stored CartSession record identifiers resolve to their migrated Cart IDs',()=>{
+ const from='11111111-1111-4111-8111-111111111111';
+ const to='22222222-2222-4222-8222-222222222222';
+ const cartIds=new Map([[from,to]]);
+ assert.equal(rewriteLegacyCartText('=GETRECORD(CartSession,Id,"'+from+'",AS(c))',{cartIds}),
+  '=GETRECORD(Cart,Id,"'+to+'",AS(c))');
+ const custom={apiName:'UserAuthored',elements:[{id:2,type:'Get Records',
+  config:{object:'Cart',conditions:[{field:'Id',operator:'Equals',value:from}]}}]};
+ assert.equal(rewriteLegacyCartFlow(custom,{cartIds}).graph.elements[0].config.conditions[0].value,to);
+ assert.equal(rewriteLegacyCartPage({components:[],formula:'=REF("'+from+'")'},{cartIds}).page.formula,
+  '=REF("'+to+'")');
+});

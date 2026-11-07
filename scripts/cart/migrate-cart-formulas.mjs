@@ -1,6 +1,6 @@
 /** Migrate tenant-authored Formula and validation definitions without resetting their rules. */
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
-import {hasLegacyCartReference,rewriteLegacyCartText} from './cart-legacy-references.mjs';
+import {hasLegacyCartReference,rewriteLegacyCartText,loadLegacyCartIdMap} from './cart-legacy-references.mjs';
 
 const connectionString=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!connectionString)throw Error('DATABASE_URL is required');
@@ -16,14 +16,16 @@ try{
  const result=[];
  for(const {id:tenant} of tenants){
   await db.transaction(async client=>{
+   const cartIds=await loadLegacyCartIdMap(client,tenant);
    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['cart-formulas:'+tenant]);
    for(const table of tables){
     const {rows}=await client.query(
      'SELECT '+table.keys.join(',')+','+table.column+' AS formula FROM '+table.name+
      ' WHERE tenant_id=$1 AND '+table.where+' AND '+table.column+' IS NOT NULL FOR UPDATE',[tenant]);
     for(const item of rows){
-     if(!hasLegacyCartReference(item.formula))continue;
-     const updated=rewriteLegacyCartText(item.formula);
+     if(!hasLegacyCartReference(item.formula)&&
+        ![...cartIds.keys()].some(id=>item.formula.includes(id)))continue;
+     const updated=rewriteLegacyCartText(item.formula,{cartIds});
      if(hasLegacyCartReference(updated))throw Error('Legacy Cart formula was not converted');
      result.push({tenant,table:table.name,object:item.object_api,field:item.api_name??item.field_api});
      if(!apply)continue;

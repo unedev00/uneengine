@@ -6,7 +6,7 @@ export const hasLegacyCartReference = value =>
   typeof value === 'string' && /CartSession|cartSessionId|activeCartSessionId/.test(value);
 
 /** Transform an expression or a literal API-name field, not a SQL statement. */
-export function rewriteLegacyCartText(text,{page=false}={}){
+export function rewriteLegacyCartText(text,{page=false,cartIds=new Map()}={}){
  if(typeof text !== 'string')return text;
  let result=text
   // A single-record lookup by browser session is ambiguous with several carts.
@@ -21,29 +21,30 @@ export function rewriteLegacyCartText(text,{page=false}={}){
   .replace(/\bCartSession\b/g,'Cart')
   .replace(/\bCartSessionId\b/g,'CartId')
   .replace(/\bcartSessionId\b/g,page?'activeCartId':'cartId');
+ for(const [oldId,newId] of cartIds)result=result.replaceAll(oldId,newId);
  return result;
 }
 
 /** Fully migrate nested published page/Flow metadata, including saved formulas. */
-export function rewriteLegacyCartTree(input,{page=false}={}){
- if(typeof input==='string')return rewriteLegacyCartText(input,{page});
- if(Array.isArray(input))return input.map(v=>rewriteLegacyCartTree(v,{page}));
+export function rewriteLegacyCartTree(input,{page=false,cartIds=new Map()}={}){
+ if(typeof input==='string')return rewriteLegacyCartText(input,{page,cartIds});
+ if(Array.isArray(input))return input.map(v=>rewriteLegacyCartTree(v,{page,cartIds}));
  if(!input||typeof input!=='object')return input;
  const result={};
  for(const [key,value] of Object.entries(input)){
-  const nextKey=rewriteLegacyCartText(key,{page});
+  const nextKey=rewriteLegacyCartText(key,{page,cartIds});
   if(Object.hasOwn(result,nextKey))throw Error('Legacy Cart key collides with existing key: '+nextKey);
-  result[nextKey]=rewriteLegacyCartTree(value,{page});
+  result[nextKey]=rewriteLegacyCartTree(value,{page,cartIds});
  }
  return result;
 }
 
 /** Preserve a tenant's custom Flow graph; change the parent/link and no other logic. */
-export function rewriteLegacyCartFlow(graph){
+export function rewriteLegacyCartFlow(graph,{cartIds=new Map()}={}){
  if(!graph||typeof graph!=='object'||Array.isArray(graph))throw Error('Invalid Flow graph');
- const changed=JSON.stringify(graph)!==JSON.stringify(rewriteLegacyCartTree(graph));
+ const migrated=rewriteLegacyCartTree(graph,{cartIds});
+ const changed=JSON.stringify(graph)!==JSON.stringify(migrated);
  if(!changed)return {graph,changed:false};
- const migrated=rewriteLegacyCartTree(graph);
  const nodes=Array.isArray(migrated.elements)?migrated.elements:[];
  let needsCartInput=false;
  for(const node of nodes){
@@ -83,9 +84,9 @@ export function rewriteLegacyCartFlow(graph){
 }
 
 /** Convert all user-authored component formulas, bindings and Cart grids. */
-export function rewriteLegacyCartPage(page){
+export function rewriteLegacyCartPage(page,{cartIds=new Map()}={}){
  if(!page||typeof page!=='object'||Array.isArray(page))throw Error('Invalid Page metadata');
- const rewritten=rewriteLegacyCartTree(page,{page:true});
+ const rewritten=rewriteLegacyCartTree(page,{page:true,cartIds});
  const components=rewritten.components;
  if(Array.isArray(components)){
   for(const c of components){
@@ -111,4 +112,13 @@ export function rewriteLegacyCartPage(page){
  if(hasLegacyCartReference(JSON.stringify(rewritten)))
   throw Error('Legacy CartSession Page reference remains after conversion');
  return {page:rewritten,changed:JSON.stringify(page)!==JSON.stringify(rewritten)};
+}
+
+/** Resolve stable record-ID pointers after the data copy, scoped to one tenant. */
+export async function loadLegacyCartIdMap(db,tenant){
+ const {rows:tables}=await db.query("SELECT to_regclass('md_cart_session_migration_map') AS name");
+ if(!tables[0]?.name)return new Map();
+ const {rows}=await db.query(
+  'SELECT legacy_session_id,cart_id FROM md_cart_session_migration_map WHERE tenant_id=$1',[tenant]);
+ return new Map(rows.map(row=>[String(row.legacy_session_id),String(row.cart_id)]));
 }
