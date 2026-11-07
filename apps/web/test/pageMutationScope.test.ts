@@ -134,3 +134,47 @@ test('unreferenced selected sources remain idle; unknown dependencies use safe b
   pageSessionKey:page,sessionId:session,objectApiNames:['Secondary']
  },page,session,unknown),true);
 });
+
+
+test('late small-page subscriber joins a larger in-flight read',async()=>{
+ const batch=createRecordPageCoalescer<{Id:string}>();
+ let calls=0;
+ let finish!:(value:{records:{Id:string}[];total:number})=>void;
+ const network=new Promise<{records:{Id:string}[];total:number}>(resolve=>{finish=resolve;});
+ const first=batch('tenant:a:epoch:0:CartLine',100,async()=>{calls++;return network;});
+ await new Promise<void>(resolve=>setImmediate(resolve));
+ const second=batch('tenant:a:epoch:0:CartLine',2,async()=>{
+  throw Error('A compatible in-flight query should have been shared');
+ });
+ assert.equal(calls,1);
+ finish({records:Array.from({length:100},(_,i)=>({Id:String(i)})),total:150});
+ const [large,small]=await Promise.all([first,second]);
+ assert.equal(large.records.length,100);
+ assert.deepEqual(small.records.map(row=>row.Id),['0','1']);
+});
+
+test('a larger page and a post-write generation never reuse an incomplete or stale request',async()=>{
+ const batch=createRecordPageCoalescer<{Id:string}>();
+ let small!: (page:{records:{Id:string}[];total:number})=>void;
+ let large!: (page:{records:{Id:string}[];total:number})=>void;
+ const calls:number[]=[];
+ const first=batch('tenant:a:epoch:0',2,async(limit)=>{
+  calls.push(limit);return new Promise(resolve=>{small=resolve;});
+ });
+ await new Promise<void>(resolve=>setImmediate(resolve));
+ const second=batch('tenant:a:epoch:0',100,async(limit)=>{
+  calls.push(limit);return new Promise(resolve=>{large=resolve;});
+ });
+ await new Promise<void>(resolve=>setImmediate(resolve));
+ assert.deepEqual(calls,[2,100]);
+ const afterWrite=batch('tenant:a:epoch:1',2,async()=>{
+  calls.push(2);return {records:[{Id:'fresh'}],total:1};
+ });
+ small({records:[{Id:'old-1'},{Id:'old-2'}],total:2});
+ large({records:Array.from({length:100},(_,i)=>({Id:String(i)})),total:101});
+ const [before,bigger,fresh]=await Promise.all([first,second,afterWrite]);
+ assert.equal(before.records[0].Id,'old-1');
+ assert.equal(bigger.records.length,100);
+ assert.equal(fresh.records[0].Id,'fresh');
+ assert.equal(calls.length,3);
+});
