@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -72,7 +73,7 @@ test('Fit Width accounts for the actual scroll viewport padding and ignores subp
 });
 
 test('The Design 2 SQL migration consolidates duplicate sections without touching saved metadata',()=>{
- const sql=read('../../server/src/system-support/migrations/20271116-page-builder-inspector-consolidation.sql');
+ const sql=readRetiredMigration('20271116-page-builder-inspector-consolidation.sql');
  const areas=['Body','Badge','Image','Header','Header Supporting','Table','Row',
   'Row Supporting','Summary','Summary 2','Footer','Button','Button 2','Button 3','Button 4','Button 5'];
  for(const area of areas)assert.ok(sql.includes("('"+area+"',"),area);

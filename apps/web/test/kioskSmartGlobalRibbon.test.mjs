@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +18,7 @@ async function renderSmart(api,properties){
 }
 
 test('Shared SQL owns selection, row supporting and both buttons without page changes',()=>{
- const sql=read('../../server/src/system-support/migrations/20271104-kiosk-smart-global-ribbon.sql');
+ const sql=readRetiredMigration('20271104-kiosk-smart-global-ribbon.sql');
  for(const key of ['selectionMode','focusedCardBorderColor','focusedCardShadow',
   'rowSupportingSource','rowSupportingBackgroundColor','rowSupportingTextColor',
   'rowSupportingTextSize','rowSupportingAlignment','rowSupportingBold',
