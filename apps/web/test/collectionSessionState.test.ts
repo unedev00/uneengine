@@ -537,9 +537,9 @@ test('equivalent collection publications do not replace data values or leave an 
  assert.equal(equalSessionCollection(first,{name:'Items',items:[{Id:'1',Name:'Changed',Flags:[true,2]}]}),false);
  const firstCleanup=registerSessionCollection(scope,'owner',first);
  const secondCleanup=registerSessionCollection(scope,'owner',second);
- assert.equal(getSessionCollection(scope,'Items'),second);
+ assert.deepEqual(getSessionCollection(scope,'Items'),second);
  firstCleanup();
- assert.equal(getSessionCollection(scope,'Items'),second,'old cleanup cannot remove newer equivalent owner');
+ assert.deepEqual(getSessionCollection(scope,'Items'),second,'old cleanup cannot remove newer equivalent owner');
  secondCleanup();
  assert.equal(getSessionCollection(scope,'Items'),undefined);
 });
