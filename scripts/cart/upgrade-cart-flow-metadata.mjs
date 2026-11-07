@@ -81,6 +81,12 @@ try{
     const name=previous.api_name,target=targets.get(name);
     const {rows}=await client.query(
      'SELECT property_path,value_kind,value_text FROM md_flow_editor_values WHERE tenant_id=$1 AND flow_id=$2 ORDER BY property_path',[tenant,previous.id]);
+    // Do not decode unrelated active Flows: some legacy definitions have no
+    // editor graph and must not block this narrowly scoped migration.
+    const relevant=rows.some(v=>hasLegacyCartReference(v.property_path)||
+      hasLegacyCartReference(v.value_text)||
+      [...cartIds.keys()].some(id=>typeof v.value_text==='string'&&v.value_text.includes(id)));
+    if(!target&&!relevant)continue;
     const graph=decodeMetadataValues(rows).builder;
     if(!graph||typeof graph!=='object'||Array.isArray(graph))throw Error(name+': active Flow metadata invalid');
     const serialized=JSON.stringify(graph);
