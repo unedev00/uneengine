@@ -70,7 +70,9 @@ test('every Smart binding icon is field-anchored, never positioned in an arbitra
  const runtime=source('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(icons,/querySelectorAll<HTMLElement>\('\[data-md-bind\]'\)/);
  assert.match(icons,/const clipped=clipRect\(element,host\)/);
- assert.match(icons,/if\(!clipped\)continue/);
+ assert.match(icons,/const anchor=clipped\?/);
+ assert.match(icons,/available\.set\(key,/);
+ assert.doesNotMatch(icons,/if\(!clipped\)continue/);
  assert.match(icons,/const selected=new Set<string>\(\)/);
  assert.match(icons,/propertyKey==='tabCaptionFormula'/);
  assert.match(icons,/return null; \/\/ Never manufacture a grid/);
@@ -96,4 +98,30 @@ test('data icons: centred on boxes, zoom-safe, pointer cursor, green when active
  assert.match(css,/cursor:pointer!important/);
  assert.match(handles,/:not\(\.free-canvas-move-edge\):not\(\.canvas-data-bindings\)/);
  assert.match(runtime,/!String\(p\.imageSource\?\?p\.src\?\?""\)\.trim\(\)/);
+});
+
+
+test('compact text and dense Cart expose a portal picker without increasing component size',()=>{
+ const icons=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
+ const css=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.css');
+ // Every metadata-approved expression remains selectable even if its visual
+ // anchor is clipped, has zero height, or cannot fit a 22px direct icon.
+ assert.match(icons,/const available=new Map<string,BindingEntry>\(\)/);
+ assert.match(icons,/if\(propertyKey!=='tabCaptionFormula'\)/);
+ assert.match(icons,/remaining=\[\.\.\.available\.values\(\)\]\.filter/);
+ assert.match(icons,/if\(selected\.has\(key\)\|\|!anchor\)return/);
+ assert.match(icons,/const displaced=next\.filter/);
+ assert.match(icons,/createPortal\(/);
+ assert.match(icons,/document\.body/);
+ assert.match(icons,/aria-label="Search data fields"/);
+ assert.match(icons,/overflow\.filter\(target=>/);
+ assert.match(icons,/maxHeight:panelHeight/);
+ assert.match(icons,/onChoose\(\{propertyKey:target\.propertyKey,itemIndex:target\.itemIndex/);
+ assert.match(icons,/window\.addEventListener\('scroll',schedule,true\)/);
+ assert.match(css,/\.canvas-data-overflow-trigger\{/);
+ assert.match(css,/\.canvas-data-overflow-list\{overflow-y:auto/);
+ assert.match(css,/\.canvas-data-overflow-panel\{/);
+ // The browser portal must not alter published components or their dimensions.
+ assert.doesNotMatch(css,/\.smart-cart\s*\{/);
+ assert.doesNotMatch(css,/\.smart-display-text\s*\{/);
 });
