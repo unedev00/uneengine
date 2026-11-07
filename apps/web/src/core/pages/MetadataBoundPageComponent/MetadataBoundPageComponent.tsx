@@ -621,9 +621,10 @@ export default function MetadataBoundPageComponent({
        ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,execute)
        :await execute();
       recordWrite=(result as {recordChanged?:boolean}|undefined)?.recordChanged;
-      if(recordWrite===false&&configured&&typeof configured==='object'&&!Array.isArray(configured)
-        &&configured.actionType==='Formula'&&typeof configured.formula==='string'
-        &&isActionPlan(configured.formula))outcome='no-record-write';
+      const planned=configured&&typeof configured==='object'&&!Array.isArray(configured)
+        ?configured as {actionType?:unknown;formula?:unknown}:null;
+      if(recordWrite===false&&planned?.actionType==='Formula'
+        &&typeof planned.formula==='string'&&isActionPlan(planned.formula))outcome='no-record-write';
       setActionError('');
       return result;
     } catch(error) {
