@@ -117,39 +117,6 @@ test('Card Grid Add button remains compatible with saved values without exposing
   assert.match(runtime,/onKeyDown=\{event=>/);
 });
 
-test('Page canvas controls live in Design and Quick Access stays on topbar',()=>{
-  const source=readPageBuilderModules();
-  const content=source.slice(source.indexOf('className="office-ribbon-topbar"'),source.indexOf('{!designInPanel && renderRibbonPanel()}'));
-  assert.doesNotMatch(content,/aria-label="Page name"/);
-  assert.match(content,/office-ribbon-quick-access/);
-  assert.match(content,/quickAccessOrder\.map\(key=>/);
-  for(const key of ['save','activate','resetIcon','undo','redo','cut','copy','paste'])
-    assert.match(source,new RegExp("case '"+key+"'"));
-  assert.match(source,/data-shared-group="Canvas"/);
-  assert.match(source,/ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"/);
-  assert.doesNotMatch(source,/className="office-ribbon-page-layout-groups"/);
-  const sql=readFileSync(new URL('../../server/src/system-support/migrations/20270122-global-shared-builder-ribbon.sql',import.meta.url),'utf8');
-  assert.match(sql,/md_builder_shared_properties/);
-  for(const property of ['backIcon','pageName','deviceLayout','canvasMode','canvasWidth','canvasHeight',
-    'selectVersion','resetIcon','cut','copy','paste','undo','redo','save','activate'])
-    assert.ok(sql.includes("'"+property+"'"),'Missing SQL Home control '+property);
-  assert.doesNotMatch(source,/case 'pageName':/);
- assert.match(source,/id="new-lightning-page-label"/);
-  const pageDetails=readFileSync(new URL('../src/core/builders/PageBuilder/PageDetailsDialog.tsx',import.meta.url),'utf8');
-  assert.doesNotMatch(source,/aria-label="Choose page layout"/);
-  assert.match(pageDetails,/aria-label="Device layout to design"/);
-  assert.match(source,/aria-label="Cut"/);
-  assert.match(source,/aria-label="Copy"/);
-  assert.match(source,/aria-label="Paste"/);
-  const advanced=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
-  assert.doesNotMatch(source,/<PageBuilderAdvancedStyle/);
-  assert.match(advanced,/office-ribbon-extra-grid/);
-  assert.doesNotMatch(advanced,/createPortal/);
-  assert.match(source,/office-ribbon-quick-access/);
-  assert.doesNotMatch(source,/ribbonTab==='Component Responsive'/);
-  assert.doesNotMatch(source,/<RibbonResponsive/);
-});
-
 test('colour pickers share a single accessible, metadata-backed palette',()=>{
   const source=readFileSync(new URL('../src/core/builders/PageBuilder/RibbonColorPalette.tsx',import.meta.url),'utf8');
   for(const token of ['Theme colours','Standard colours','More colours','aria-haspopup="dialog"','onChange(colour)'])

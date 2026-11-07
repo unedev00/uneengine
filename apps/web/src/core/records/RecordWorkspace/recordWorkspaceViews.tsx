@@ -21,78 +21,20 @@ import {actionVisibleInArea} from './recordActionPlacement';
 import RichTextContent from './RichTextContent';
 import FormulaImageContent from './FormulaImageContent';
 import {resolveRecordCustomLink} from './recordCustomLinks';
-import { pageLayoutForRecord, compactLayoutForRecord, matchesLookupFilterGroup, relatedLookupFilterOperators, type RecordData } from './recordMetadataUtils';
+import { pageLayoutForRecord, compactLayoutForRecord, type RecordData } from './recordMetadataUtils';
 import { formatRecordValue, parseCsvImport } from './recordCsvUtils';
 import { initialScreenValues, screenFieldIsVisible } from '../../automation/FlowScreen/flowScreenRuntimeUtils';
-import { objectSettings, parseAppRoute, appRoutePath, type AppRoute } from '../../workspace/Navigation/appRouting';
+import { appRoutePath, type AppRoute } from '../../workspace/Navigation/appRouting';
 import { NavigationLoadTime, resolveCurrentAppNavigation } from '../../workspace/Navigation/appNavigationView';
 import { isStandalonePagePresentation, pageCanvasPresentationStyle } from '../../pages/PageRuntime/pageRuntimePresentation';
 import { insertFlowElementAtPath } from '../../builders/FlowBuilder/flowInsertElement.mjs';
 import {resolveSetupNavigation} from '../../platform/Workspace/platformSetupNavigation';
 import {readVerifiedMetadata,saveVerifiedMetadata,type MetadataPublicationResponse} from '../../metadata/Cache/verifiedMetadataCache';
-import { queueOfflineRecord, listOfflineRecords, markOfflineRecord, removeOfflineRecord,
-  synchronizeOfflineRecords, type OfflineQueueOwner, type OfflineRecordItem, type OfflineRecordWrite } from '../../metadata/Cache/offlineRecordQueue';
+import { queueOfflineRecord, listOfflineRecords, markOfflineRecord, removeOfflineRecord, synchronizeOfflineRecords, type OfflineQueueOwner, type OfflineRecordItem } from '../../metadata/Cache/offlineRecordQueue';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import {
-  Activity,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  Bell,
-  Building2,
-  BriefcaseBusiness,
-  CalendarDays,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleHelp,
-  ClipboardList,
-  ClipboardPaste,
-  Command,
-  Copy,
-  Database,
-  Ellipsis,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  FileText,
-  Filter,
-  GripVertical,
-  Grid2X2,
-  ListFilter,
-  Maximize2,
-  Monitor,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Puzzle,
-  Smartphone,
-  RefreshCw,
-  Save,
-  Search,
-  ShieldCheck,
-  Scissors,
-  Settings2,
-  SlidersHorizontal,
-  Star,
-  Undo2,
-  Redo2,
-  Trash2,
-  Tablet,
-  UsersRound,
-  X,
-  Workflow,
-  Wifi,
-  WifiOff,
-  PanelLeft,
-  PanelRight
-} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { ArrowLeft, ChevronRight, Copy, Database, Ellipsis, Filter, Pencil, Plus, Smartphone, RefreshCw, Settings2, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import { RecordsListPageHeading, RecordsListSearchControls } from '../../../component-libraries/shared/primitives/RecordsListNavigation/RecordsListNavigation';
@@ -100,8 +42,8 @@ import PageRouteDirectory from '../../pages/PageRouteDirectory/PageRouteDirector
 import { isComponentVisible } from '../../components/Properties/componentVisibility';
 import { canNestComponent, componentVisualStyle, directChildren, isLayoutType, isDescendantOf, layoutTypes } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import { isCanvasLocked, wrapCanvasComponent, ungroupCanvasComponent } from '../../builders/PageBuilder/canvasInteractions';
-import { filterPageComponentRecords, needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
-import { childrenOf, canNest, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, rawLayoutParentId, reparentComponent, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
+import { needsMetadataComponentRuntime } from '../../pages/PageRuntime/pageComponentBindings';
+import { childrenOf, componentLayoutProps, hasPageComponentAppearance, isLayoutContainer, resolvePageComponentStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import {GlobalRecordSearch} from '../../../component-libraries/shared/primitives/GlobalRecordSearch/GlobalRecordSearch';
 import {useDismissOnOutside} from '../../accessibility/Dismiss/useDismissOnOutside';
 
@@ -126,74 +68,7 @@ import {
   getPageBuilderComponentCategories,
   pageBuilderPaletteCategories
 } from '../../builders/PageBuilder/pageBuilderPalette';
-import {
-  defaultFlow,
-  defaultLightningPage,
-  defaultAccessControl,
-  objectMetadata,
-  setupShortcuts,
-  workspaces,
-  type ObjectMetadata,
-  type FieldMetadata,
-  type FieldSetMetadata,
-  type PageLayoutMetadata,
-  type PageLayoutCustomLinkMetadata,
-  type CompactLayoutMetadata,
-  type RecordTypeMetadata,
-  type RelatedLookupFilterMetadata,
-  type ObjectActionMetadata,
-  type ObjectSettingsMetadata,
-  type ProfileMetadata,
-  type PageActivationAssignmentMetadata,
-  type FlowDefinitionMetadata,
-  type FlowExecutionLogMetadata,
-  type FlowInterviewMetadata,
-  type FlowElementMetadata,
-  type FlowResourceMetadata,
-  type FlowValidationMetadata,
-  type PlatformEventMetadata,
-  type LightningPageTemplate,
-  type NamedCredentialMetadata,
-  type EmailAlertMetadata,
-  type CustomNotificationMetadata,
-  type ApprovalRequestMetadata,
-  type ApprovalProcessMetadata,
-  type ApprovalProcessInput,
-  type ConnectorProviderMetadata,
-  type IntegrationConnectionMetadata,
-  type LightningPageMetadata,
-  type PageComponentMetadata,
-  type LibraryComponentMetadata,
-  type DashboardFilterMetadata,
-  type DashboardMetadata,
-  type DashboardFolderMetadata,
-  type DashboardFolderInput,
-  type DashboardTerritoryMetadata,
-  type DashboardSubscription,
-  type DashboardSubscriptionInput,
-  type DashboardSnapshot,
-  type ReportMetadata,
-  type ReportBucketMetadata,
-  type ReportFolderMetadata,
-  type ReportFolderInput,
-  type ReportRunMetadata,
-  type ReportStandardFiltersMetadata,
-  type ReportFilterMetadata,
-  type ReportDateRange,
-  type ReportDateGrouping,
-  type ReportSummaryOperation,
-  type ReportCrossFilterMetadata,
-  type AccessControlMetadata,
-  type CurrencySettingsMetadata,
-  type LightningAppMetadata,
-  type PermissionSetMetadata,
-  type PermissionSetGroupMetadata,
-  type PublicGroupMetadata,
-  type QueueMetadata,
-  type SharingRuleMetadata,
-  type UserMetadata,
-  type WorkspaceId
-} from '../../metadata/Definitions/metadata';
+import { type ObjectMetadata, type FieldMetadata, type ObjectActionMetadata, type FlowDefinitionMetadata, type LightningPageMetadata, type PageComponentMetadata, type LibraryComponentMetadata, type ReportMetadata, type LightningAppMetadata } from '../../metadata/Definitions/metadata';
 type RecordActivity = {
   id: string;
   objectApiName: string;

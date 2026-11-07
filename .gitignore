@@ -6,3 +6,4 @@ coverage
 .DS_Store
 .artifacts/
 apps/server/dist-system/
+apps/web/public/component-sandbox.js

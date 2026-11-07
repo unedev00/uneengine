@@ -12,7 +12,7 @@ const WorkspaceShortcutHelp = React.lazy(() => import('../Navigation/WorkspaceSh
 const GlobalQuickActionLauncher=React.lazy(()=>import('./GlobalQuickActionLauncher'));
 import { MobileAppNavigation, MobileAppLauncher } from './MobileAppNavigation';
 import { resolvePageToolbarActions } from '../../pages/PageRuntime/pageToolbarActions';
-import { workspaces, type ObjectMetadata, type LightningPageMetadata, type LightningAppMetadata } from '../../metadata/Definitions/metadata';
+import { type ObjectMetadata, type LightningPageMetadata, type LightningAppMetadata } from '../../metadata/Definitions/metadata';
 import type { RecordData } from '../../records/RecordWorkspace/recordMetadataUtils';
 const UniversalDataLoaderWorkspace=React.lazy(()=>import('./UniversalDataLoaderWorkspace'));
 const ReportReadOnlyView=React.lazy(()=>import('../../builders/ReportBuilder/ReportReadOnlyView'));

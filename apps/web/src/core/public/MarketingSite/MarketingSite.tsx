@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  ArrowRight, ArrowUpRight, BarChart3, BellRing, CalendarCheck2, Check,
-  CheckCircle2, ChevronDown, ClipboardList, Clock3, CloudUpload, CreditCard,
-  Globe2, HeartHandshake, LayoutDashboard, Mail, Menu, MessageCircle,
-  MonitorSmartphone, PackageCheck, QrCode, ShieldCheck, ShoppingBag,
-  ShoppingCart, Smartphone, Sparkles, Store, TabletSmartphone, UtensilsCrossed,
-  Wifi, X, Zap
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BarChart3, BellRing, CalendarCheck2, Check, CheckCircle2, ChevronDown, ClipboardList, CloudUpload, CreditCard, Globe2, HeartHandshake, LayoutDashboard, Mail, Menu, MessageCircle, MonitorSmartphone, PackageCheck, QrCode, ShieldCheck, ShoppingBag, ShoppingCart, Smartphone, Sparkles, Store, TabletSmartphone, UtensilsCrossed, Wifi, X, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import './marketing.css';
 import { UneBrandLogo } from '../../branding/UneBrandLogo';

@@ -2,7 +2,7 @@ import TenantGovernance from './TenantGovernance';
 import {useViewportWidth} from '../../workspace/Responsive/useViewportWidth';
 import {refreshTenantBrand} from '../../branding/tenantBrandLoader';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Save, Trash2, Plus, Lock, Unlock } from 'lucide-react';
+import { Save, Trash2, Plus } from 'lucide-react';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import SettingsViewRow from '../SettingsViewRow/SettingsViewRow';
 import TenantPasswordPolicy from './TenantPasswordPolicy';

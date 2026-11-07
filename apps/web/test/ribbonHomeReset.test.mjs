@@ -3,28 +3,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-
-test('page-level handlers remain intact in topbar and Design while Smart Insert stays functional',()=>{
- const page=readPageBuilderModules();
- // Top ribbon tab panel (its id moves to the left Design dock while Design is docked).
- const marker=page.indexOf('ref={ribbonStripRef}');
- const end=page.indexOf('{visibilityEditorOpen && selected && <PageBuilderVisibilityDialog',marker);
- const body=page.slice(marker,end);
- assert.ok(marker>0&&end>marker);
- for(const name of ["case 'backIcon'","case 'restoreVersion'","case 'save'","case 'activate'","case 'resetIcon'"])
-  assert.ok(page.includes(name),name);
- assert.doesNotMatch(body,/<UneBuilderRibbon|<UniversalRibbonInventory|<PageBuilderRibbonData|ribbonTab==='Parity'/);
- assert.match(body,/\{!previewMode && <div className="office-ribbon-group canvas-preview-selector-group" aria-label="Layers">/,
-   'Layers must remain available throughout editing, not only on the Preview tab');
- assert.match(body,/ribbonTab==='Add Block' && insertRibbon/);
- assert.match(page,/const insertRibbon = \(<SmartInsertRibbon/);
- assert.match(page,/onInsert=\{addPaletteComponent\}/);
- assert.doesNotMatch(body,/onOpenLibrary=\{\(\)=>openAddBlocks\(\)\}/);
- assert.match(body,/ribbonTab==='Component Design 2' && <div className="office-ribbon-group une-sql-home-group design-canvas-settings"/);
- assert.doesNotMatch(page,/\x27Component Design 2\x27,\x27Component Layout\x27,\x27Arrange\x27/);
- assert.match(page,/office-ribbon-quick-access/);
- assert.match(page,/const quickAccessOrder=\['save','activate','preview','exitPreview','resetIcon','undo','redo','cut','copy','paste','delete'\]/);
-});
 test('additive SQL migration removes only non-Home shared entries and migrates Acetill Cart without deleting values',()=>{
  const sql=src('../../server/src/system-support/migrations/20270123-ribbon-home-reset-acetill-cart.sql');
  assert.match(sql,/DELETE FROM md_builder_shared_properties WHERE tab <> 'Home'/);

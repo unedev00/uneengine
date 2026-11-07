@@ -1,7 +1,7 @@
 // @ts-nocheck
 // On-demand reports, dashboards, subscriptions and page selection operations.
 import { useCallback } from 'react';
-import type { DashboardMetadata, DashboardFolderMetadata, DashboardTerritoryMetadata, ReportMetadata, ReportFolderInput, ReportRunMetadata, LightningPageMetadata } from '../../metadata/Definitions/metadata';
+import type { DashboardMetadata, DashboardFolderMetadata, DashboardTerritoryMetadata, ReportMetadata, ReportFolderInput, ReportRunMetadata } from '../../metadata/Definitions/metadata';
 export function useSetupAnalyticsActions(ctx: any) {
  const { apiRequest, dashboards, navigateRoute, notify, objects, page, pages, reports, setDashboardFolders, setDashboardTerritories, setDashboards, setPage, setReportFolders, setReports, workspace } = ctx;
   const loadDashboardRecords = useCallback(async (dashboardApiName: string, objectApiName: string, runningUserId?: string) => {

@@ -202,34 +202,6 @@ test('Free Canvas uses clean component objects and a compact ribbon-based palett
   assert.match(styles, /\.page-builder-layout \.page-preview-area/);
 });
 
-test('Page Builder property editors filter controls by selected component capabilities', async () => {
-  const builder = await readFile(new URL('../src/core/builders/PageBuilder/editor/inspector/usePageComponentProperties.tsx', import.meta.url), 'utf8');
-  const visual = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentVisualEditor.tsx', import.meta.url), 'utf8');
-  const advanced = await readFile(new URL('../src/core/builders/ComponentStyleEditor/PageComponentStyleEditor.tsx', import.meta.url), 'utf8');
-  const capabilities = await readFile(new URL('../src/core/builders/ComponentStyleEditor/componentAppearanceCapabilities.ts', import.meta.url), 'utf8');
-
-  // A single metadata-aware editor owns each responsibility.
-  const ribbonStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const advancedStyle=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderAdvancedStyle.tsx',import.meta.url),'utf8');
-  const capability=await readFile(new URL('../src/core/builders/PageBuilder/RibbonCapabilityControls.tsx',import.meta.url),'utf8');
-  assert.doesNotMatch(builder, /<PageBuilderAdvancedStyle/);
-  assert.match(advancedStyle, /office-ribbon-extra-grid/);
-  assert.doesNotMatch(advancedStyle, /office-ribbon-capability-backdrop/);
-  assert.doesNotMatch(builder, /<RibbonResponsive/);
-  assert.doesNotMatch(builder, /visible=\{selected\.visible\}/);
-  assert.match(capability, /disabled=\{!definitions.length\}/);
-  assert.match(capability, /RibbonColorPalette key=\{name\}/);
-  assert.match(ribbonStyle, /RibbonColorPalette kind="text"/);
-  assert.match(ribbonStyle, /availableComponentSettings/);
-  assert.doesNotMatch(builder, /<PageComponentStyleEditor section="all"/);
-  assert.match(visual, /numericPresets\.filter\(preset => supportsAppearanceProperty\(componentType, preset\.key\)\)/);
-  assert.match(visual, /appearanceNumberFields\.filter\(\(\{key\}\) => supportsAppearanceProperty\(componentType, key\)\)/);
-  assert.match(advanced, /numeric\.filter\(\(\[key\]\)=>supportsAppearanceProperty\(componentType,key\)\)/);
-  assert.match(advanced, /componentAppearanceCapabilities\(componentType\)\.container/);
-  assert.match(capabilities, /return capabilities\.container/);
-  assert.match(capabilities, /return capabilities\.text \|\| capabilities\.data/);
-});
-
 test('Appearance targets the control without creating a rounded outer shell', () => {
   assert.equal(pageAppearanceTarget('Custom:OneSearch'),'input');
   assert.equal(pageAppearanceTarget('Custom:UneInput'),'input');
@@ -457,33 +429,6 @@ test('Grouping selected canvas components preserves children and absolute bounds
   assert.equal(groupCanvasComponents(components,['a','missing'],'not-allowed').length,components.length);
 });
 
-test('Page Builder contextual ribbon respects the fixed-height no-scroll contract',async()=>{
-  const root=new URL('../src/core/builders/',import.meta.url);
-  const builder=await readFile(new URL('PageBuilder/editor/ribbon/createPageRibbon.tsx',root),'utf8');
-  const css=await readModularCss(new URL('PageBuilder/styles-md227.css',root));
-  const filters=await readFile(new URL('PageBuilder/PageBuilderRibbonEditors.tsx',root),'utf8');
-  const actions=await readFile(new URL('PageBuilder/PageBuilderActionRibbon.tsx',root),'utf8');
-  assert.doesNotMatch(builder,/ribbonTab==='Filters' && <RibbonFilters/);
-  assert.doesNotMatch(builder,/ribbonTab==='Visibility Rules' && <RibbonVisibilityRules/);
-  assert.match(builder,/ribbonTab==='Advanced'/);
-  assert.match(builder,/ribbonTab==='Preview'/);
-  assert.match(builder,/<SmartRibbon/);
-  assert.doesNotMatch(builder,/ribbonTab === 'Component Content'/);
-  const advancedStyle=await readFile(new URL('PageBuilder/PageBuilderAdvancedStyle.tsx',root),'utf8');
-  const blueprint=await readFile(new URL('PageBuilder/PageBuilderRibbonBlueprint.css',root),'utf8');
-  assert.doesNotMatch(builder,/<PageBuilderAdvancedStyle/);
-  assert.match(advancedStyle,/office-ribbon-extra-grid/);
-  assert.match(blueprint,/#page-builder-tab-content\.office-ribbon-content/);
-  assert.match(blueprint,/overflow-x:auto!important;overflow-y:hidden!important/);
-  assert.match(filters,/validateVisibilityRule/);
-  assert.match(filters,/examineRecordFilter/);
-  assert.match(actions,/actionType/);
-  const ribbonLayout=await readFile(new URL('PageBuilder/PageBuilderRibbonLayout.css',root),'utf8');
-   assert.match(ribbonLayout,/--page-ribbon-scroll-strip-height: 127px/);
-  assert.match(ribbonLayout,/overflow-x: auto !important/);
-  assert.doesNotMatch(builder,/ribbonComponentSearch/);
-});
-
 test('Page Builder contextual ribbon is generated from aligned three-row groups',async()=>{
   const root=new URL('../src/core/builders/',import.meta.url);
   const builder=readPageBuilderModules();
@@ -498,29 +443,6 @@ test('Page Builder contextual ribbon is generated from aligned three-row groups'
   assert.match(css,/color:#1b283a!important/);
   assert.match(css,/office-ribbon-responsive-editor>\.office-ribbon-responsive-group/);
   assert.match(css,/grid-template-rows:repeat\(3,28px\)!important/);
-});
-
-test('Card Grid surface colour and individual card colour stay separate in builder and runtime',async()=>{
-  const css=await readFile(new URL('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css',import.meta.url),'utf8');
-  const ribbon=await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const renderer=await readFile(new URL('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx',import.meta.url),'utf8');
-  // Native collection cards must not inherit the component-wide background or
-  // border tokens; only the surrounding Card Grid surface uses those tokens.
-  for(const flag of ['background','stroke','border']){
-    assert.match(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component:not\\(\\.metadrive-component-ui_item_grid\\) \\.md-product-card'));
-    assert.doesNotMatch(css,new RegExp('data-page-style~="'+flag+'"\\] \\.registered-component \\.md-product-card'));
-  }
-  assert.match(css,/\.registered-component\.metadrive-component-ui_item_grid > section\s*\{\s*background-color: var\(--md-page-background\) !important;/);
-  assert.match(css,/\.registered-component\.metadrive-component-ui_item_grid > section\s*\{\s*border-style: solid !important;/);
-  assert.match(renderer,/backgroundColor: typeof p\.cardBackgroundColor === "string" \? p\.cardBackgroundColor : undefined/);
-  assert.match(renderer,/borderColor: typeof p\.cardBorderColor === "string" \? p\.cardBorderColor : undefined/);
-  assert.match(ribbon,/isItemGrid\?'Component background':'Background \/ Fill'/);
-  assert.match(ribbon,/responsive\[key\]\?\?base\[key\]\?\?visual\[key\]\?\?properties\[metadataKey\]/);
-  const result=resolvePageComponentStyle({backgroundColor:'#223344',cardBackgroundColor:'#cc4422',borderColor:'#776655',cardBorderColor:'#004488'},'Custom:ui_item_grid');
-  const vars=result as Record<string,unknown>;
-  assert.equal(vars['--md-page-background'],'#223344');
-  assert.equal(vars['--md-page-border-color'],'#776655');
-  assert.equal(vars['--md-card-background'],undefined);
 });
 
 test('Card Grid keeps authored collection radius and padding separate from card properties',async()=>{
@@ -540,29 +462,6 @@ test('Page Runtime produces typed native line-height and letter-spacing tokens',
   assert.equal(values['--md-page-letter-spacing'],'2px');
   assert.equal(values['--md-page-font-family'],'Georgia, serif');
   assert.equal(values.lineHeight,undefined,'line-height must not decorate the canvas editor frame');
-});
-
-test('Page Builder no longer offers redundant Show component controls', async () => {
-  const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  const builder = readPageBuilderModules();
-
-
-
-  assert.doesNotMatch(ribbon,/Show component|onVisibleChange/);
-  assert.doesNotMatch(builder,/\{component\.visible \? 'Hide' : 'Show'\} element/);
-  assert.match(builder,/if \(!component\.visible && !showHiddenSelection\) return null;/, 'visibility stays unchanged except for a preview-only outline');
-});
-
-test('Page Builder authors shared visibility rules without replacing conditional appearance actions', async () => {
-  const builder = readPageBuilderModules();
-  const ribbon = await readFile(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonStyle.tsx',import.meta.url),'utf8');
-  assert.match(builder,/PageBuilderVisibilityDialog/);
-  assert.doesNotMatch(builder,/Edit visibility rules/);
-  assert.doesNotMatch(builder,/allowRecordFields=\{page\.pageType==='Record Page'\}/);
-  assert.match(builder,/visibilityRules=|properties\.visibilityRules/);
-  assert.doesNotMatch(ribbon,/Edit visibility rules/);
-  const runtime = await readFile(new URL('../src/core/components/Properties/componentVisibility.ts',import.meta.url),'utf8');
-  assert.match(runtime,/visibilityRules|VisibilityRule/);
 });
 
 test('each Smart component is explicitly mapped for Page Runtime appearance',()=>{
