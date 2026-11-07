@@ -10,6 +10,7 @@ type Scalar=string|number|boolean;
 type Entry={id:string;name:string;token:string;keys:string[]};
 type Scope={
  entries:Entry[];
+ entryById:ReadonlyMap<string,Entry>;
  read:(name:string,key:string)=>Scalar;
  publish:(id:string,values:Record<string,Scalar>|null)=>void;
  subscribe:(dependencies:readonly string[],listener:()=>void)=>()=>void;
@@ -42,8 +43,13 @@ export function componentFormulaDependencies(source:unknown):string[]{
   }else if(typeof value==='object'){
    if(seen.has(value))return;
    seen.add(value);
-   const items=Array.isArray(value)?value:Object.values(value as Record<string,unknown>);
-   for(const child of items)visit(child,depth+1);
+   if(Array.isArray(value)){for(const child of value)visit(child,depth+1);return;}
+   // Metadata bindings are authored properties. Record data, session objects and
+   // catalog definitions are not bindings and can contain large row arrays.
+   const excluded=new Set(['records','record','objects','pageState','collectionRows',
+    'formulaCollectionSources','formulaSources','collectionRecords','catalog']);
+   for(const [key,child] of Object.entries(value as Record<string,unknown>))
+    if(!excluded.has(key))visit(child,depth+1);
   }
  };
  visit(source,0);
@@ -68,10 +74,11 @@ export function PageFormulaScope({components,catalog,children}:{
  const model=useMemo(()=>{
   const items=components??[];
   const names=componentInstanceNames(items);
+  const catalogByType=new Map(catalog.map(definition=>['Custom:'+definition.apiName,definition]));
   const entries:Entry[]=[];
   const edges=new Map<string,string[]>();
   for(const item of items){
-   const definition=catalog.find(d=>'Custom:'+d.apiName===item.type);
+   const definition=catalogByType.get(item.type);
    if(!definition)continue;
    const name=names.get(item.id)!;
    const token=nameToken(name);
@@ -108,7 +115,8 @@ export function PageFormulaScope({components,catalog,children}:{
    return cyclic.has(path);
   }
   for(const path of edges.keys())visit(path);
-  return {entries,cyclic};
+  return {entries,cyclic,entryById:new Map(entries.map(item=>[item.id,item])),
+   entryByToken:new Map(entries.map(item=>[item.token,item]))};
  },[components,catalog]);
  const values=useRef(new Map<string,Record<string,Scalar>>());
  const inputs=useRef(new Map<string,Scalar>());
@@ -124,7 +132,7 @@ export function PageFormulaScope({components,catalog,children}:{
   if(next===null&&!previous)return;
   if(next!==null&&sameFormulaSnapshot(previous,next))return;
   if(next===null)values.current.delete(id);else values.current.set(id,next);
-  const entry=model.entries.find(item=>item.id===id);
+  const entry=model.entryById.get(id);
   if(!entry)return;
   const changed=new Set<string>();
   for(const key of new Set([...Object.keys(previous??{}),...Object.keys(next??{})])){
@@ -163,7 +171,7 @@ export function PageFormulaScope({components,catalog,children}:{
   },
   read(name:string,key:string){
    if(model.cyclic.has(name+'.'+key))throw Error('Circular component reference: '+name+'.'+key);
-   const entry=model.entries.find(item=>item.token===name);
+   const entry=model.entryByToken.get(name);
    if(!entry?.keys.includes(key))throw Error('Unknown component property: '+name+'.'+key);
    if(key==='value'&&inputs.current.has(entry.id))return inputs.current.get(entry.id)!;
    const row=values.current.get(entry.id);
@@ -174,7 +182,7 @@ export function PageFormulaScope({components,catalog,children}:{
 }
 export function PublishedFormulaProperties({id,values,rendered}:{id?:string;values:Record<string,unknown>;rendered:Readonly<Record<string,string>>}){
  const scope=usePageFormulaScope();
- const entry=scope?.entries.find(item=>item.id===id);
+ const entry=id?scope?.entryById.get(id):undefined;
  const publish=scope?.publish;
  const output:Record<string,Scalar>=Object.create(null);
  const bindingErrors:string[]=[];
