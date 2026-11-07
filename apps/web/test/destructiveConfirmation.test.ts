@@ -40,9 +40,9 @@ test('sensitive editor deletion controls use the shared confirmation before muta
     'builders/ObjectManager/GlobalQuickActionsEditor.tsx',
     'builders/ObjectManager/CustomMetadataManager.tsx',
     'builders/ObjectManager/objectManagerView.tsx',
-    'builders/FlowBuilder/FlowBuilder.tsx',
+    'builders/FlowBuilder/editor/toolbox/FlowToolbox.tsx',
     'builders/DashboardBuilder/DashboardBuilder.tsx',
-    'builders/PageBuilder/pageBuilderView.tsx',
+    'builders/PageBuilder/editor/usePageComponentActions.tsx',
     'security/Permissions/permissionsView.tsx',
     'settings/SettingsWorkspace/settingsWorkspaceViews.tsx'
   ];

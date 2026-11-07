@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -7,7 +8,7 @@ const sql=read('../../server/src/system-support/migrations/20270309-design2-cont
 const approved=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
 const imageGapMigration=read('../../server/src/system-support/migrations/20271112-design2-image-placement-gap.sql');
 const shared=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
-const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+const builder=readPageBuilderModules();
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
 const cart=read('../src/component-libraries/smart_cart/SmartCart.jsx');
 const table=read('../src/component-libraries/smart_table/SmartTable.jsx');

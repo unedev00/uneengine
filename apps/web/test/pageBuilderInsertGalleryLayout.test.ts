@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 test('Insert gallery CSS targets the current JSX wrapper, not only the removed browser sidebar',()=>{
-  const jsx=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const jsx=readFileSync(new URL('../src/core/builders/PageBuilder/editor/ribbon/usePagePalette.tsx',import.meta.url),'utf8');
   const css=readFileSync(new URL('../src/core/builders/PageBuilder/PageBuilderRibbonGallery.css',import.meta.url),'utf8');
   assert.match(jsx,/className="office-ribbon-add-library"/);
   assert.match(jsx,/className="office-ribbon-gallery-pages"/);

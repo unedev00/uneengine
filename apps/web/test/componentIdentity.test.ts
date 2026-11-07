@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -66,7 +67,7 @@ test('rename updates page key, nested parents and declared interaction target re
 
 test('Technical IDs remain immutable in ribbon while component name is validated for CSV',()=>{
  const advanced=read('../src/core/builders/PageBuilder/PageBuilderAdvancedSections.tsx');
- const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=readPageBuilderModules();
  const layout=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
  const draft=read('../../server/src/system-files/page-layout-version-runtime.ts');
  const legacy=read('../../server/src/system-files/page-runtime.ts');

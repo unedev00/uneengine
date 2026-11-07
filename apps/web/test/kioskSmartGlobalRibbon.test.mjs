@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -108,7 +109,7 @@ test('Focused Card Grid border/shadow retain existing single-record highlight',a
 test('Actions and ribbon reuse the Cart slots for Grid without enabling Cart quantity on Grid',()=>{
  const actions=read('../src/core/builders/PageBuilder/SmartEventActionsRibbon.tsx');
  const unified=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const ribbon=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
  assert.match(actions,/\['smart_cart','smart_card_grid'\]\.includes\(api\)/);
  assert.match(actions,/\['qtyIcon','qtyIncrease','qtyDecrease'\]\.includes\(event\)\?api==='smart_cart'/);

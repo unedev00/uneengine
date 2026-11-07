@@ -1,10 +1,11 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 test('page-level handlers remain intact in topbar and Design while Smart Insert stays functional',()=>{
- const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=readPageBuilderModules();
  // Top ribbon tab panel (its id moves to the left Design dock while Design is docked).
  const marker=page.indexOf('ref={ribbonStripRef}');
  const end=page.indexOf('{visibilityEditorOpen && selected && <PageBuilderVisibilityDialog',marker);
@@ -53,7 +54,7 @@ test('Acetill owns its renderer identity and a separate version-3 package',()=>{
 
 test('Device layout moves to Page Details without losing version controls or SQL metadata',()=>{
  const sql=src('../../server/src/system-support/migrations/20270203-page-layout-ribbon-consolidation.sql');
- const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const ui=src('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  const css=src('../src/core/builders/PageBuilder/PageBuilderRibbonBlueprint.css');
  const details=src('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
  const move=src('../../server/src/system-support/migrations/20270309-page-device-layout-page-properties.sql');
@@ -75,7 +76,7 @@ test('Device layout moves to Page Details without losing version controls or SQL
 });
 
 test('Quick Access keeps Preview and Exit while collapsing the interactive ribbon',()=>{
- const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const ui=readPageBuilderModules();
  const polish=src('../src/core/builders/PageBuilder/PageBuilderRibbonPolish.css');
  assert.ok(ui.includes("case 'preview':return <button"));
  assert.ok(ui.includes("case 'exitPreview':return <button"));
@@ -85,7 +86,7 @@ test('Quick Access keeps Preview and Exit while collapsing the interactive ribbo
  assert.ok(polish.includes('.builder-page.builder-interactive-preview .record-component-head'));
 });
 test('Conditional Visibility and Canvas Tools are direct ribbon sections',()=>{
- const ui=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const ui=src('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  const advanced=src('../src/core/builders/PageBuilder/PageBuilderAdvancedRibbon.tsx');
  assert.ok(ui.includes('preview-visibility-group'));
  assert.ok(ui.includes('onClick={openVisibilityEditor}'));

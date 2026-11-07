@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const src = path => readFileSync(new URL('../src/' + path, import.meta.url), 'utf8');
 
 test('all free-canvas components clip or scroll inside saved geometry without clipping resize handles', () => {
- const builder=src('core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=src('core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
  const handles=src('core/builders/PageBuilder/SmartCanvasHandles.css');
  assert.match(builder,/const ContentHost = page\.layoutMode === 'free-canvas' && !nested && !libraryPreview \? 'div' : React\.Fragment/);
  assert.match(builder,/<ContentHost \{\.\.\.contentHostProps\}>/);
@@ -43,7 +43,7 @@ test('floating actions use the visible portion of tall or scrolled components',(
 
 test('native scroll controls remain usable without moving the page component',()=>{
  const css=src('core/builders/PageBuilder/sections/01-page-builder.css');
- const builder=src('core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=src('core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
  const workspace=src('core/workspace/WorkspaceTheme/sections/07-workspace.css');
  assert.match(css,/free-canvas-content-viewport > \.canvas-design-interaction-shield/);
  assert.match(css,/\.smart-grid,\.smart-cart-root,\.smart-tabs-shell,\.smart-calendar,\.smart-navigation/);

@@ -83,7 +83,7 @@ test('waiting never grants access: unresolved checks render no workspace content
 
 test('Object Manager Record Page links target a specific device without duplicate summary screens', () => {
   const manager = read('../src/core/builders/ObjectManager/objectManagerView.tsx');
-  const editor = read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+  const editor = read('../src/core/builders/PageBuilder/editor/management/usePageLayoutActions.tsx');
   const router = read('../src/core/workspace/Navigation/appRouting.ts');
   assert.deepEqual(recordPageLayoutVariants,['Mobile','Desktop','Tablet','Custom']);
   for (const variant of recordPageLayoutVariants) {
@@ -106,7 +106,7 @@ test('Object Manager Record Page links target a specific device without duplicat
 
 test('Flow list keeps the Setup sidebar and a first-column pencil Edit action', () => {
   const shell = read('../src/core/workspace/SetupShell/setupShellPresentation.tsx');
-  const builder = read('../src/core/builders/FlowBuilder/FlowBuilder.tsx');
+  const builder = read('../src/core/builders/FlowBuilder/editor/management/FlowLandingPage.tsx');
   assert.match(shell, /workspace !== 'flow-builder' \|\| !route\.resourceApiName/,
     'Only a selected Flow editor may hide Setup navigation');
   const list = builder.slice(builder.indexOf('<h2 id="flow-start-existing-title">'),

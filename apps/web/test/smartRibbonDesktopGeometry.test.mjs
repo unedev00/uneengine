@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -68,7 +69,7 @@ test('edited Design and Layout placements are applied through SQL without recolo
       'Missing placement '+tab+' / '+key);
   assert.match(placement,/SET design_row=placement\.row_no,design_order=placement\.order_no/);
   assert.doesNotMatch(placement,/\b(?:background_color|text_color|default_value|UPDATE md_page_components)\b/i);
-  const view=source('pageBuilderView.tsx');
+  const view=readPageBuilderModules();
   const details=source('PageDetailsDialog.tsx');
   assert.doesNotMatch(view,/data-ribbon-property="deviceLayout"/);
   assert.match(details,/aria-label="Device layout to design"/);

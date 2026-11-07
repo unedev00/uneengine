@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
@@ -47,7 +48,7 @@ test('Cart Actions expose independent eye controls without editing Flow or Formu
  const action=read('../src/core/builders/PageBuilder/PageBuilderActionRibbon.tsx');
  assert.match(action,/buttonVisibility\?\.\[slot\.key as CartButtonKey\]===false/);
  assert.match(action,/onButtonVisibilityChange\?\.\(slot\.key as CartButtonKey/);
- const page=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=readPageBuilderModules();
  assert.match(page,/applyCartButtonVisibility/);
  assert.match(page,/item\.properties,\[property\]:visible/);
 });
@@ -79,12 +80,12 @@ test('legacy action configs are preserved without hiding or reinterpreting them'
  assert.match(css,/grid-template-rows:repeat\(2,26px\)/);
  assert.match(css,/gap:2px/);
  assert.match(css,/page-action-icon-remove/);
- const main=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const main=readPageBuilderModules();
  assert.doesNotMatch(main,/page-builder-inline-actions|Configure details|Collapse details/);
 });
 
 test('Actions tab retains natural horizontal scrolling at 127px',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=read('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  const base=read('../src/core/builders/PageBuilder/PageBuilderRibbonLayout.css');
  const compact=read('../src/core/builders/PageBuilder/PageBuilderActionRibbonCompact.css');
  assert.match(view,/\{ribbonTab==='Component Action' &&\s*<PageBuilderActionRibbon/);

@@ -51,7 +51,7 @@ test('editing a child retains saved settings, permissions and Flow actions',()=>
 test('conversation keeps its existing shell and authorised actions',()=>{
  const jsx=read('../src/component-libraries/shared/primitives/Conversation/Conversation.jsx');
  const adapters=read('../src/component-libraries/ui_conversation/ConversationParts.jsx');
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/inspector/usePageComponentProperties.tsx');
  for(const token of ['one-conversation-inbox','one-conversation-thread',
    'one-conversation-compose','one-conversation-messages',
    'optionalAction("refresh",{selectedConversationId:activeId})',

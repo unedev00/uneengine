@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -15,7 +16,7 @@ test('universal catalog indexes all installed UNE manifests without app-specific
  assert.match(catalog,/isExcludedRibbonProperty/);
 });
 test('all six property tabs use a fixed section catalog without component-specific layout',()=>{
- const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=load('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  const catalog=load('../src/core/builders/PageBuilder/UniversalRibbonInventory.tsx');
  for(const name of ['Component Data','Component Content','Component Properties','Component Layout','Component Responsive','Component Action']){
    assert.ok(catalog.includes("'"+name+"'"),name);
@@ -33,7 +34,7 @@ test('media property and structured values are handled without converting persis
 });
 
 test('UNE components do not render the legacy second Data ribbon',()=>{
- const view=load('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  assert.match(view,/selected && !selectedCustomDefinition && ribbonTab==='Component Data' && <PageBuilderRibbonData/);
  assert.match(view,/selected && selectedCustomDefinition && \(\['Component Data'/);
 });

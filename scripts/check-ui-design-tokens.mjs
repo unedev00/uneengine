@@ -189,8 +189,8 @@ assert.match(builderCss, /\.component-card-action,\.component-favourite\).*min-w
   'Builder palette add/favourite affordances must be touch-sized');
 assert.match(installedAppsCss, /header-page-action:focus-visible/,
   'App navigation controls must expose keyboard focus');
-const pageBuilderView = web('core/builders/PageBuilder/pageBuilderView.tsx');
-assert.match(pageBuilderView, /aria-label=\{\x60Add \$\{component\.label\} to canvas\x60\}/,
+const insertGallery = web('core/builders/PageBuilder/SmartInsertRibbon.tsx');
+assert.match(insertGallery, /<button className="smart-insert-tile"[\s\S]*?onClick=\{\(\)=>onInsert\(item\.type\)\}/s,
   'A discoverable click/tap-to-add action must accompany builder drag');
 
 const oneCalendar = web('component-libraries/shared/primitives/Calendar/Calendar.jsx');

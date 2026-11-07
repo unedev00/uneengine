@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -29,7 +30,7 @@ test('Setup resources have working controls and security events have honest stat
 });
 
 test('Preview chrome is not interactive and search suggestions support touch clicks',()=>{
- const builder=read('src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  const search=read('src/core/components/SharedRuntime/Search.jsx');
  assert.doesNotMatch(builder,/<button className="btn">Follow<\/button>/);
  assert.doesNotMatch(builder,/aria-label="More record actions"/);

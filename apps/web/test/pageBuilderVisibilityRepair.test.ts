@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -64,7 +65,7 @@ test('Smart Image and UI Image share one stable, source-keyed media loader',()=>
 });
 
 test('canvas action toolbars are portalled above authored sibling layers without changing page data',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  const portal=read('../src/core/builders/PageBuilder/CanvasFloatingActions.tsx');
  const css=read('../src/core/builders/PageBuilder/CanvasFloatingActions.css');
  assert.match(builder,/CanvasFloatingActions componentId=\{component\.id\}/);
@@ -76,7 +77,7 @@ test('canvas action toolbars are portalled above authored sibling layers without
 });
 
 test('inserted element becomes selected and is revealed in the canvas viewport',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  assert.match(builder,/placeNewCanvasComponent\(/);
  assert.match(builder,/visibleCanvasBounds\(stage\.getBoundingClientRect\(\)/);
  assert.match(builder,/pendingInsertedRef\.current=page\.layoutMode==='free-canvas'\?id:null/);
@@ -98,7 +99,7 @@ test('Smart Container accepts palette inserts and cut/paste children without cha
  assert.equal(pasted.components[0].properties.layoutParentId,parent.id);
  const disabled={...parent,properties:{layoutContainer:false}};
  assert.equal(isLayoutContainer(disabled),false,'Explicitly disabled nesting remains respected');
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  assert.match(builder,/isLayoutContainer\(selected\) \? selected.id : rawLayoutParentId\(selected\)/);
  assert.match(builder,/assignTabOnReparent\(components,cloned.rootId,parentId/);
 });

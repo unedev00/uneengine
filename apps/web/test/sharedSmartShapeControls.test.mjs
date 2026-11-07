@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -28,7 +29,7 @@ test('global Shape is SQL owned, enabled only for requested components, and icon
  assert.match(ribbon,/choicesOverrides\?\.\[member\]/);
  const gallery=read('../src/core/builders/PageBuilder/SmartIconGallery.tsx');
  assert.match(gallery,/allowIcons&&<section><strong>Icons<\/strong>/);
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  assert.match(builder,/component.apiName!=='smart_icon'/);
  assert.match(builder,/selectedApis=\{ribbonSelectedMembers\.map/);
  assert.match(builder,/selected\?\.type==='Custom:smart_icon'/);

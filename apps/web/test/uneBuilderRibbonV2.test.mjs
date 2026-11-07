@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import vm from 'node:vm';
 import React from 'react';
@@ -67,7 +68,7 @@ test('Image renders ONE Card and Card Grid renders the same shared Card repeated
    assert.ok(card.includes(key),'Shared Card missing '+key);
  assert.match(card,/Header \/ text/);
  assert.match(card,/Image area/);
- const builder=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=src('../src/core/builders/PageBuilder/editor/ribbon/createPageRibbon.tsx');
  assert.match(builder,/selectedNewUne/);
  assert.match(builder,/<UneBuilderRibbon tab=/);
  const palette=src('../src/core/builders/PageBuilder/pageBuilderPalette.ts');
@@ -109,7 +110,7 @@ test('new Calendar Layout controls and navigation, container and image renderers
   const registration=JSON.parse(src('../src/component-libraries/'+name+'/component.json'));
   assert.deepEqual(registration.propertyDefinitions,[],'SQL metadata leaked into '+name);
  }
- const builder=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  assert.match(builder,/component.apiName==='ui_navigation'\?'Navigation Bar'/);
  assert.match(builder,/data-une-v2/);
 });
@@ -153,7 +154,7 @@ test('navigation and container preserve usable rendering with new text, image, b
 });
 
 test('Page Builder renders only the SQL-backed ribbon, without invented Content shortcuts',()=>{
- const page=src('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const page=readPageBuilderModules();
  const ribbon=src('../src/core/builders/PageBuilder/UneBuilderRibbon.tsx');
  const inventory=src('../src/core/builders/PageBuilder/uneBuilderPropertyInventory.ts');
  assert.match(page,/request<SharedRibbonCatalog>\\('\/metadata\/builder-ribbon'\\)/);

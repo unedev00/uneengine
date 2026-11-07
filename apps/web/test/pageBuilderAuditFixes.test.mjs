@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,7 +6,7 @@ import {readFileSync} from 'node:fs';
 const read = path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 test('View exposes the visibility rule filter dialog without a duplicate Logic ribbon editor',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  assert.match(view,/ribbonTab==='Preview' && <div className="office-ribbon-group preview-visibility-group"/);
  assert.match(view,/Visible on this page<\/label>/);
  assert.match(view,/aria-label="Edit conditional visibility"/);
@@ -29,7 +30,7 @@ test('Smart Button confines overlarge labels and retains full accessible tooltip
 });
 
 test('Floating canvas editor commands open the ribbon tabs that actually render those properties',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Design 2'\)\} title="Edit block"/);
  assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Layout'\)\} title="Position and size"/);
  assert.match(view,/onClick=\{\(\) => selectRibbonTab\('Component Layout'\)\}>Align and position/);
@@ -38,7 +39,7 @@ test('Floating canvas editor commands open the ribbon tabs that actually render 
 });
 
 test('Smart Insert differentiates button/navigation, container/icon, and input/toggle',()=>{
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=read('../src/core/builders/PageBuilder/editor/ribbon/usePagePalette.tsx');
  assert.match(view,/case 'Custom:smart_navigation':return <Menu/);
  assert.match(view,/case 'Custom:smart_container':return <Layers3/);
  assert.match(view,/case 'Custom:smart_icon':return <Star/);
@@ -49,7 +50,7 @@ test('Smart Insert differentiates button/navigation, container/icon, and input/t
 
 test('Shared canvas popup has legible enabled and disabled text across all pages',()=>{
  const css=read('../src/core/builders/PageBuilder/sections/01-page-builder.css');
- const view=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  const rule=selector=>{
   const escaped=selector.replace(/[.*+?^$()|[\]{}]/g,'\\$&');
   const block=css.match(new RegExp(escaped+'\\s*\\{([^}]*)\\}'));

@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -53,7 +54,7 @@ test('resize handles lie on real component edges, never in the ribbon or in empt
 });
 
 test('moving/resizing affects component metadata only and preserves page dimensions',()=>{
- const builder=read('core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=readPageBuilderModules();
  assert.match(builder,/const bounds=\{width:page\.canvasWidth,height:page\.canvasHeight\}/,
    'multi-shape movement is constrained by the fixed page dimensions');
  assert.match(builder,/canvasBoundPosition\(\{\.\.\.start\.original,x,y\},bounds,false\)/,
@@ -73,7 +74,7 @@ test('moving/resizing affects component metadata only and preserves page dimensi
 
 test('Smart Cart and other Smart components fill the actual resized frame in editor AND published runtime',()=>{
  const smart=read('component-libraries/smart/shared/SmartRuntime.jsx');
- const editor=read('core/builders/PageBuilder/pageBuilderView.tsx');
+ const editor=read('core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
  const binding=read('core/pages/MetadataBoundPageComponent/MetadataBoundPageComponent.tsx');
  const published=read('core/pages/PageRuntime/pageRuntimeViews.tsx');
  assert.match(smart,/width:p\.canvasFrameSized===true\?"100%"/);

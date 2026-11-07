@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -17,7 +18,7 @@ test('UNE component labels identify source objects without changing property API
  }
 });
 test('List View editor uses Source Object in both edit surfaces',()=>{
- const view=file('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const view=readPageBuilderModules();
  assert.match(view,/<label className="form-label">Source Object\s*<select className="form-control" aria-label="List View Object"/);
  assert.match(view,/<div className="properties-section-title">List records<\/div>\s*<label className="form-label">Source Object/);
 });

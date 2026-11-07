@@ -28,7 +28,7 @@ test('Card Grid record rows have a native, keyboard accessible and independently
 test('Card Grid scrolling does not replace move/resize or enable nested scrolling on auto-height templates',()=>{
  const grid=read('../src/component-libraries/shared/primitives/ItemGrid/ItemGrid.jsx');
  const handles=read('../src/core/builders/PageBuilder/SmartCanvasHandles.css');
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
  assert.match(grid,/p\.boundedViewport===true\?/);
  assert.match(handles,/\.free-canvas-resize-handle/);
  assert.match(handles,/overflow:visible!important/);
@@ -50,7 +50,7 @@ test('Both Card Grid runtimes keep every authorised row and use row count for vi
 });
 
 test('Smart Card Grid scroll interaction preserves Page Builder move grips',()=>{
- const builder=read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+ const builder=read('../src/core/builders/PageBuilder/editor/canvas/createPageCanvasRenderer.tsx');
  assert.doesNotMatch(builder,/component\.type==='Custom:smart_card_grid'&&target\.closest/);
  assert.match(builder,/startCanvasMove\(event, component\)/);
 });

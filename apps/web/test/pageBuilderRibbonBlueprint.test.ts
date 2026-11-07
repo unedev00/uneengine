@@ -1,15 +1,16 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 test('ribbon preserves real disabled commands instead of Not applicable placeholders',()=>{
- const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const source=readPageBuilderModules();
  assert.doesNotMatch(source,/<RibbonCapabilityControls group=/);
  assert.doesNotMatch(source,/office-ribbon-disabled-group/);
 });
 
 test('Parity tab lists verified work and remaining scope without claiming full Salesforce coverage',()=>{
- const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const source=readPageBuilderModules();
  assert.doesNotMatch(source,/Implemented and verified|Remaining requested coverage/);
 });
 
@@ -32,7 +33,7 @@ test('capability icons use reusable metadata editors without intermediate modals
 });
 
 test('selected Item Grid and Calendar render blueprint-specific Design and Content',()=>{
- const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const source=readPageBuilderModules();
  assert.doesNotMatch(source,/<PageBuilderRibbonContent |<UneBuilderRibbon tab=/);
 });
 
@@ -83,7 +84,7 @@ test('Design icons provide direct Excel-style colour, size, weight and alignment
 });
 
 test('Batch 2 removes redundant Layout controls and keeps unique positioning',()=>{
- const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const source=readPageBuilderModules();
  assert.doesNotMatch(source,/office-ribbon-arrange-column|office-ribbon-layout-position-physical|office-ribbon-layout-size-physical/);
 });
 

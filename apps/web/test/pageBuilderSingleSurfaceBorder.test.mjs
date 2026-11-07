@@ -1,9 +1,10 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read = relative => readFileSync(new URL(relative, import.meta.url), 'utf8');
-const builder = read('../src/core/builders/PageBuilder/pageBuilderView.tsx');
+const builder = readPageBuilderModules();
 const canvas = read('../src/core/builders/PageBuilder/PageBuilderCanvasWorkspace.css');
 const selection = read('../src/core/builders/PageBuilder/sections/01-page-builder.css');
 const appearance = read('../src/core/pages/TemplatePageRuntime/pageComponentAppearance.css');

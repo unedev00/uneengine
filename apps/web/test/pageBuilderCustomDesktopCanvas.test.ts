@@ -1,3 +1,4 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -57,7 +58,7 @@ test('Fill canvas refuses locked, grouped, nested, missing and invalid targets',
   assert.deepEqual(fitCanvasComponentToPage(items,'regular',{width:Infinity,height:900}),items);
 });
 test('Arrange command uses metadata/Undo and preview device respects saved variant',()=>{
-  const source=readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+  const source=readPageBuilderModules();
   const arrange=readFileSync(new URL('../src/core/builders/PageBuilder/ArrangeRibbon.tsx',import.meta.url),'utf8');
   assert.match(source,/const device = pageBuilderPreviewDevice\(page\);/);
   assert.match(source,/onFitToCanvas:\(\)=>\{[\s\S]*?applyPage\(\{\.\.\.page,components:fitCanvasComponentToPage/);

@@ -1,10 +1,11 @@
+import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const tabs = readFileSync(new URL('../src/core/builders/PageBuilder/PageManagerTabs.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/core/builders/PageBuilder/PageManagerTabs.css', import.meta.url), 'utf8');
-const builder = readFileSync(new URL('../src/core/builders/PageBuilder/pageBuilderView.tsx', import.meta.url), 'utf8');
+const builder = readPageBuilderModules();
 
 test('Page Builder uses Company Settings-style primary tab strip and conditional app sub-tabs', () => {
   assert.match(tabs, /md-admin-tabstrip/);

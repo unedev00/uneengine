@@ -22,7 +22,7 @@ test('only safe CSS properties can be interpolated in live terminal',()=>{
  assert.equal(acetillStyleCss({cash:{backgroundColor:'url(x)'}}),'');
 });
 test('Acetill editable pages use the shared metadata Page Builder',()=>{
- const builder=readFileSync(new URL('../../web/src/core/builders/PageBuilder/pageBuilderView.tsx',import.meta.url),'utf8');
+ const builder=readFileSync(new URL('../../web/src/core/builders/PageBuilder/editor/PageBuilderWorkspace.tsx',import.meta.url),'utf8');
  assert.doesNotMatch(builder,/AcetillVisualEditor/);
  assert.doesNotMatch(builder,/page\.apiName==='AcetillRegisterEditable'/);
  assert.match(builder,/builder-editor-mode/);
