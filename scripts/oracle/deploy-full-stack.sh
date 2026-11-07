@@ -48,8 +48,14 @@ trap rollback ERR
 bash "$SOURCE/scripts/oracle/backup-production-sql.sh"
 bash "$SOURCE/scripts/oracle/deploy-api.sh" "$SOURCE" "$SHA"
 API_ACTIVATED=1
+# Execute tenant migrations from the immutable release, not the runner checkout:
+# the unprivileged metadrive user cannot reliably read /home/ubuntu.
+api_release="$(systemctl show "$API" -p WorkingDirectory --value)"
+worker_release="$(systemctl show "$WORKER" -p WorkingDirectory --value)"
+[[ "$api_release" == "/opt/metadrive/releases/gh-$SHA" && "$worker_release" == "$api_release" ]] ||
+  { echo "Active services do not match the requested release" >&2; exit 1; }
 # Cart fields are seeded by the new API; finish one-time data and metadata retirement.
-bash "$SOURCE/scripts/oracle/apply-cart-session-retirement.sh" "$SOURCE"
+bash "$SOURCE/scripts/oracle/apply-cart-session-retirement.sh" "$api_release"
 # Never publish the SQL-backed Page Builder frontend unless the API and
 # worker have been activated from this exact immutable release. A protected
 # endpoint returning HTTP 401 cannot prove that it exists, so do not mistake
