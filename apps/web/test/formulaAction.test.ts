@@ -619,3 +619,15 @@ test('read-only guarded action explains missing writes without falsely reporting
   ['GETRECORD','completed'],['CREATERECORD','skipped'],['STATE','completed']
  ]);
 });
+
+
+test('Flow and conditional Flow expressions reserve all metadata Objects for session serialization',()=>{
+ const objects=[{apiName:'Cart'},{apiName:'CartLine'},{apiName:'Product'}];
+ assert.deepEqual(planReadWriteObjects({actionType:'Flow',flowApiName:'Checkout'},'Cart',objects),
+  ['Cart','CartLine','Product']);
+ assert.deepEqual(planReadWriteObjects({actionType:'Formula',
+  formula:'=IF(@mode = "charge", $flow.TakePayment, $flow.HoldOrder)'},'Cart',objects),
+  ['Cart','CartLine','Product']);
+ assert.deepEqual(planReadWriteObjects({actionType:'Formula',
+  formula:'=@counter+1'},'Cart',objects),[]);
+});
