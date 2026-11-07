@@ -60,12 +60,14 @@ function patchComponent(component){
  const p=component.properties;
  if(!p||typeof p!=='object'||Array.isArray(p))return component;
  const cart=p.objectApiName==='CartLine';
+ const legacySessionGrid=p.objectApiName==='CartSession';
  const oldLink=p.relatedFieldApiName==='CartSession' || p.relatedFilterKey==='cartSessionId';
  const actions=p.actionFlows&&typeof p.actionFlows==='object'&&!Array.isArray(p.actionFlows)
   ?p.actionFlows:{};
  const oldActions=Object.values(actions).some(a=>a&&typeof a==='object'&&known.has(String(a.flowApiName??'')));
- if(!oldLink&&!oldActions)return component;
+ if(!legacySessionGrid&&!oldLink&&!oldActions)return component;
  const props=structuredClone(p);
+ if(legacySessionGrid)props.objectApiName='Cart';
  if(cart&&oldLink){
   props.relatedFieldApiName='Cart';
   props.relatedFilterKey='activeCartId';
