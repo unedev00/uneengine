@@ -509,7 +509,7 @@ export default function MetadataBoundPageComponent({
             recordChanges:result.recordChanges}
         }));
       }
-      return {updated:true};
+      return {updated:true,recordChanged:result.recordChanged};
     }
     if (binding.actionType === 'AdjustNumber') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
@@ -609,6 +609,7 @@ export default function MetadataBoundPageComponent({
     const started=trace?performance.now():0;
     let executingAt=started;
     let outcome:'completed'|'skipped'|'failed'='completed';
+    let recordWrite:boolean|undefined;
     const traceId=trace?crypto.randomUUID():'';
     setActionPending(count=>count+1);
     try {
@@ -620,10 +621,12 @@ export default function MetadataBoundPageComponent({
        ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,execute)
        :await execute();
       if((result as {skipped?:boolean}|undefined)?.skipped===true)outcome='skipped';
+      recordWrite=(result as {recordChanged?:boolean}|undefined)?.recordChanged;
       setActionError('');
       return result;
     } catch(error) {
       outcome='failed';
+      if(error instanceof PartialActionError)recordWrite=error.mutatedObjectApiNames.length>0;
       // A prior Record API write may have succeeded before this step failed.
       // Refresh only the confirmed objects. Do not replay the authored action.
       if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
@@ -637,6 +640,7 @@ export default function MetadataBoundPageComponent({
         const ended=performance.now();
         console.info('[PageActionTiming]',{
           id:traceId,componentId:component.id,event:action.event,outcome,
+          recordWrite:recordWrite??null,
           queueWaitMs:Math.max(0,executingAt-started),
           executionMs:Math.max(0,ended-executingAt),
           totalMs:Math.max(0,ended-started)
