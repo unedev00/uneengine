@@ -10,6 +10,7 @@ import {ComponentLibraryService} from './component-library-service.js';
 import {DashboardSnapshotService} from './dashboard-snapshot-service.js';
 import {DashboardSubscriptionService} from './dashboard-subscription-service.js';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import compression from 'compression';
 import { SqlPersistence } from '../system-files/sql-persistence.js';
 import {applySystemMigrations} from './system-migrations.js';
 import {loadFlowCapabilityCatalog} from '../system-files/flow-capability-catalog.js';
@@ -212,6 +213,12 @@ export function createSystemServer(db:SqlPersistence) {
   const app=express();
   configureTrustedProxy(app,process.env.METADRIVE_TRUST_PROXY_CIDRS);
   app.disable('x-powered-by');
+  // PERFORMANCE FIX: compress JSON/JS/CSS responses (they were sent uncompressed, ~85% larger).
+  // Live event streams must never be compressed or they stop streaming.
+  app.use(compression({threshold:1024,filter:(req,res)=>{
+    if(String(res.getHeader('Content-Type')??'').includes('text/event-stream'))return false;
+    return compression.filter(req,res);
+  }}));
   app.use((_req,res,next)=>withAuditContext({},()=>{res.setHeader('X-Correlation-ID',auditContext()!.correlationId);next();}));
   // Log webhook ingress and response status without logging query tokens, signatures,
   // request bodies, or credential material. This distinguishes delivery from processing failures.
@@ -2813,7 +2820,8 @@ export function createSystemServer(db:SqlPersistence) {
   }));
   app.get('/api/media-assets/:id',route(async(req,res)=>{
     const actor=req.actor!;
-    res.setHeader('Cache-Control','private, no-store');
+    // PERFORMANCE FIX: images may be kept by the user's own browser for 10 minutes (was no-store).
+    res.setHeader('Cache-Control','private, max-age=600');
     res.json(await tenantMedia.read(actor.tenant_id,actor.user_id,req.params.id));
   }));
   app.delete('/api/media-assets/:id',route(async(req,res)=>{
