@@ -75,6 +75,7 @@ export async function executePageFormulaAction(
    const first=await request<{
     supported:boolean;error?:string;changes?:Change[];recordChanged?:boolean;
     mutatedObjectApiNames?:string[];variables?:Record<string,unknown>;completedActionCount?:number;
+    plannedRecordWrites?:number;skippedRecordWrites?:number;noRecordWriteReason?:string;
     recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>
    }>('/action-formulas/execute-data',{
     method:'POST',body:JSON.stringify({formula,scope,dataSteps:split.dataSteps})
@@ -87,7 +88,9 @@ export async function executePageFormulaAction(
      throw Error(first.error);
     }
     const data={changes:first.changes??[],recordChanged:first.recordChanged===true,
-     mutatedObjectApiNames:first.mutatedObjectApiNames??[],recordChanges:first.recordChanges??[]};
+     mutatedObjectApiNames:first.mutatedObjectApiNames??[],recordChanges:first.recordChanges??[],
+     plannedRecordWrites:first.plannedRecordWrites??0,skippedRecordWrites:first.skippedRecordWrites??0,
+     noRecordWriteReason:first.noRecordWriteReason};
     if(split.dataSteps===split.totalSteps)return data;
     // Browser-only steps run after server transaction, in their authored order.
     let rest:Awaited<ReturnType<typeof executeActionFormula>>;
@@ -107,7 +110,13 @@ export async function executePageFormulaAction(
     return {changes:[...data.changes,...rest.changes],
      recordChanged:data.recordChanged||rest.recordChanged,
      mutatedObjectApiNames:[...new Set([...data.mutatedObjectApiNames,...rest.mutatedObjectApiNames])],
-     recordChanges:data.recordChanges};
+     recordChanges:data.recordChanges,
+     plannedRecordWrites:data.plannedRecordWrites+(rest.plannedRecordWrites??0),
+     skippedRecordWrites:data.skippedRecordWrites+(rest.skippedRecordWrites??0),
+     ...(!(data.recordChanged||rest.recordChanged)&&
+       (data.plannedRecordWrites+(rest.plannedRecordWrites??0))>0
+      ?{noRecordWriteReason:data.skippedRecordWrites+(rest.skippedRecordWrites??0)>0
+         ?'guard-skipped-write':'no-record-write-executed'}:{})};
    }
   }
   // Existing interpreter and SQL-aggregate flag remain unchanged by default.
