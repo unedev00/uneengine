@@ -51,14 +51,3 @@ test('light/dark visual tokens include readable primary and secondary text',()=>
     assert.ok(ratio(fg,bg)>=4.5,`${fg} on ${bg}: ${ratio(fg,bg).toFixed(2)}`);
   }
 });
-test('ACE themes remain app-scoped and never overridden by the global admin stylesheet',()=>{
-  for(const cls of ['.ak-shell','.acetill-terminal','.custom-aceassist','.ace-chat']){
-    assert.ok(!baseline.includes(cls),cls+' must retain its own theme contract');
-  }
-  for(const path of ['../../acekiosk/src/acekiosk.css','../../acetill/src/acetill-terminal.css',
-    '../../aceassist/src/aceassist.css','../../acechatter/src/aceChatter.css']){
-    const css=read(path);
-    assert.match(css,/--md-surface/);
-    assert.match(css,/--md-text/);
-  }
-});

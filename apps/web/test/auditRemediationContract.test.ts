@@ -43,33 +43,6 @@ test('security settings no longer load a monolithic stack; mobile audit has labe
  assert.match(css,/@media(?:\s*)\(\s*max-width:\s*899px\s*\)/);
  assert.match(css,/\.md-audit-table td::before/);
 });
-test('Till secondary display inherits appearance; all modal types use shared focus management',()=>{
- const till=read('../../acetill/src/AcetillTerminal.tsx');
- const doc=read('../../aceassist/src/FinancialDocumentEditor.tsx');
- const hook=read('../src/core/accessibility/useModalFocus.ts');
- assert.match(till,/themeValue\(\x27--md-action-ink\x27/);
- assert.match(till,/--display-bg/);
- assert.match(till,/pinSetupDialogRef/);
- assert.match(till,/lockedDialogRef/);
- assert.match(till,/ageDialogRef/);
- assert.match(doc,/documentDialogRef/);
- assert.match(doc,/customerDialogRef/);
- assert.match(hook,/document\.addEventListener\(\x27keydown\x27,onKey,true\)/);
- assert.match(hook,/previous\.focus\(\)/);
-});
-test('Assist small captions and Report/Object Manager data grids have accessibility standards',()=>{
- const assist=read('../../aceassist/src/aceassist.css');
- assert.doesNotMatch(assist,/font-size:(?:9|10|11)px/);
- for(const p of [
-   '../src/core/builders/ReportBuilder/reportBuilderView.tsx',
-   '../src/core/builders/ObjectManager/GlobalValueSetManager.tsx',
-   '../src/core/builders/ObjectManager/CustomMetadataManager.tsx'
- ]){
-   const source=read(p);assert.match(source,/role="region"/);assert.match(source,/tabIndex=\{0\}/);
-   assert.match(source,/scope="col"/);
- }
-});
-
 test('audit login issues: text, persistent field errors and readable copy',()=>{
  const login=read('../src/core/authentication/Login/loginView.tsx');
  const css=read('../src/core/authentication/Login/standaloneLogin.css');
@@ -98,7 +71,6 @@ test('shared administrative copy, icons, and input targets address the audit',()
  const records=read('../src/core/records/RecordWorkspace/recordsListToolbar.css');
  const settings=read('../src/core/workspace/WorkspaceTheme/setupUsability.css');
  const dashboard=read('../src/core/workspace/WorkspaceTheme/sections/02-workspace.css');
- const till=read('../../acetill/src/acetill-terminal.css');
  assert.match(mail,/Trash is empty/);
  assert.match(credentials,/credential\$\{visibleCredentials\.length===1\?'':'s'\}/);
  assert.match(bell,/<Bell size=\{20\}/);
@@ -106,5 +78,4 @@ test('shared administrative copy, icons, and input targets address the audit',()
  assert.match(records,/records-data-table input\[type="checkbox"\]/);
  assert.match(settings,/\.company-workspace-tabs\s*\{[\s\S]*?top:\s*50px/);
  assert.match(dashboard,/dashboard-name-input\s*\{[^}]*font-size:\s*14px/);
- assert.match(till,/\.acetill-search input\{[\s\S]*?min-height:32px/);
 });

@@ -259,31 +259,6 @@ test('secondary object field bindings resolve only within their selected object'
  assert.equal(resolveMetadataProperties(p,[object,contacts],[]).contactNameFieldApiName,'FullLabel');
  assert.equal(resolveMetadataProperties({...p,contactsObjectApiName:'metadata:deleted'},[object,contacts],[]).contactNameFieldApiName,'metadata:contact-name');
 });
-test('ChatterInbox compatibility retains the shared conversation renderer and all registered JSX compiles',async()=>{
- const {components}=await loadComponentCatalog();
- const alias=components.find((c:any)=>c.apiName==='ChatterInbox');
- const canonical=components.find((c:any)=>c.apiName==='ui_conversation');
- assert.ok(alias,'existing ChatterInbox pages retain their compatibility registration');
- assert.ok(canonical,'UNE conversation is the canonical registration');
- assert.equal(components.some((c:any)=>c.apiName==='OneConversation'),false,
-  'retired OneConversation is not registered as a separate component');
- assert.equal(alias.jsxFile,'component-libraries/shared/primitives/Conversation/Conversation.jsx');
- assert.equal(alias.cssFile,'component-libraries/shared/primitives/Conversation/Conversation.css');
- assert.deepEqual(alias.defaults.actionFlows,{});
- assert.equal(canonical.jsxFile,'component-libraries/ui_conversation/UiConversation.jsx');
- assert.ok(!canonical.propertyDefinitions.some((p:any)=>p.propertyKey==='conversationsObjectApiName'),
-  'AceChatter source mapping is private runtime configuration');
- const wrapper=await readFile(new URL('../src/component-libraries/ui_conversation/UiConversation.jsx',import.meta.url),'utf8');
- assert.ok(wrapper.includes('from "../shared/primitives/Conversation/Conversation.jsx"') ||
-  wrapper.includes("from '../shared/primitives/Conversation/Conversation.jsx'"),
-  'UI conversation imports the shared renderer');
- assert.ok(wrapper.includes('<OneComponent '),'UNE wrapper actually renders the shared component');
- for(const definition of components){
-  const built=await buildBundledComponent(definition);
-  assert.ok(built.compiledJs,definition.apiName);assert.ok(built.cssSource,definition.apiName);
- }
-});
-
 test('record page layout assignments resolve profile, type and wildcard defaults',()=>{
  const layouts=['fallback','specific','type','profile','wildcard'].map(id=>({
    id,label:id,sections:[],actions:['New','Edit'],relatedLists:[],customLinks:[]

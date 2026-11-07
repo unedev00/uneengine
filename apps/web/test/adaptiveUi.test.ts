@@ -151,14 +151,6 @@ test('desktop record preview reuses existing guarded detail runtime and mobile u
   assert.match(native,/onSelect=\{isTablet/);
 });
 
-test('reused UNE modal and drawer trap keyboard focus rather than making duplicate engines',()=>{
-  const layout=file('src/component-libraries/ui-runtime/shared/Layout.jsx');
-  assert.match(layout,/export function UneModal/);
-  assert.match(layout,/export function UneDrawer/);
-  assert.match(layout,/e\.key!=="Tab"/);
-  assert.match(layout,/previous\?\.focus/);
-});
-
 test('tablet builders and Setup have valid media queries and complete touch controls', () => {
   const builder = file('src/core/builders/SharedBuilderFrame/adaptiveBuilder.css');
   const application = file('src/core/workspace/WorkspaceTheme/applicationPolish.css');

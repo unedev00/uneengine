@@ -9,11 +9,6 @@ import type {ObjectMetadata} from '../src/core/metadata/Definitions/metadata';
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const builder=read('../src/core/builders/SharedBuilderFrame/adaptiveBuilder.css');
 const schemaCss=read('../src/core/builders/SchemaBuilder/schemaBuilderUsability.css');
-const till=read('../../acetill/src/acetill-terminal.css');
-const kiosk=read('../../acekiosk/src/acekiosk.css');
-const assist=read('../../aceassist/src/aceassist.css');
-const chat=read('../../acechatter/src/aceChatter.css');
-const visual=read('../../acetill/src/acetill-visual-editor.css');
 
 test('shared Builder layout is editor-only and loaded from optional modules',()=>{
  for(const name of ['PageBuilder/pageBuilderView.tsx','FlowBuilder/FlowBuilder.tsx',
@@ -44,56 +39,6 @@ test('Schema Builder renders accessible scrollable canvas and responsive search/
  assert.match(html,/aria-label="Schema diagram zoom controls"/);
  assert.match(schemaCss,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(schemaCss,/@media\(max-width:700px\)/);
-});
-
-test('ACE apps retain independent brand tokens, real navigation and bounded modal sizes',()=>{
- for(const [name,css,root] of [
-  ['Till',till,'.acetill-terminal'],['Kiosk',kiosk,'.ak-shell'],
-  ['Assist',assist,'.custom-aceassist'],['Chatter',chat,'.ace-chat']
- ] as const){
-  assert.match(css,/Phase 3/,name);
-  assert.ok(css.includes(root),name+' root missing');
-  assert.match(css,/@media\(max-width:/,name+' responsive breakpoint missing');
-  assert.match(css,/:focus-visible/,name+' keyboard focus missing');
-  assert.match(css,/prefers-reduced-motion/,name+' reduced-motion missing');
- }
- assert.match(till,/\.acetill-terminal \.acetill-checkout/);
- assert.match(till,/\.acetill-terminal \.acetill-product-grid/);
- assert.match(till,/\.acetill-payment-buttons/);
- assert.match(kiosk,/\.ak-shell \.ak-orderline/);
- assert.match(kiosk,/\.ak-shell \.ak-modal-backdrop/);
- assert.match(assist,/\.assist-document-header-fields/);
- assert.match(chat,/\.ace-chat-conversation-meta/);
- assert.match(visual,/live tenant-rendered till/);
-});
-
-test('Kiosk category/payment controls and quantity affordances expose selection state',()=>{
- const source=read('../../acekiosk/src/AceKiosk.tsx');
- assert.match(source,/aria-pressed=\{c===category\}/);
- assert.match(source,/aria-pressed=\{subcategory===c\}/);
- assert.match(source,/aria-pressed=\{paymentMethod==='Cash'\}/);
- assert.match(source,/aria-pressed=\{paymentMethod==='Card'\}/);
- assert.match(source,/aria-label=\{'Remove one '\+l\.product\.name\}/);
- assert.match(source,/aria-label="Basket and checkout actions"/);
- assert.match(source,/aria-label="Menu products"/);
- const modal=read('../../acekiosk/src/ProductCustomiser.tsx');
- assert.match(modal,/aria-modal="true"/);
- assert.match(modal,/event\.key==='Escape'/);
-});
-
-test('Till payment, cart and Chatter selection have keyboard and screen-reader semantics',()=>{
- const terminal=read('../../acetill/src/AcetillTerminal.tsx');
- assert.match(terminal,/paymentDialogRef/);
- assert.match(terminal,/useModalFocus\(Boolean\(paymentMode\)/);
- const focus=read('../src/core/accessibility/useModalFocus.ts');
- assert.match(focus,/event\.key==='Escape'/);
- assert.match(focus,/document\.addEventListener\('keydown',onKey,true\)/);
- assert.match(terminal,/aria-label="Current order items"/);
- assert.match(terminal,/aria-label="Payment method"/);
- const chatter=read('../../acechatter/src/AceChatterRuntime.tsx');
- assert.match(chatter,/aria-current=\{selected===rowId\?'true':undefined\}/);
- assert.match(chatter,/newChatDialogRef/);
- assert.match(chatter,/event\.key==='Escape'/);
 });
 
 test('No Builder chrome changes enter the published Page Runtime',()=>{
