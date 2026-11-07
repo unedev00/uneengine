@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,7 +8,7 @@ const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const page=readPageBuilderModules();
 const design=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
-const migration=read('../../server/src/system-support/migrations/20271114-page-builder-retire-layout-ribbon.sql');
+const migration=readRetiredMigration('20271114-page-builder-retire-layout-ribbon.sql');
 const card=read('../src/component-libraries/shared/CardCore.jsx');
 const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
 const visibility=read('../src/core/builders/PageBuilder/layoutRibbonVisibility.ts');

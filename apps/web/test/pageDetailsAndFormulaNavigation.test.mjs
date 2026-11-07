@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -53,7 +54,7 @@ test('new API names typed manually are normalized to lowercase across metadata e
 test('Edit Page selects the device draft and respects saved-layout switching boundaries',()=>{
  const dialog=read('../src/core/builders/PageBuilder/PageDetailsDialog.tsx');
  const builder=read('../src/core/builders/PageBuilder/editor/management/usePageLayoutActions.tsx');
- const migration=read('../../server/src/system-support/migrations/20270309-page-device-layout-page-properties.sql');
+ const migration=readRetiredMigration('20270309-page-device-layout-page-properties.sql');
  assert.match(dialog,/aria-label="Device layout to design"/);
  assert.match(dialog,/setDesignVariant\(e\.target\.value as Variant\)/);
  assert.match(dialog,/onOpenDesign\(page\.apiName,designVariant\)/);

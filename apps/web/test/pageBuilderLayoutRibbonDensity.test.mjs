@@ -1,10 +1,11 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const file = name => readFileSync(new URL(name,import.meta.url),'utf8');
-const migration = file('../../server/src/system-support/migrations/20270208-page-builder-layout-ribbon-density.sql');
+const migration = readRetiredMigration('20270208-page-builder-layout-ribbon-density.sql');
 const css = file('../src/core/builders/PageBuilder/SmartRibbonApprovedThreeRow.css');
 const ribbon = file('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const builder = readPageBuilderModules();
@@ -43,7 +44,7 @@ test('Page and Canvas widths are content-sized and their numeric icons share an 
 
 test('Header Supporting width follows controls instead of allocating an empty fixed column',()=>{
  assert.match(ribbon,/group\.length\*5\.5\+16/);
- const newSql=file('../../server/src/system-support/migrations/20270211-eight-tab-ribbon-geometry.sql');
+ const newSql=readRetiredMigration('20270211-eight-tab-ribbon-geometry.sql');
  assert.match(newSql,/supportingBoxHeight','Cards'/);
  assert.match(ribbon,/\[1,2,3\]\.map\(row/);
  assert.match(ribbon,/sectionRow\(section,row\)\.map\(controls\)/);
