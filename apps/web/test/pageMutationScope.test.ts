@@ -215,3 +215,24 @@ test('CartLine mutations do not refetch Cart parent SessionKey, but Cart and unk
  assert.equal(shouldRevalidateSessionParent({pageSessionKey:'Other',objectApiNames:['Cart']},page,session,parents),false);
  assert.equal(shouldRevalidateSessionParent({...mutation(['Cart']),sessionId:'other'},page,session,parents),false);
 });
+
+
+test('complete authorized filtered row updates reuse the page when every filter field is stable',()=>{
+ const rows=[{Id:'a',Cart:'cart1',Status:'Open',Quantity:1},
+  {Id:'b',Cart:'cart1',Status:'Open',Quantity:4}];
+ const mutation={pageSessionKey:page,sessionId:session,objectApiNames:['CartLine'],
+  recordChanges:[{objectApiName:'CartLine',operation:'update' as const,
+    record:{Id:'a',Cart:'cart1',Status:'Open',Quantity:2}}]};
+ const updated=applyCompleteRecordMutation(rows,'CartLine',mutation,['Cart','Status']);
+ assert.equal(updated?.[0].Quantity,2);
+ assert.equal(rows[0].Quantity,1);
+ const changedFilter={...mutation,recordChanges:[{objectApiName:'CartLine',operation:'update' as const,
+    record:{Id:'a',Cart:'cart2',Status:'Open',Quantity:2}}]};
+ assert.equal(applyCompleteRecordMutation(rows,'CartLine',changedFilter,['Cart','Status']),null);
+ const absentField={...mutation,recordChanges:[{objectApiName:'CartLine',operation:'update' as const,
+    record:{Id:'a',Cart:'cart1',Quantity:2}}]};
+ assert.equal(applyCompleteRecordMutation(rows,'CartLine',absentField,['Cart','Status']),null);
+ const extraRow={...mutation,recordChanges:[{objectApiName:'CartLine',operation:'create' as const,
+    record:{Id:'c',Cart:'cart1',Status:'Open',Quantity:2}}]};
+ assert.equal(applyCompleteRecordMutation(rows,'CartLine',extraRow,['Cart','Status']),null);
+});
