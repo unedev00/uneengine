@@ -273,3 +273,25 @@ test('manual OCI tenant API normalization is protected, opt-in and restarts serv
   assert.equal(syntax.status,0,syntax.stderr);
  }
 });
+
+test('Oracle release completes CartSession retirement after SQL backup and before frontend',()=>{
+ const deploy=readFileSync(new URL('../../../../scripts/oracle/deploy-full-stack.sh',import.meta.url),'utf8');
+ const path=new URL('../../../../scripts/oracle/apply-cart-session-retirement.sh',import.meta.url);
+ const helper=readFileSync(path,'utf8');
+ assert.ok(deploy.indexOf('backup-production-sql.sh')<deploy.indexOf('apply-cart-session-retirement.sh'));
+ assert.ok(deploy.indexOf('deploy-api.sh')<deploy.indexOf('apply-cart-session-retirement.sh'));
+ assert.ok(deploy.indexOf('apply-cart-session-retirement.sh')<deploy.indexOf('deploy-frontend.sh'));
+ const ordered=['migrate-cart-session-to-cart.mjs --apply',
+  'upgrade-cart-flow-metadata.mjs --apply',
+  'migrate-cart-page-bindings.mjs --apply --publish',
+  'retire-cart-session.mjs --apply'];
+ for(let i=1;i<ordered.length;i++)
+  assert.ok(helper.indexOf(ordered[i-1])<helper.indexOf(ordered[i]),
+   'Cart data and live metadata must migrate before the Object is retired');
+ assert.match(helper,/runuser -u metadrive -- node/);
+ assert.match(helper,/source \/etc\/metadrive\/production\.env/);
+ if(process.platform!=='win32'){
+  const parsed=spawnSync('bash',['-n',fileURLToPath(path)],{encoding:'utf8'});
+  assert.equal(parsed.status,0,parsed.stderr);
+ }
+});

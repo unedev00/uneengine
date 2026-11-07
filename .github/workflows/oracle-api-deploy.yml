@@ -52,6 +52,7 @@ jobs:
           bash -n scripts/oracle/ensure-frontend-api-proxy.sh
           bash -n scripts/oracle/backup-production-sql.sh
           bash -n scripts/oracle/deploy-full-stack.sh
+          bash -n scripts/oracle/apply-cart-session-retirement.sh
           bash -n scripts/oracle/install-oci-deploy-control.sh
           bash -n scripts/oracle/metadrive-oci-deploy-latest
           bash -n scripts/oracle/metadrive-mcp-operations
