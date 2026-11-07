@@ -47,4 +47,5 @@ export function evaluateParsedExpression(
 ):unknown;
 export function executeActionFormula(formula:string,record:Record<string,unknown>,context:FormulaBindingContext,
  services:import('../../../../server/src/expression-engine/ActionFormulas.js').ActionServices
-):Promise<{changes:Array<{key:string;value:unknown}>;recordChanged:boolean;mutatedObjectApiNames:string[]}>;
+):Promise<{changes:Array<{key:string;value:unknown}>;recordChanged:boolean;mutatedObjectApiNames:string[];
+ plannedRecordWrites?:number;skippedRecordWrites?:number;noRecordWriteReason?:string}>;
