@@ -12,29 +12,30 @@ const graph=(apiName:string,label:string,elements:Node[],connectors:ReturnType<t
  apiName,label,appApiName:'Acetill',flowType:'Autolaunched Flow',status:'Active',version:1,
  elements,connectors,resources,tests:[]
 });
-const hold=graph('AcetillHoldCart','Hold current sale',[
+const hold=graph('AcetillHoldCart','Hold active cart without cloning lines',[
  node(1,'Start','Start',{executionContext:'User'}),
- node(2,'Assignment','Assign unique hold reference',{variable:'holdReference',value:'{!requestId}',operator:'Assign'}),
- node(3,'Create Records','Save held cart',{object:'Cart',resultVariable:'cartId',
-  uniqueInputGuard:{field:'HoldReference'},fieldValues:[
-   {field:'Name',value:'{!holdReference}'},{field:'HoldLabel',value:'{!label}'},{field:'HoldReference',value:'{!holdReference}'},
-   {field:'Status',value:'Held'},{field:'HeldBy',value:'{!$User.Id}'}
- ]}),
- node(4,'Loop','Save each cart item',{collection:'cartItems',loopVariable:'cartItem'}),
- node(5,'Create Records','Save cart line',{object:'CartLine',fieldValues:[
-   {field:'Cart',value:'{!cartId}'},{field:'Product',value:'{!cartItem.Product}'},
-   {field:'Quantity',value:'{!cartItem.Quantity}'},
-   {field:'OriginalUnitPrice',value:'{!cartItem.OriginalUnitPrice}'}
- ]}),
- node(6,'End','Held',{})
-],[edge(1,2),edge(2,3),edge(3,4),edge(4,5,'For Each'),edge(5,4),edge(4,6,'After Last')],[
- input('requestId'),input('label'),collection('cartItems','CartLine',true),
- output('holdReference'),output('cartId'),{name:'cartItem',type:'Record',dataType:'CartLine'},
+ node(2,'Get Records','Read my open cart',{object:'Cart',recordLimit:'1',outputVariable:'cart',
+  conditions:[{field:'Id',operator:'Equals',value:'{!cartId}'},
+   {field:'UserId',operator:'Equals',value:'{!$User.Id}'},
+   {field:'Status',operator:'Equals',value:'Open'}]}),
+ node(3,'Decision','Cart found?',{outcomes:[{name:'Found',label:'Found',conditionLogic:'All',
+  conditions:[{field:'{!cart}',operator:'IsNotNull'}]}]}),
+ node(4,'Assignment','Assign hold reference',{variable:'holdReference',value:'{!requestId}',operator:'Assign'}),
+ node(5,'Update Records','Hold selected cart',{object:'Cart',recordId:'{!cart.Id}',
+  fieldValues:[{field:'HoldReference',value:'{!holdReference}'},{field:'HoldLabel',value:'{!label}'},
+   {field:'Status',value:'Held'},{field:'HeldBy',value:'{!$User.Id}'}]}),
+ node(6,'End','Cart held',{}),
+ node(7,'Custom Error','Cannot hold unowned cart',{errorLocation:'Page',
+  errorMessage:'Select your open cart before placing it on hold.'})
+],[edge(1,2),edge(2,3),edge(3,4,'Found'),edge(3,7,'Default'),edge(4,5),edge(5,6),edge(7,6)],[
+ input('cartId'),input('requestId'),input('label'),
+ output('holdReference'),{name:'cart',type:'Record',dataType:'Cart'}
 ]);
 const list=graph('AcetillListHeldCarts','List my held sales',[
  node(1,'Start','Start',{executionContext:'User'}),
  node(2,'Get Records','My held carts',{object:'Cart',recordLimit:'all',outputVariable:'records',
-  conditions:[{field:'Status',operator:'Equals',value:'Held'},{field:'HeldBy',operator:'Equals',value:'{!$User.Id}'}]}),
+  conditions:[{field:'Status',operator:'Equals',value:'Held'},
+   {field:'UserId',operator:'Equals',value:'{!$User.Id}'}]}),
  node(3,'End','Done',{})
 ],[edge(1,2),edge(2,3)],[collection('records','Cart')]);
 const resume=graph('AcetillResumeHeldCart','Resume a held sale',[
@@ -42,18 +43,19 @@ const resume=graph('AcetillResumeHeldCart','Resume a held sale',[
  node(2,'Get Records','Find my held cart',{object:'Cart',recordLimit:'1',outputVariable:'heldCart',
   conditions:[{field:'HoldReference',operator:'Equals',value:'{!holdReference}'},
    {field:'Status',operator:'Equals',value:'Held'},
-   {field:'HeldBy',operator:'Equals',value:'{!$User.Id}'}]}),
+   {field:'UserId',operator:'Equals',value:'{!$User.Id}'}]}),
  node(3,'Decision','Cart found?',{outcomes:[{name:'Resume',label:'Resume',conditionLogic:'All',
   conditions:[{field:'{!heldCart}',operator:'IsNotNull'}]}]}),
  node(4,'Get Records','Retrieve cart lines',{object:'CartLine',recordLimit:'all',
   outputVariable:'records',requireNonEmpty:true,conditions:[{field:'Cart',operator:'Equals',value:'{!heldCart.Id}'}],
   referenceEnrichments:[{referenceField:'Product',object:'Product',fields:{ProductId:'Id',Name:'Name',Price:'Price',AgeRestricted:'AgeRestricted',MinimumAge:'MinimumAge'}}]}),
  node(5,'Update Records','Release held cart',{object:'Cart',recordId:'{!heldCart.Id}',
-  fieldValues:[{field:'Status',value:'Resumed'}]}),
+  fieldValues:[{field:'Status',value:'Open'}]}),
  node(6,'Assignment','Mark completed',{variable:'status',value:'completed'}),
+ node(8,'Assignment','Activate selected cart',{variable:'cartId',value:'{!heldCart.Id}',operator:'Assign'}),
  node(7,'End','Done',{})
-],[edge(1,2),edge(2,3),edge(3,4,'Resume'),edge(3,7,'Default'),edge(4,5),edge(5,6),edge(6,7)],[
- input('holdReference'),input('requestId'),output('status'),collection('records','CartLine'),
+],[edge(1,2),edge(2,3),edge(3,4,'Resume'),edge(3,7,'Default'),edge(4,5),edge(5,6),edge(6,8),edge(8,7)],[
+ input('holdReference'),input('requestId'),output('status'),output('cartId'),collection('records','CartLine'),
  {name:'heldCart',type:'Record',dataType:'Cart'}
 ]);
 export async function seedAcetillCartFlows(client:PoolClient,tenantId:string):Promise<number>{
