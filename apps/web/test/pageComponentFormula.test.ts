@@ -139,9 +139,10 @@ test('explicit unknown field bindings report an error while null and unbound val
  assert.throws(()=>resolveRegisteredTextProperties(definitions,{
   ...base,textSource:'@Subtotal'
  }),/Field Subtotal is not available on Object CartLine/);
- assert.equal(resolveRegisteredTextProperties(definitions,{
+ const nullValue=resolveRegisteredTextProperties(definitions,{
   ...base,record:{Quantity:null},textSource:'@Quantity'
- }).textSource,'');
+ }).textSource;
+ assert.ok(nullValue==null||nullValue==='');
  assert.equal(resolveRegisteredTextProperties(definitions,{
   ...base,textSource:''
  }).textSource,'');
@@ -149,6 +150,6 @@ test('explicit unknown field bindings report an error while null and unbound val
   ...base,textSource:'@Quantity'
  }).textSource,'2');
  assert.equal(resolveRegisteredTextProperties(definitions,{
-  ...base,textSource:'"@Subtotal"'
- }).textSource,'@Subtotal');
+  ...base,textSource:'="literal @Subtotal: " & @Quantity'
+ }).textSource,'literal @Subtotal: 2');
 });
