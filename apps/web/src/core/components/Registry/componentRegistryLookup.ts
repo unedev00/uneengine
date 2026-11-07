@@ -1,5 +1,5 @@
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
-import { registeredComponentDefinitions, legacyUneAliases } from './componentLibraryDiscovery';
+import { registeredComponentDefinitions } from './componentLibraryDiscovery';
 
 export type ComponentSurface = LibraryComponentMetadata['surfaces'][number];
 
@@ -11,14 +11,8 @@ export function findRegisteredComponent(
 ): LibraryComponentMetadata | undefined {
   if (typeof apiName !== 'string' || !apiName) return undefined;
   const registered = registeredComponentDefinitions(components, surface);
-  // A tenant's real published identity wins; only absent retired system keys
-  // fall back to the canonical UNE implementation for older saved metadata.
-  return registered.find(definition => definition.apiName === apiName &&
-    !((apiName === 'ui_text' || (apiName === 'OneText' || apiName === 'OneBadge')) && definition.trustedBundled === true) &&
-    definition.status !== 'Draft' && definition.surfaces.includes(surface))
-    ?? (legacyUneAliases[apiName] ? registered.find(definition =>
-      definition.apiName === legacyUneAliases[apiName] && definition.trustedBundled === true &&
-      definition.status !== 'Draft' && definition.surfaces.includes(surface)) : undefined);
+  return registered.find(definition=>definition.apiName===apiName &&
+    definition.status!=='Draft' && definition.surfaces.includes(surface));
 }
 
 /** Interpret saved metadata for all existing registered-component surfaces.

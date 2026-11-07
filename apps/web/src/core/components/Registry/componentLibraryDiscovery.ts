@@ -1,29 +1,9 @@
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
 
-export const oneLibraryName = 'One-';
-
-/** Display names can change without invalidating persisted API references. */
-export function oneComponentLabel(component: Pick<LibraryComponentMetadata, 'label' | 'apiName'>): string {
-  const label = component.label.trim() || component.apiName;
-  return `One-${label.replace(/^One(?:[-\s]+|(?=[A-Z]))/, '')}`;
+/** Tenant-authored component labels are independent of retired renderer families. */
+export function customComponentLabel(component:Pick<LibraryComponentMetadata,'label'|'apiName'>):string {
+ return component.label.trim() || component.apiName;
 }
-
-/** Compatibility entries stay resolvable, but are not offered for new placements.
- * Only reviewed bundled aliases are consolidated; tenant components retain their identity. */
-/** Old system API names are readable aliases, not additional new components.
- * Keep tenant-authored components with identical labels or unrelated API names. */
-export const legacyUneAliases: Readonly<Record<string,string>> = Object.freeze({
-  OneText: 'ui_input',
-  ui_text: 'ui_input',
-  OneBadge: 'ui_input',
-  OneButton: 'ui_button',
-  OneSearch: 'ui_search',
-  OneCalendar: 'ui_calendar',
-  OneItemGrid: 'ui_item_grid',
-  OneConversation: 'ui_conversation',
-  OneShoppingCart: 'ui_cart',
-});
-const bundledAliases: Readonly<Record<string, string>> = { ChatterInbox: 'ui_conversation' };
 
 export function registeredComponentDefinitions(
   components: readonly LibraryComponentMetadata[],
@@ -48,23 +28,12 @@ export function uniqueLibraryComponents(
   surface?: LibraryComponentMetadata['surfaces'][number]
 ): LibraryComponentMetadata[] {
   const catalog = registeredComponentDefinitions(components, surface);
-  const definitions = new Map(catalog.map(component => [component.apiName, component]));
-  return catalog.filter(component => {
-    if (component.trustedBundled && (component.apiName.startsWith('ui_') || component.apiName === 'ChatterInbox' || /^(acetill|aceassist|onechatter|uneacechatter)_/.test(component.apiName))) return false;
-    // The original eight One registrations are internal compatibility identities.
-    if (component.trustedBundled && legacyUneAliases[component.apiName]) return false;
-    const canonical = definitions.get(bundledAliases[component.apiName]);
-    return !(component.trustedBundled && canonical?.trustedBundled && canonical.status !== 'Draft' &&
-      (component.surfaces ?? []).every(item => canonical.surfaces.includes(item)));
-  });
+  return catalog.filter(component=>!component.trustedBundled || component.apiName.startsWith('smart_'));
+
 }
 
 /** Friendly names are presentation-only. Never change stable component API names in saved pages. */
-export function libraryComponentLabel(component: LibraryComponentMetadata): string {
-  if (component.apiName.startsWith('smart_')) return component.label.replace(/^Smart\s+/, '');
-  if (component.apiName.startsWith('ui_')) {
-    const raw = component.label.replace(/^\s*(?:UNE|One)[\s_-]*/i, '').trim();
-    return raw || component.apiName.slice(4).split('_').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-  }
-  return component.scope === 'platform-system' ? component.label : oneComponentLabel(component);
+export function libraryComponentLabel(component:LibraryComponentMetadata):string {
+ const label=customComponentLabel(component);
+ return component.apiName.startsWith('smart_') ? label.replace(/^Smart\s+/,'') : label;
 }

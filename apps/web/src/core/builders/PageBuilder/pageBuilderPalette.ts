@@ -1,11 +1,10 @@
 import { uniqueLibraryComponents } from '../../components/Registry/componentLibraryDiscovery';
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
 
-/** Page Builder uses the published shared registry, never draft or unsupported definitions. */
-export const RETIRED_UNE_PAGE_BUILDER_COMPONENTS = new Set(["ui_badge","ui_text","ui_alert","ui_card","ui_chart","ui_choice","ui_container","ui_date_picker","ui_document_viewer","ui_drawer","ui_form","ui_grid","ui_image","ui_line_items","ui_menu","ui_metric","ui_navigation","ui_option_groups","ui_progress","ui_record_list","ui_repeater","ui_slot_picker","ui_split_pane","ui_table","ui_conversation","ui_cart","ui_search","ui_modal"]);
+/** Page Builder uses the published shared registry, never draft definitions. */
 
 export function publishedPageLibraryComponents(components: readonly LibraryComponentMetadata[]): LibraryComponentMetadata[] {
-  return uniqueLibraryComponents(components, 'page').filter(component=>!component.apiName.startsWith('ui_'));
+  return uniqueLibraryComponents(components, 'page');
 }
 
 /** Platform palette groups are generic. Application-specific categories belong

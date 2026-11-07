@@ -10,7 +10,7 @@ import { layoutTypes } from '../../../../pages/TemplatePageRuntime/pageComponent
 import { standardPageComponents } from '../../../../components/Catalog/index';
 import {
 getPageBuilderComponentCategories, publishedPageLibraryComponents,
-RETIRED_UNE_PAGE_BUILDER_COMPONENTS, pageBuilderPaletteCategories,
+pageBuilderPaletteCategories,
 } from '../../pageBuilderPalette';
 import { pageBuilderCategoryLabels } from '../../pageBuilderUx';
 import { uneRibbonIcon } from '../../uneRibbonIcon';
@@ -55,7 +55,7 @@ export function usePagePalette(
     }] : []),
     ...libraryComponents.filter(component=>isUneBuilderApi(component.apiName,ribbonCatalog?.components??[])
       &&component.apiName!=='smart_icon' // Legacy instances stay registered; new pages use Button + Shape.
-      &&component.status!=='Draft'&&!RETIRED_UNE_PAGE_BUILDER_COMPONENTS.has(component.apiName)).map(component=>({
+      &&component.status!=='Draft').map(component=>({
       id:'Custom:'+component.apiName,
       type:'Custom:'+component.apiName,
       label:component.apiName==='smart_textbox'?'Smart Textbox':component.apiName==='smart_card_grid'?'Card Grid':component.apiName==='smart_lookup'?'Lookup Record':
@@ -63,7 +63,7 @@ export function usePagePalette(
         component.apiName.startsWith('smart_')?component.apiName.slice(6).split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '):component.label,
       description:component.description,
       categories:getPageBuilderComponentCategories(component.apiName,component.label,component.description,false,
-        component.apiName==='ui_item_grid'?'Data':component.apiName==='ui_image'?'Display':undefined)
+        undefined)
     })),
     ...publishedPageLibraryComponents(libraryComponents).filter(component=>!isUneBuilderApi(component.apiName,ribbonCatalog?.components??[])).map((component) => ({
       id: `Custom:${component.apiName}`,

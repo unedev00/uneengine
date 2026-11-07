@@ -83,41 +83,25 @@ export type PageAppearanceTarget =
   | 'input' | 'toggle' | 'button' | 'badge' | 'text' | 'image'
   | 'surface' | 'collection' | 'table' | 'calendar' | 'progress'
   | 'layout' | 'tabs' | 'conversation' | 'cart' | 'form' | 'overlay';
-const specificPageTargets: Record<string, PageAppearanceTarget> = {
-  smartbutton:'button',smarttoggle:'toggle',smartlookup:'input',
-  smarttabs:'tabs',smarttext:'input',smartcardgrid:'collection',
-  smartimage:'image',smartcalendar:'calendar',smartnavigation:'button',
-  smartcontainer:'layout',
-  oneitemgrid:'collection', unerepeater:'collection', unerecordlist:'collection',
-  uneitemgrid:'collection', uneoptiongroups:'collection',
-  unetable:'table', unelineitems:'table', reportchart:'surface',
-  onecalendar:'calendar', unecalendar:'calendar',
-  oneconversation:'conversation', uneconversation:'conversation',
-  oneshoppingcart:'cart', unecart:'cart', acetillcart:'cart',
-  unetoggle:'toggle',
-  uneform:'form',
-  unestack:'layout', unecontainer:'layout', unegrid:'layout', unesplitpane:'layout',
-  unetabs:'tabs', tabs:'tabs',
-  unemodal:'overlay', unedrawer:'overlay',
-  uneprogress:'progress'
+const specificPageTargets:Record<string,PageAppearanceTarget>={
+ smartbutton:'button',smarttoggle:'toggle',smartlookup:'input',smarttabs:'tabs',
+ smarttext:'input',smarttextbox:'input',smartlabel:'text',smartcardgrid:'collection',
+ smartimage:'image',smartcalendar:'calendar',smartnavigation:'button',
+ smartcontainer:'layout',smartcart:'cart',smarttable:'table',smartnumpad:'input',
+ smarticon:'image',tabs:'tabs',reportchart:'surface'
 };
-export function pageAppearanceTarget(type: string): PageAppearanceTarget {
-  if (isLayoutType(type)) return 'layout';
-  const name = type.replace(/^Custom:/i, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-  // Private application identities keep the same native appearance targets as their
-  // former UNE renderers; only the app owns the component, not its styling engine.
-  const canonicalLegacy = name.startsWith('ui') ? 'une'+name.slice(2) : name;
-  const legacyName = canonicalLegacy.replace(/^(?:acetill|aceassist|onechatter|uneacechatter)/,'une');
-  if (specificPageTargets[name] || specificPageTargets[canonicalLegacy] || specificPageTargets[legacyName])
-    return specificPageTargets[name] ?? specificPageTargets[canonicalLegacy] ?? specificPageTargets[legacyName];
-  if (/search|input|lookup|date.?picker|select|dropdown|choice|checkbox|radio|slider|slot.?picker/.test(name)) return 'input';
-  if (/button|navigation|menu|link|action/.test(name)) return 'button';
-  if (/badge|chip|tag/.test(name)) return 'badge';
-  if (/image|picture|avatar|logo/.test(name)) return 'image';
-  if (/progress|loadingbar/.test(name)) return 'progress';
-  if (/text|heading|paragraph|label/.test(name)) return 'text';
-  if (/chart|table/.test(name)) return 'table';
-  return 'surface';
+export function pageAppearanceTarget(type:string):PageAppearanceTarget {
+ if(isLayoutType(type))return 'layout';
+ const name=type.replace(/^Custom:/i,'').replace(/[^a-z0-9]/gi,'').toLowerCase();
+ if(specificPageTargets[name])return specificPageTargets[name];
+ if(/search|input|lookup|date.?picker|select|dropdown|choice|checkbox|radio|slider/.test(name))return 'input';
+ if(/button|navigation|menu|link|action/.test(name))return 'button';
+ if(/badge|chip|tag/.test(name))return 'badge';
+ if(/image|picture|avatar|logo/.test(name))return 'image';
+ if(/progress|loadingbar/.test(name))return 'progress';
+ if(/text|heading|paragraph|label/.test(name))return 'text';
+ if(/chart|table/.test(name))return 'table';
+ return 'surface';
 }
 
 /** An authored appearance value is independent: setting a 64px radius does
@@ -304,7 +288,6 @@ export const layoutContainerTypes = new Set(['Container', 'Row', 'Column', 'Card
 
 export function isLayoutContainer(component: PageComponentMetadata): boolean {
   return layoutContainerTypes.has(component.type)
-    || component.type==='Custom:ui_container'
     // Smart Container is a shared layout primitive. Older saved instances have no
     // layoutContainer flag, so recognise them without rewriting tenant metadata.
     || (component.type==='Custom:smart_container' && component.properties?.layoutContainer !== false)

@@ -6,7 +6,7 @@ import { Check, Code2, Grid2X2, Pencil, Plus, Puzzle, Save, Trash2, X } from 'lu
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
 import { standardDashboardComponents, standardPageComponents } from '../Catalog/index';
 
-import { uniqueLibraryComponents, libraryComponentLabel, oneComponentLabel } from '../Registry/componentLibraryDiscovery';
+import { uniqueLibraryComponents, libraryComponentLabel, customComponentLabel } from '../Registry/componentLibraryDiscovery';
 
 type ComponentInput = Pick<LibraryComponentMetadata, 'apiName' | 'label' | 'description' | 'surfaces' | 'resize' | 'jsxSource' | 'cssSource' | 'propertyDefinitions'> & {publicationStatus: 'Draft' | 'Published'};
 
@@ -38,7 +38,7 @@ export default function ComponentLibrary({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [catalogSearch, setCatalogSearch] = useState('');
-  const [activeLibrary, setActiveLibrary] = useState<'Core' | 'One-'>('Core');
+  const [activeLibrary, setActiveLibrary] = useState<'Core' | 'Custom'>('Core');
   const [publicationStatus, setPublicationStatus] = useState<'Draft' | 'Published'>('Draft');
   const [restoreVersion, setRestoreVersion] = useState(0);
 
@@ -85,7 +85,7 @@ export default function ComponentLibrary({
       if(issues.length)throw Error(issues.map(i=>i.path+' '+i.message).join('; '));
       await onSave({
         apiName,
-        label: oneComponentLabel({ label, apiName }),
+        label: customComponentLabel({ label, apiName }),
         description: description.trim(),
         surfaces,
         resize,
@@ -193,18 +193,18 @@ export default function ComponentLibrary({
   return <div className="component-library-page">
     <div className="page-heading">
       <div><div className="eyebrow">Setup / Platform Tools</div><h1>Component Libraries</h1><p>Core contains built-in platform components. One- contains tenant components for pages, dashboards, and Flows. UNE components are maintained directly by their applications.</p></div>
-      {canManage && <button className="btn btn-brand" onClick={() => { reset(); setActiveLibrary('One-'); }}><Plus size={14} />Register One- component</button>}
+      {canManage && <button className="btn btn-brand" onClick={() => { reset(); setActiveLibrary('Custom'); }}><Plus size={14} />Register custom component</button>}
     </div>
     {!canManage && <div className="info-callout component-library-notice">You can use shared components in builders. A user with the <strong>Manage tenant components</strong> permission is required to register, update, or remove library entries.</div>}
     {error && <div className="auth-error" role="alert">{error}</div>}
-    <div className="component-library-layout" style={activeLibrary !== 'One-' || !canManage ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
+    <div className="component-library-layout" style={activeLibrary !== 'Custom' || !canManage ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
       <section className="surface component-library-list">
         <div className="list-view-header"><div><div className="list-view-label">Shared catalog</div><h2>All components</h2><span>{totalCount} components · {standardPageComponents.length + standardDashboardComponents.length + coreComponents.length} Core · {customComponents.length} One-</span></div></div>
         <label className="form-label" htmlFor="component-library-search">Search components
           <input id="component-library-search" className="form-control" type="search" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} placeholder="Search label, API name or description" />
         </label>
         <div style={{ display: 'flex', gap: 8, padding: '0 14px' }} role="group" aria-label="Component library">
-          {(['Core', 'One-'] as const).map(name => <button key={name} className={`btn ${activeLibrary === name ? 'btn-brand' : ''}`} aria-pressed={activeLibrary === name} onClick={() => setActiveLibrary(name)}>{name} library</button>)}
+          {(['Core', 'Custom'] as const).map(name => <button key={name} className={`btn ${activeLibrary === name ? 'btn-brand' : ''}`} aria-pressed={activeLibrary === name} onClick={() => setActiveLibrary(name)}>{name} library</button>)}
         </div>
         <p className="properties-help">Showing {shownCount} of {libraryCount} components in {activeLibrary}</p>
         {activeLibrary === 'Core' && [
@@ -218,8 +218,8 @@ export default function ComponentLibrary({
             <div className="library-component-info"><strong>{component.label}</strong><code>{component.apiName}</code><small>{section.label}</small><p>{component.description}</p></div>
           </article>)}
         </div>)}
-        {activeLibrary === 'One-' && <div className="component-library-section">
-          <div className="component-library-section-heading"><h3>One- · Custom components</h3><span>Registered in this shared library</span></div>
+        {activeLibrary === 'Custom' && <div className="component-library-section">
+          <div className="component-library-section-heading"><h3>Custom components</h3><span>Registered in this shared library</span></div>
         {visibleCustomComponents.map((component) => <article className={`library-component-card ${editingApiName === component.apiName ? 'selected' : ''}`} key={component.apiName}>
           <span className="component-option-icon"><Puzzle size={16} /></span>
           <div className="library-component-info"><strong>{libraryComponentLabel(component)}</strong><code>{component.apiName}</code><small>{component.surfaces.map((surface) => surface === 'page' ? 'Lightning pages' : surface === 'dashboard' ? 'Dashboards' : 'Flow screens').join(' · ')} · v{component.version} · {component.status ?? 'Published'}{component.pendingDraft ? ` · Draft v${component.pendingDraft.version} ready` : ''}</small>{component.description && <p>{component.description}</p>}</div>
@@ -228,7 +228,7 @@ export default function ComponentLibrary({
         {!customComponents.length && <div className="component-library-empty"><Puzzle size={25} /><strong>No custom components registered</strong><span>Core components are listed above. Register a JSX component to share your own in the builders.</span></div>}
         </div>}
       </section>
-      {canManage && activeLibrary === 'One-' && <section className="surface component-registration-panel">
+      {canManage && activeLibrary === 'Custom' && <section className="surface component-registration-panel">
         <div className="properties-header"><div><div className="list-view-label">{editingApiName ? 'New version' : 'Tenant catalog'}</div><h2>{editingApiName ? `Update ${label || editingApiName}` : 'Register a component'}</h2></div>{editingApiName && <button className="icon-button subtle" aria-label="Cancel editing" onClick={reset}><X size={15} /></button>}</div>
         <p className="properties-help">Select a self-contained React JSX/TSX component and an optional CSS file. Saving a new version updates every tenant that uses this component.</p>
         <label className="form-label" htmlFor="library-component-label">Label</label>
