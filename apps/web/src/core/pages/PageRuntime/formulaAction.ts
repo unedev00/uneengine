@@ -110,7 +110,7 @@ export async function executePageFormulaAction(
     return {changes:[...data.changes,...rest.changes],
      recordChanged:data.recordChanged||rest.recordChanged,
      mutatedObjectApiNames:[...new Set([...data.mutatedObjectApiNames,...rest.mutatedObjectApiNames])],
-     recordChanges:data.recordChanges,
+     recordChanges:[...data.recordChanges,...(rest.recordChanges??[])],
      plannedRecordWrites:data.plannedRecordWrites+(rest.plannedRecordWrites??0),
      skippedRecordWrites:data.skippedRecordWrites+(rest.skippedRecordWrites??0),
      ...(!(data.recordChanged||rest.recordChanged)&&
