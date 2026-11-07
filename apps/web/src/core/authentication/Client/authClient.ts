@@ -61,13 +61,20 @@ function refreshAccessToken() {
 // Include the in-memory access token in the key so requests cannot cross an auth
 // transition, and skip custom signals/headers because their semantics are caller-owned.
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
+// A write or page mutation changes the query generation: a refetch must never
+// join a pre-write GET still in flight. This is not a settled record cache.
+let recordReadGeneration=0;
+export function invalidateRecordReadRequests():void { recordReadGeneration++; }
+if(typeof window!=='undefined')
+ window.addEventListener('metadrive:page-flow-mutated',invalidateRecordReadRequests);
 
 export function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   // Only default GETs are coalesced. Any explicit RequestInit may carry caller
   // semantics (cache mode, credentials, abort signal, headers, etc.) and must
   // remain an independent request.
   if (init !== undefined) return performApiRequest<T>(path, init);
-  const key = JSON.stringify([accessToken ?? null, path]);
+  const key = JSON.stringify([accessToken ?? null, path,
+    path.startsWith('/records/')?recordReadGeneration:0]);
   const existing = inFlightGetRequests.get(key);
   if (existing) return existing as Promise<T>;
   const request = performApiRequest<T>(path, init);
@@ -105,7 +112,11 @@ async function performApiRequest<T>(path: string, init?: RequestInit): Promise<T
     // just repeats the 401 and can trigger another refresh loop.
     if (token && token !== sentToken) response = await send(token);
   }
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) {
+    if(init?.method&&['POST','PUT','PATCH','DELETE'].includes(init.method.toUpperCase())
+      &&path.startsWith('/records/'))invalidateRecordReadRequests();
+    return undefined as T;
+  }
   if (!(response.headers.get('content-type')??'').toLowerCase().includes('application/json'))
     throw new ApiRequestError(`API ${path} returned non-JSON (HTTP ${response.status}); verify API deployment and routing`,
       {path},response.status);
@@ -123,6 +134,8 @@ async function performApiRequest<T>(path: string, init?: RequestInit): Promise<T
       payload, response.status
     );
   }
+  if(init?.method&&['POST','PUT','PATCH','DELETE'].includes(init.method.toUpperCase())
+    &&path.startsWith('/records/'))invalidateRecordReadRequests();
   if(path==='/auth/me' && payload && typeof payload==='object' && 'user' in payload)
     setAuthenticatedFormulaBindingContext((payload as {user:unknown}).user);
   return payload;
@@ -227,7 +240,7 @@ export async function loadFlowScreenRecordPage(
   // The key includes auth identity and every server query dimension except
   // limit. A concurrent 2-row and 100-row request then uses the larger page.
   // Later requests still reauthorize through the Object API (no settled cache).
-  const key=JSON.stringify([accessToken??null,objectApiName,params.toString()]);
+  const key=JSON.stringify([accessToken??null,recordReadGeneration,objectApiName,params.toString()]);
   return pageCoalescer(key,limit,combinedLimit=>{
    const query=new URLSearchParams(params);
    query.set('limit',String(combinedLimit));

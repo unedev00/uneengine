@@ -1,4 +1,4 @@
-import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from 'react';
+import {createContext,useCallback,useContext,useEffect,useMemo,useRef,useSyncExternalStore,type ReactNode} from 'react';
 import {sameFormulaSnapshot} from './pageFormulaSnapshot';
 import {componentInstanceNames,type NamedComponent} from '../../../../../server/src/system-support/page-component-names';
 import type {LibraryComponentMetadata} from '../../metadata/Definitions/metadata';
@@ -12,6 +12,8 @@ type Scope={
  entries:Entry[];
  read:(name:string,key:string)=>Scalar;
  publish:(id:string,values:Record<string,Scalar>|null)=>void;
+ subscribe:(dependencies:readonly string[],listener:()=>void)=>()=>void;
+ version:(dependencies:readonly string[])=>string;
 };
 const Context=createContext<Scope|null>(null);
 /** Live user input (typed text, selections) published by the page runtime's onChange. */
@@ -26,9 +28,39 @@ function nameToken(name:string){
  return safeKey.test(name)&&!name.startsWith('__n_')?name:
   '__n_'+Array.from(name,char=>char.codePointAt(0)!.toString(16)).join('_');
 }
-export function useComponentFormulaState(state:Record<string,unknown>){
+/** Subscribe only to the named component properties actually referenced by a binding.
+ * A change in one Text or Cart component must not rerender all page components.
+ */
+export function componentFormulaDependencies(source:unknown):string[]{
+ const found=new Set<string>();
+ const seen=new WeakSet<object>();
+ const visit=(value:unknown,depth:number):void=>{
+  if(depth>8||value===null||value===undefined)return;
+  if(typeof value==='string'){
+   for(const match of value.matchAll(/\$component\.([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)/g))
+    found.add(match[1]+'.'+match[2]);
+  }else if(typeof value==='object'){
+   if(seen.has(value))return;
+   seen.add(value);
+   const items=Array.isArray(value)?value:Object.values(value as Record<string,unknown>);
+   for(const child of items)visit(child,depth+1);
+  }
+ };
+ visit(source,0);
+ return [...found].sort();
+}
+export function useFormulaDependencyVersion(scope:Scope|null,source:unknown):string{
+ const key=componentFormulaDependencies(source).join('|');
+ const dependencies=useMemo(()=>key?key.split('|'):[],[key]);
+ const subscribe=useCallback((listener:()=>void)=>
+  scope?.subscribe(dependencies,listener)??(()=>{}),[scope,dependencies]);
+ const snapshot=useCallback(()=>scope?.version(dependencies)??'',[scope,dependencies]);
+ return useSyncExternalStore(subscribe,snapshot,()=> '');
+}
+export function useComponentFormulaState(state:Record<string,unknown>,bindings?:unknown){
  const scope=usePageFormulaScope();
- return useMemo(()=>scope?Object.assign({},state,{[componentReaderKey]:scope.read}):state,[state,scope]);
+ const version=useFormulaDependencyVersion(scope,bindings);
+ return useMemo(()=>scope?Object.assign({},state,{[componentReaderKey]:scope.read}):state,[state,scope,version]);
 }
 export function PageFormulaScope({components,catalog,children}:{
  components?:readonly NamedComponent[];catalog:readonly LibraryComponentMetadata[];children:ReactNode
@@ -78,41 +110,66 @@ export function PageFormulaScope({components,catalog,children}:{
   for(const path of edges.keys())visit(path);
   return {entries,cyclic};
  },[components,catalog]);
- const [values,setValues]=useState(()=>new Map<string,Record<string,Scalar>>());
- const publish=useMemo(()=>((id:string,next:Record<string,Scalar>|null)=>{
-  setValues(old=>{
-   if(next===null&&!old.has(id))return old;
-   if(next!==null&&sameFormulaSnapshot(old.get(id),next))return old;
-   const updated=new Map(old);
-   if(next===null)updated.delete(id);else updated.set(id,next);
-   return updated;
-  });
- }),[]);
- const [inputs,setInputs]=useState(()=>new Map<string,Scalar>());
+ const values=useRef(new Map<string,Record<string,Scalar>>());
+ const inputs=useRef(new Map<string,Scalar>());
+ const revisions=useRef(new Map<string,number>());
+ const listeners=useRef(new Set<{dependencies:readonly string[];listener:()=>void}>());
+ const notify=useCallback((changed:ReadonlySet<string>)=>{
+  if(!changed.size)return;
+  for(const item of listeners.current)
+   if(item.dependencies.some(key=>changed.has(key)))item.listener();
+ },[]);
+ const publish=useCallback((id:string,next:Record<string,Scalar>|null)=>{
+  const previous=values.current.get(id);
+  if(next===null&&!previous)return;
+  if(next!==null&&sameFormulaSnapshot(previous,next))return;
+  if(next===null)values.current.delete(id);else values.current.set(id,next);
+  const entry=model.entries.find(item=>item.id===id);
+  if(!entry)return;
+  const changed=new Set<string>();
+  for(const key of new Set([...Object.keys(previous??{}),...Object.keys(next??{})])){
+   if(Object.is(previous?.[key],next?.[key]))continue;
+   const name=entry.token+'.'+key;
+   revisions.current.set(name,(revisions.current.get(name)??0)+1);
+   changed.add(name);
+  }
+  notify(changed);
+ },[model,notify]);
  useEffect(()=>{
-  const ids=new Set(model.entries.map(entry=>entry.id));
+  const byId=new Map(model.entries.map(entry=>[entry.id,entry.token]));
   const changed=(event:Event)=>{
    const detail=(event as CustomEvent<{componentId?:unknown;value?:unknown}>).detail;
-   if(typeof detail?.componentId!=='string'||!ids.has(detail.componentId))return;
+   if(typeof detail?.componentId!=='string'||!byId.has(detail.componentId))return;
    const value=detail.value;
    const scalar:Scalar=typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value)
     ?value:value==null?'':String(value);
-   setInputs(old=>{
-    if(old.has(detail.componentId as string)&&Object.is(old.get(detail.componentId as string),scalar))return old;
-    const next=new Map(old);next.set(detail.componentId as string,scalar);return next;
-   });
+   if(inputs.current.has(detail.componentId)&&Object.is(inputs.current.get(detail.componentId),scalar))return;
+   inputs.current.set(detail.componentId,scalar);
+   const name=byId.get(detail.componentId)!+'.value';
+   revisions.current.set(name,(revisions.current.get(name)??0)+1);
+   notify(new Set([name]));
   };
   window.addEventListener(componentInputEvent,changed);
   return ()=>window.removeEventListener(componentInputEvent,changed);
- },[model]);
- const scope=useMemo(()=>({...model,publish,read(name:string,key:string){
-  if(model.cyclic.has(name+'.'+key))throw Error('Circular component reference: '+name+'.'+key);
-  const entry=model.entries.find(item=>item.token===name);
-  if(!entry?.keys.includes(key))throw Error('Unknown component property: '+name+'.'+key);
-  if(key==='value'&&inputs.has(entry.id))return inputs.get(entry.id)!;
-  const row=values.get(entry.id);
-  return row&&Object.hasOwn(row,key)?row[key]:'';
- }}),[model,values,inputs,publish]);
+ },[model,notify]);
+ const scope=useMemo<Scope>(()=>({...model,publish,
+  subscribe(dependencies,listener){
+   const item={dependencies,listener};
+   listeners.current.add(item);
+   return ()=>{listeners.current.delete(item);};
+  },
+  version(dependencies){
+   return dependencies.map(key=>revisions.current.get(key)??0).join(',');
+  },
+  read(name:string,key:string){
+   if(model.cyclic.has(name+'.'+key))throw Error('Circular component reference: '+name+'.'+key);
+   const entry=model.entries.find(item=>item.token===name);
+   if(!entry?.keys.includes(key))throw Error('Unknown component property: '+name+'.'+key);
+   if(key==='value'&&inputs.current.has(entry.id))return inputs.current.get(entry.id)!;
+   const row=values.current.get(entry.id);
+   return row&&Object.hasOwn(row,key)?row[key]:'';
+  }
+ }),[model,publish]);
  return <Context.Provider value={scope}>{children}</Context.Provider>;
 }
 export function PublishedFormulaProperties({id,values,rendered}:{id?:string;values:Record<string,unknown>;rendered:Readonly<Record<string,string>>}){

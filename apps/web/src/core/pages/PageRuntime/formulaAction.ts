@@ -79,7 +79,12 @@ export async function executePageFormulaAction(
     method:'POST',body:JSON.stringify({formula,scope,dataSteps:split.dataSteps})
    });
    if(first.supported===true){
-    if(first.error)throw Error(first.error);
+    if(first.error){
+     // Earlier committed server writes must be reconciled, never replayed.
+     if(first.recordChanged&&first.mutatedObjectApiNames?.length)
+      throw new PartialActionError(first.error,first.mutatedObjectApiNames,first.completedActionCount??0);
+     throw Error(first.error);
+    }
     const data={changes:first.changes??[],recordChanged:first.recordChanged===true,
      mutatedObjectApiNames:first.mutatedObjectApiNames??[],recordChanges:first.recordChanges??[]};
     if(split.dataSteps===split.totalSteps)return data;

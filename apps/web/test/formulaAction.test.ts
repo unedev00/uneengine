@@ -537,3 +537,58 @@ test('multi-Object Formula reads and writes reserve both Objects once per action
  assert.deepEqual(planReadWriteObjects({actionType:'AdjustNumber'},'Counter'),['Counter']);
  assert.deepEqual(planReadWriteObjects({actionType:'PageState',stateKey:'count'},'Counter'),[]);
 });
+
+
+test('formula mutex reserves aggregate read objects even when the write targets a different Object',()=>{
+ const binding={actionType:'Formula',formula:
+  '=ACTIONS(GETRECORD(Cart, SessionKey, "session", AS(cart)), '+
+  'IF(COUNTIFS(CartLine, Cart, cart.Id)>0, UPDATERECORD(Cart, cart.Id, Total, 1), '+
+  'CREATERECORD(CartLine, Cart, cart.Id)))'};
+ assert.deepEqual(planReadWriteObjects(binding,'Cart',
+  [{apiName:'Cart'},{apiName:'CartLine'}]),['Cart','CartLine']);
+});
+
+test('collection and sum aggregate reads share their source Object lock',()=>{
+ const binding={actionType:'Formula',formula:
+  '=ACTIONS(GETRECORD(Order, Name, "a", AS(order)), '+
+  'UPDATERECORD(Order, order.Id, Total, SUMIFS(OrderLine, Amount, Order, order.Id)))'};
+ assert.deepEqual(planReadWriteObjects(binding,'Order',
+  [{apiName:'Order'},{apiName:'OrderLine'}]),['Order','OrderLine']);
+});
+
+test('unrelated object actions still run without false data locks',()=>{
+ const binding={actionType:'Formula',formula:
+  '=UPDATERECORD(Counter, "11111111-1111-4111-8111-111111111111", Value, 1)'};
+ assert.deepEqual(planReadWriteObjects(binding,'Counter',
+  [{apiName:'Counter'},{apiName:'CartLine'}]),['Counter']);
+});
+
+
+test('ten rapid Formula actions execute ten authorised writes without stale counter reads',async()=>{
+ let value=0;
+ let writes=0;
+ const formula='=ACTIONS(GETRECORD(Counter, Name, "current", AS(row)), '+
+  'UPDATERECORD(Counter, row.Id, Count, row.Count + 1))';
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  if(options?.method==='PUT'){
+   assert.equal(path,'/records/Counter/'+rowId);
+   const next=JSON.parse(String(options.body)).Count;
+   assert.equal(next,value+1,'queued actions must read the previous confirmed write');
+   await Promise.resolve();
+   value=next;writes++;
+   return {record:{Id:rowId,Count:value}} as T;
+  }
+  if(options)throw Error('Unexpected mutation method');
+  assert.match(path,/^\/records\/Counter\?limit=1/);
+  await Promise.resolve();
+  return {records:[{Id:rowId,Count:value}],total:1} as T;
+ };
+ const actions=Array.from({length:10},()=>runSerializedPageAction('rapid-action-test',
+  planReadWriteObjects({actionType:'Formula',formula},'Counter',[{apiName:'Counter'}]),
+  ()=>executePageFormulaAction(request,{actionType:'Formula',formula},
+   {},{},[{apiName:'Counter',fields:[]}],'Counter')));
+ const results=await Promise.all(actions);
+ assert.equal(writes,10);
+ assert.equal(value,10);
+ assert.ok(results.every(result=>result.recordChanged===true));
+});

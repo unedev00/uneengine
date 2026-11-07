@@ -80,7 +80,7 @@ export default function MetadataBoundPageComponent({
     }
   });
   const [storedPageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
-  const pageState=useComponentFormulaState(storedPageState);
+  const pageState=useComponentFormulaState(storedPageState,properties);
   const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const [revision, setRevision] = useState(0);
   const contextApiName=typeof properties.contextApiName==='string'?properties.contextApiName:'';
@@ -509,7 +509,7 @@ export default function MetadataBoundPageComponent({
             recordChanges:result.recordChanges}
         }));
       }
-      return {updated:true};
+      return {updated:true,recordChanged:result.recordChanged};
     }
     if (binding.actionType === 'AdjustNumber') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
@@ -601,18 +601,32 @@ export default function MetadataBoundPageComponent({
     }
   };
   const onAction = async (action: {event:string;value?:unknown}) => {
+    // Opt-in action trace includes queue wait, execution time and outcome, but
+    // never an authored formula, record values, request URLs or user inputs.
+    let trace=false;
+    try{trace=window.sessionStorage.getItem('metadrive:action-timings')==='1';}
+    catch{/* Session storage may be unavailable. */}
+    const started=trace?performance.now():0;
+    let executingAt=started;
+    let outcome:'completed'|'skipped'|'failed'='completed';
+    let recordWrite:boolean|undefined;
+    const traceId=trace?crypto.randomUUID():'';
     setActionPending(count=>count+1);
     try {
       const configured=actionFlows[action.event];
       const dependencyObjects=configured&&typeof configured==='object'&&!Array.isArray(configured)
-       ?planReadWriteObjects(configured as Record<string,unknown>,objectApiName):[];
+       ?planReadWriteObjects(configured as Record<string,unknown>,objectApiName,objects):[];
+      const execute=()=>{if(trace)executingAt=performance.now();return executeAction(action);};
       const result=dependencyObjects.length
-       ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,
-          ()=>executeAction(action))
-       :await executeAction(action);
+       ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,execute)
+       :await execute();
+      if((result as {skipped?:boolean}|undefined)?.skipped===true)outcome='skipped';
+      recordWrite=(result as {recordChanged?:boolean}|undefined)?.recordChanged;
       setActionError('');
       return result;
     } catch(error) {
+      outcome='failed';
+      if(error instanceof PartialActionError)recordWrite=error.mutatedObjectApiNames.length>0;
       // A prior Record API write may have succeeded before this step failed.
       // Refresh only the confirmed objects. Do not replay the authored action.
       if(error instanceof PartialActionError&&error.mutatedObjectApiNames.length)
@@ -622,6 +636,16 @@ export default function MetadataBoundPageComponent({
       setActionError(error instanceof Error?error.message:'Action failed');
       throw error;
     } finally {
+      if(trace){
+        const ended=performance.now();
+        console.info('[PageActionTiming]',{
+          id:traceId,componentId:component.id,event:action.event,outcome,
+          recordWrite:recordWrite??null,
+          queueWaitMs:Math.max(0,executingAt-started),
+          executionMs:Math.max(0,ended-executingAt),
+          totalMs:Math.max(0,ended-started)
+        });
+      }
       setActionPending(count=>Math.max(0,count-1));
     }
   };

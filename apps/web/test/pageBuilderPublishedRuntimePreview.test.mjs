@@ -52,3 +52,14 @@ test('live preview has no editor drag and resize handlers or canvas movement cur
   assert.match(css, /builder-interactive-preview \.reference-builder-layout\.page-builder-layout \.page-stage:has\(> \.page-builder-live-runtime\)\{/);
   assert.match(css, /builder-interactive-preview \.page-builder-live-runtime\{/);
 });
+
+
+test('both published free-canvas and template runtimes expose the same formula dependency scope',()=>{
+ const runtime=source('../src/core/pages/PageRuntime/pageRuntimeViews.tsx');
+ const canvas=runtime.slice(runtime.indexOf("if(page.layoutMode==='free-canvas')return"),runtime.indexOf('const renderRegion ='));
+ assert.match(canvas, /<PageFormulaScope[^>]*components=\{page\.components\}[^>]*catalog=\{libraryComponents\}/);
+ assert.match(canvas, /<ResponsivePageCanvas page=\{page\}>/);
+ assert.match(canvas, /<\/ResponsivePageCanvas>[\s\S]*<\/PageFormulaScope>/);
+ const template=runtime.slice(runtime.indexOf('const renderRegion ='));
+ assert.match(template, /<PageFormulaScope[^>]*components=\{page\.components\}[^>]*catalog=\{libraryComponents\}/);
+});
