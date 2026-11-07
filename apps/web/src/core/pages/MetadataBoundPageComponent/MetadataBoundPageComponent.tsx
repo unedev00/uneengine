@@ -80,7 +80,7 @@ export default function MetadataBoundPageComponent({
     }
   });
   const [storedPageState,setPageState]=useState<Record<string,unknown>>(initialPageState??{});
-  const pageState=useComponentFormulaState(storedPageState);
+  const pageState=useComponentFormulaState(storedPageState,properties);
   const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const [revision, setRevision] = useState(0);
   const contextApiName=typeof properties.contextApiName==='string'?properties.contextApiName:'';
