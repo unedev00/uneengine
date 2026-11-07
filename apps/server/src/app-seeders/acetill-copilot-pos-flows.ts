@@ -122,6 +122,27 @@ export const copilotChangeQuantity=graph('AcetillCopilotChangeQuantity','Till: c
  {name:'selectedLine',type:'Record',dataType:'CartLine'},
  {name:'nextQuantity',type:'Formula',dataType:'Number',value:'selectedLine.Quantity + delta'},
  {name:'nextLineTotal',type:'Formula',dataType:'Number',value:'nextQuantity * selectedLine.UnitPrice'}]);
+const selectTotals=summaries(6);
+export const copilotSelectCart=graph('AcetillCopilotSelectCart','Till: select a saved or held cart',[
+ n(1,'Start','Start'),
+ n(2,'Get Records','Read selected cart owned by cashier',{object:'Cart',
+  recordLimit:'1',outputVariable:'existingSession',
+  conditions:[{field:'Id',operator:'Equals',value:'{!cartId}'},
+   {field:'UserId',operator:'Equals',value:'{!$User.Id}'}]}),
+ n(3,'Decision','Open or held cart?',{outcomes:[
+  {name:'Open',label:'Open',conditionLogic:'All',
+   conditions:[{field:'{!existingSession.Status}',operator:'Equals',value:'Open'}]},
+  {name:'Held',label:'Held',conditionLogic:'All',
+   conditions:[{field:'{!existingSession.Status}',operator:'Equals',value:'Held'}]}]}),
+ n(4,'Update Records','Resume held cart',{object:'Cart',recordId:'{!cartId}',
+  fieldValues:[{field:'Status',value:'Open'}]}),
+ basket(5),...selectTotals.elements,
+ n(10,'End','Cart selected'),
+ n(11,'Custom Error','Cart unavailable',{errorLocation:'Page',
+  errorMessage:'Choose your own open or held cart.'})
+],[e(1,2),e(2,3),e(3,5,'Open'),e(3,4,'Held'),e(3,11,'Default'),e(4,5),
+ e(5,6),...selectTotals.links,e(9,10),e(11,10)]);
+
 export const copilotNewCart=graph('AcetillCopilotNewCart','Till: open a new independent cart',[
  n(1,'Start','Start'),
  n(2,'Create Records','Open cart',{object:'Cart',recordSource:'fields',resultVariable:'cartId',
@@ -170,7 +191,7 @@ export const copilotVerifyPin={
  connectors:[e(1,2),e(2,3),e(3,4),e(4,5,'Verified'),e(4,6,'Default')],
  resources:[variable('pin'),variable('verified','Boolean',false,true)],tests:[]
 };
-export const copilotPosGraphs=[copilotNewCart,copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory,copilotVerifyPin];
+export const copilotPosGraphs=[copilotNewCart,copilotSelectCart,copilotAddProduct,copilotReadCart,copilotChangeQuantity,copilotDefaultCategory,copilotVerifyPin];
 
 /** Only Acetill's independent seeder writes graphs; skip existing versions. */
 export async function seedAcetillCopilotPosFlows(client:Pick<PoolClient,'query'>,tenant:string){

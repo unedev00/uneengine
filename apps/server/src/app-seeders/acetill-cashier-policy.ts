@@ -12,7 +12,7 @@ export async function seedAcetillCashierPolicy(client:PoolClient,tenantId:string
   ...['HoldSale','RetrieveSale','SalesReturn'].map(name=>['Action:Acetill'+name,'execute'] as [string,string]),
   ...['GetProducts','GetCategories','HoldCart','ListHeldCarts','ResumeHeldCart','LoadReturnInvoice',
     'CreateSalesReturn','VerifyUserPin','ScanProduct','PaymentCash','PaymentCard',
-    'CopilotNewCart','CopilotAddProduct','CopilotReadCart','CopilotChangeQuantity','CopilotDefaultCategory',
+    'CopilotNewCart','CopilotSelectCart','CopilotAddProduct','CopilotReadCart','CopilotChangeQuantity','CopilotDefaultCategory',
     'CopilotVerifyPin'].map(name=>['Flow:Acetill'+name,'execute'] as [string,string]),
   ...['Cart','CartLine','MenuCategory','Invoice','InvoiceLine','Product'].map(name=>[name,'read'] as [string,string]),
   ['create'],['CartLine','delete'],

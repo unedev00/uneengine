@@ -4,7 +4,7 @@ import type {PoolClient} from 'pg';
 import {copilotPosGraphs,seedAcetillCopilotPosFlows} from '../../src/app-seeders/acetill-copilot-pos-flows.js';
 import {copilotTillLayout} from '../../src/app-seeders/acetill-copilot-pos-page.js';
 
-const required=['AcetillCopilotNewCart','AcetillCopilotAddProduct','AcetillCopilotReadCart','AcetillCopilotChangeQuantity','AcetillCopilotDefaultCategory','AcetillCopilotVerifyPin'];
+const required=['AcetillCopilotNewCart','AcetillCopilotSelectCart','AcetillCopilotAddProduct','AcetillCopilotReadCart','AcetillCopilotChangeQuantity','AcetillCopilotDefaultCategory','AcetillCopilotVerifyPin'];
 test('Copilot POS installs only metadata-driven reuse of existing shared runtimes',()=>{
  assert.deepEqual(copilotPosGraphs.map(g=>g.apiName),required);
  for(const g of copilotPosGraphs){
@@ -78,9 +78,9 @@ test('Copilot till Flow seeder is idempotent and never replaces authored metadat
   }
   return {rows:[],rowCount:1};
  }} as unknown as PoolClient;
- assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),6);
+ assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),7);
  assert.equal(await seedAcetillCopilotPosFlows(client,'tenant-1'),0);
- assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,6);
+ assert.equal(queries.filter(q=>q.includes('INSERT INTO md_flow_definitions')).length,7);
  assert.equal(queries.some(q=>q.includes('DELETE FROM md_flow')||q.includes('UPDATE md_flow')),false);
 });
 
