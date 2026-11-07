@@ -317,7 +317,7 @@ function MetadataBoundPageComponent({
   // Generic, page-scoped visual state for metadata-configured local actions.
   // Never grants data permissions or persists cross-tenant information.
   const [storedPageState, setPageState] = useState<Record<string, unknown>>(()=>initialPageState??{});
-  const pageState=useComponentFormulaState(storedPageState);
+  const pageState=useComponentFormulaState(storedPageState,properties);
   const stateDependencies=useMemo(()=>pageStateDependencies(pageComponents??[component]),[pageComponents,component]);
   const pendingFlowOutputs=useRef(new Map<string,{flowApiName:string;mappings:Record<string,unknown>}>());
   useEffect(() => {
