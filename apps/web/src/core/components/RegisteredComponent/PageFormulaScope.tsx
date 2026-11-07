@@ -24,6 +24,8 @@ export function publishComponentInput(componentId:string,value:unknown){
 }
 export const usePageFormulaScope=()=>useContext(Context);
 const safeKey=/^[A-Za-z_][A-Za-z0-9_]*$/;
+const nonBindingKeys=new Set(['records','record','objects','pageState','collectionRows',
+ 'formulaCollectionSources','formulaSources','collectionRecords','catalog']);
 // Preserve simple names. Reserve a prefix for reversible encoding of legacy names.
 function nameToken(name:string){
  return safeKey.test(name)&&!name.startsWith('__n_')?name:
@@ -46,10 +48,8 @@ export function componentFormulaDependencies(source:unknown):string[]{
    if(Array.isArray(value)){for(const child of value)visit(child,depth+1);return;}
    // Metadata bindings are authored properties. Record data, session objects and
    // catalog definitions are not bindings and can contain large row arrays.
-   const excluded=new Set(['records','record','objects','pageState','collectionRows',
-    'formulaCollectionSources','formulaSources','collectionRecords','catalog']);
    for(const [key,child] of Object.entries(value as Record<string,unknown>))
-    if(!excluded.has(key))visit(child,depth+1);
+    if(!nonBindingKeys.has(key))visit(child,depth+1);
   }
  };
  visit(source,0);
@@ -74,7 +74,7 @@ export function PageFormulaScope({components,catalog,children}:{
  const model=useMemo(()=>{
   const items=components??[];
   const names=componentInstanceNames(items);
-  const catalogByType=new Map(catalog.map(definition=>['Custom:'+definition.apiName,definition]));
+  const catalogByType=new Map(catalog.map(definition=>['Custom:'+definition.apiName,definition] as const));
   const entries:Entry[]=[];
   const edges=new Map<string,string[]>();
   for(const item of items){
@@ -115,8 +115,8 @@ export function PageFormulaScope({components,catalog,children}:{
    return cyclic.has(path);
   }
   for(const path of edges.keys())visit(path);
-  return {entries,cyclic,entryById:new Map(entries.map(item=>[item.id,item])),
-   entryByToken:new Map(entries.map(item=>[item.token,item]))};
+  return {entries,cyclic,entryById:new Map(entries.map(item=>[item.id,item] as const)),
+   entryByToken:new Map(entries.map(item=>[item.token,item] as const))};
  },[components,catalog]);
  const values=useRef(new Map<string,Record<string,Scalar>>());
  const inputs=useRef(new Map<string,Scalar>());
