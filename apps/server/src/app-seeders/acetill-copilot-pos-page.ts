@@ -20,7 +20,7 @@ const qty=flow('AcetillCopilotChangeQuantity',{
 },totals);
 const cash=flow('AcetillPaymentCash',{
  cartItems:{source:'ProjectRecords',value:'$state.cartItems',fields:['Product','Quantity']},
- cartTotal:'$state.total',requestId:'$session',
+ cartTotal:'$state.total',cartId:'$session.cartId',requestId:'$session.cartId',
  cashReceived:{source:'ToNumber',value:'$state.cashReceived'}
 },{status:'checkoutStatus',invoiceId:'invoiceId',total:'checkoutTotal'});
 const box=(id:string,type:string,label:string,region:string,

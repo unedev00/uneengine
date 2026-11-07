@@ -58,12 +58,13 @@ const resume=graph('AcetillResumeHeldCart','Resume a held sale',[
  input('holdReference'),input('requestId'),output('status'),output('cartId'),collection('records','CartLine'),
  {name:'heldCart',type:'Record',dataType:'Cart'}
 ]);
+export const acetillCartGraphs=[hold,list,resume] as const;
 export async function seedAcetillCartFlows(client:PoolClient,tenantId:string):Promise<number>{
  const objects=await client.query<{api_name:string}>(`SELECT api_name FROM md_object_definitions
  WHERE tenant_id=$1 AND api_name IN ('Cart','CartLine')`,[tenantId]);
  if(!['Cart','CartLine'].every(object=>objects.rows.some(row=>row.api_name===object)))return 0;
  let count=0;
- for(const template of [hold,list,resume]){
+ for(const template of acetillCartGraphs{
   const exists=await client.query('SELECT 1 FROM md_flow_definitions WHERE tenant_id=$1 AND api_name=$2',
    [tenantId,template.apiName]);
   if(exists.rowCount)continue;
