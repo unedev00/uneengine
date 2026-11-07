@@ -20,7 +20,7 @@ const eligible=['Name','SessionKey','Status','ServiceMode','ExpiresAt'];
 try{
  const tenants=await db.query(`
   SELECT DISTINCT tenant_id FROM md_records
-  WHERE object_api='CartSession' ORDER BY tenant_id`);
+  WHERE object_api IN ('CartSession','Cart') ORDER BY tenant_id`);
  const summary=[];
  for(const {tenant_id:tenant} of tenants.rows){
   const records=await db.query(`
@@ -52,6 +52,12 @@ try{
      FOREIGN KEY(tenant_id,legacy_session_id) REFERENCES md_records(tenant_id,id),
      FOREIGN KEY(tenant_id,cart_id) REFERENCES md_records(tenant_id,id)
     )`);
+   // Existing Cart records may predate the UserId field; attach their real owner.
+   await client.query(`
+    INSERT INTO md_record_values(tenant_id,record_id,object_api,field_api,reference_record_id)
+    SELECT r.tenant_id,r.id,'Cart','UserId',r.owner_id FROM md_records r
+    WHERE r.tenant_id=$1 AND r.object_api='Cart' AND r.owner_id IS NOT NULL
+    ON CONFLICT(tenant_id,record_id,field_api) DO NOTHING`,[tenant]);
    const before=await client.query(`
     SELECT r.id,r.owner_id,r.created_at FROM md_records r
     WHERE r.tenant_id=$1 AND r.object_api='CartSession' ORDER BY r.id FOR UPDATE`,[tenant]);
