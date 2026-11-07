@@ -145,7 +145,7 @@ export function PageFormulaScope({components,catalog,children}:{
     ?value:value==null?'':String(value);
    if(inputs.current.has(detail.componentId)&&Object.is(inputs.current.get(detail.componentId),scalar))return;
    inputs.current.set(detail.componentId,scalar);
-   const name=byId.get(detail.componentId)+'.value';
+   const name=byId.get(detail.componentId)!+'.value';
    revisions.current.set(name,(revisions.current.get(name)??0)+1);
    notify(new Set([name]));
   };
