@@ -3,35 +3,11 @@ import { useFormFactor } from '../../workspace/Responsive/useFormFactor';
 import {confirmDestructiveAction} from '../../components/ConfirmAction/confirmDestructiveAction';
 import '../SharedBuilderFrame/adaptiveBuilder.css';
 import { uniqueLibraryComponents, libraryComponentLabel } from '../../components/Registry/componentLibraryDiscovery';
-import type { RecordData, Aggregation, ComponentType, ActiveCrossFilter, RelationshipPathStep } from './dashboardEditorHelpers';
-import { defaultComponentTitles, relationshipPaths, csvValue, downloadCsv, filterOperators, dashboardFilterValueType, dashboardFilterOperatorsFor, dashboardFilterInputType, dashboardFilterInputValue, dashboardFilterStoredValue, chartPalette, chartPalettes, chartPaletteFor, dashboardWidthSpans, dashboardHeightSpans, dashboardWidthForSpan, dashboardHeightForSpan, apiNameFor, newDashboard, newComponent, formatValue, formatChartValue, chartAxisRange, chartAxisTicks, aggregate, aggregateReportSummary } from './dashboardEditorHelpers';
+import type { RecordData, Aggregation, ComponentType, ActiveCrossFilter } from './dashboardEditorHelpers';
+import { defaultComponentTitles, relationshipPaths, downloadCsv, dashboardFilterValueType, dashboardFilterOperatorsFor, dashboardFilterInputType, dashboardFilterInputValue, dashboardFilterStoredValue, chartPalette, chartPaletteFor, dashboardWidthSpans, dashboardHeightSpans, dashboardWidthForSpan, dashboardHeightForSpan, apiNameFor, newDashboard, newComponent, formatValue, formatChartValue, chartAxisRange, chartAxisTicks, aggregate, aggregateReportSummary } from './dashboardEditorHelpers';
 import {findRegisteredComponent} from '../../components/Registry/componentRegistryLookup';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowDown,
-  ArrowUp,
-  BarChart3,
-  Bell,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleHelp,
-  Copy,
-  Download,
-  Eye,
-  FileText,
-  GripVertical,
-  Image as ImageIcon,
-  LayoutDashboard,
-  Plus,
-  Printer,
-  Puzzle,
-  RefreshCw,
-  Save,
-  Trash2,
-  X
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Copy, Download, Eye, FileText, GripVertical, Image as ImageIcon, LayoutDashboard, Plus, Printer, Puzzle, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import RegisteredComponent from '../../components/RegisteredComponent/RegisteredComponent';
 import CustomComponentPropertyEditor from '../ComponentProperties/CustomComponentPropertyEditor';
 import SmartFieldInput from '../../../component-libraries/shared/primitives/SmartFieldInput/SmartFieldInput';
@@ -40,33 +16,8 @@ import { dashboardMentionContext, htmlSafeMentionContext } from './dashboardMent
 import PageComponentStyleEditor from '../ComponentStyleEditor/PageComponentStyleEditor';
 import { componentLayoutProps, resolveLayoutStyle, type LayoutDevice } from '../../pages/TemplatePageRuntime/pageComponentLayout';
 import { sourceReportTitleUpdate } from './dashboardComponentTitle';
-import {
-  dashboardFilterValue,
-  dashboardFiltersForObject,
-  matchesDashboardFilter,
-  matchesDashboardFilters,
-  toggleDashboardCrossFilter,
-  type ActiveDashboardCrossFilter
-} from '../../pages/EmbeddedDashboard/dashboardFilters';
-import type {
-  DashboardComponentMetadata,
-  DashboardFolderInput,
-  DashboardFolderMetadata,
-  DashboardFolderShareMetadata,
-  DashboardTerritoryMetadata,
-  DashboardFilterMetadata,
-  DashboardMetadata,
-  DashboardSnapshot,
-  DashboardSubscription,
-  DashboardSubscriptionInput,
-  AccessControlMetadata,
-  FieldMetadata,
-  LibraryComponentMetadata,
-  NamedCredentialMetadata,
-  ObjectMetadata,
-  ReportMetadata,
-  ReportRunMetadata
-} from '../../metadata/Definitions/metadata';
+import { dashboardFilterValue, dashboardFiltersForObject, matchesDashboardFilter, matchesDashboardFilters, toggleDashboardCrossFilter } from '../../pages/EmbeddedDashboard/dashboardFilters';
+import type { DashboardComponentMetadata, DashboardFolderInput, DashboardFolderMetadata, DashboardFolderShareMetadata, DashboardTerritoryMetadata, DashboardFilterMetadata, DashboardMetadata, DashboardSnapshot, DashboardSubscription, DashboardSubscriptionInput, AccessControlMetadata, LibraryComponentMetadata, NamedCredentialMetadata, ObjectMetadata, ReportMetadata, ReportRunMetadata } from '../../metadata/Definitions/metadata';
 type DashboardBuilderProps = {
   dashboards: DashboardMetadata[];
   dashboardFolders: DashboardFolderMetadata[];

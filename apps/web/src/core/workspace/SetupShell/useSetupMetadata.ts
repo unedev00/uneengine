@@ -5,7 +5,7 @@ import { resolveSqlComponentLibrary } from '../../components/Registry/bundledReg
 import { setAuthenticatedFormulaBindingContext } from '../../components/RegisteredComponent/fieldExpressionRuntime';
 import { saveVerifiedMetadata, type MetadataPublicationResponse } from '../../metadata/Cache/verifiedMetadataCache';
 import { reconcileCurrentAppId, reconcileSelectedObject, reconcileSelectedPage } from './metadataSelection';
-import type { ObjectMetadata, LightningPageMetadata, LightningAppMetadata, FlowDefinitionMetadata, PlatformEventMetadata, EmailAlertMetadata, ApprovalProcessMetadata, ConnectorProviderMetadata, IntegrationConnectionMetadata, LibraryComponentMetadata, DashboardMetadata, DashboardFolderMetadata, DashboardTerritoryMetadata, ReportFolderMetadata, ReportMetadata, AccessControlMetadata } from '../../metadata/Definitions/metadata';
+import type { ObjectMetadata, LightningPageMetadata, LightningAppMetadata, FlowDefinitionMetadata, PlatformEventMetadata, EmailAlertMetadata, ApprovalProcessMetadata, ConnectorProviderMetadata, IntegrationConnectionMetadata, LibraryComponentMetadata, DashboardFolderMetadata, DashboardTerritoryMetadata, ReportFolderMetadata, ReportMetadata, AccessControlMetadata } from '../../metadata/Definitions/metadata';
 
 export function shouldLoadFlowDefinitions(isAdmin: boolean, workspace: string, recordPageEditor=false): boolean {
   return isAdmin && (workspace === 'flow-builder' || workspace === 'page-builder'

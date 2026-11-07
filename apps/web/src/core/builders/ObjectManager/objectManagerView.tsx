@@ -6,10 +6,10 @@ import '../SchemaBuilder/schemaBuilderUsability.css';
 import { createSetupHome } from '../../settings/SetupHome/setupHomeView';
 import { relatedListRelationships } from '../PageBuilder/relatedListRelationships';
 import { createSettingsViews } from '../../settings/SettingsWorkspace/settingsWorkspaceViews';
-import { pageLayoutForRecord, compactLayoutForRecord, matchesLookupFilterGroup, relatedLookupFilterOperators, type RecordData } from '../../records/RecordWorkspace/recordMetadataUtils';
+import { relatedLookupFilterOperators } from '../../records/RecordWorkspace/recordMetadataUtils';
 import { formatRecordValue, parseCsvImport } from '../../records/RecordWorkspace/recordCsvUtils';
 import { initialScreenValues, screenFieldIsVisible } from '../../automation/FlowScreen/flowScreenRuntimeUtils';
-import { objectSettings, parseAppRoute, appRoutePath, recordPageLayoutVariants, type AppRoute } from '../../workspace/Navigation/appRouting';
+import { objectSettings, recordPageLayoutVariants } from '../../workspace/Navigation/appRouting';
 import { NavigationLoadTime, resolveCurrentAppNavigation } from '../../workspace/Navigation/appNavigationView';
 import { isStandalonePagePresentation, pageCanvasPresentationStyle } from '../../pages/PageRuntime/pageRuntimePresentation';
 import { insertFlowElementAtPath } from '../FlowBuilder/flowInsertElement.mjs';
@@ -34,66 +34,8 @@ const GlobalQuickActionsEditor = React.lazy(() => import('./GlobalQuickActionsEd
 const BusinessAutomationsPanel=React.lazy(()=>import('./BusinessAutomationsPanel'));
 const DeclarativeRulesPanel=React.lazy(()=>import('./DeclarativeRulesPanel'));
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import {
-  Activity,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  Bell,
-  Building2,
-  BriefcaseBusiness,
-  CalendarDays,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleHelp,
-  ClipboardList,
-  ClipboardPaste,
-  Command,
-  Copy,
-  Database,
-  Ellipsis,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  FileText,
-  Filter,
-  GripVertical,
-  Grid2X2,
-  ListFilter,
-  Maximize2,
-  Monitor,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Puzzle,
-  Smartphone,
-  RefreshCw,
-  Save,
-  Search,
-  ShieldCheck,
-  Scissors,
-  Settings2,
-  SlidersHorizontal,
-  Star,
-  Undo2,
-  Upload,
-  Redo2,
-  Trash2,
-  Tablet,
-  UsersRound,
-  X,
-  Workflow,
-  Wifi,
-  WifiOff,
-  PanelLeft,
-  PanelRight
-} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, ChevronRight, Database, ExternalLink, Monitor, MoreHorizontal, Pencil, Plus, Smartphone, RefreshCw, Save, Search, SlidersHorizontal, Upload, Trash2, Tablet, X } from 'lucide-react';
 import FlowBuilderWorkspace from '../FlowBuilder/FlowBuilder';
 import FlowScreenContent from '../../automation/FlowScreen/FlowScreenContent';
 import FlowLogs from '../../automation/FlowLogs/FlowLogs';
@@ -145,75 +87,7 @@ import {
   getPageBuilderComponentCategories,
   pageBuilderPaletteCategories
 } from '../PageBuilder/pageBuilderPalette';
-import {
-  defaultFlow,
-  defaultLightningPage,
-  defaultAccessControl,
-  objectMetadata,
-  setupShortcuts,
-  workspaces,
-  type ObjectMetadata,
-  type FieldMetadata,
-  type FieldSetMetadata,
-  type PageLayoutMetadata,
-  type PageLayoutCustomLinkMetadata,
-  type CompactLayoutMetadata,
-  type RecordTypeMetadata,
-  type RelatedLookupFilterMetadata,
-  type ObjectActionMetadata,
-  type ObjectSettingsMetadata,
-  type ProfileMetadata,
-  type PageActivationAssignmentMetadata,
-  type FlowDefinitionMetadata,
-  type FlowExecutionLogMetadata,
-  type FlowInterviewMetadata,
-  type FlowElementMetadata,
-  type FlowResourceMetadata,
-  type FlowValidationMetadata,
-  type PlatformEventMetadata,
-  type LightningPageTemplate,
-  type NamedCredentialMetadata,
-  type EmailAlertMetadata,
-  type CustomNotificationMetadata,
-  type ApprovalRequestMetadata,
-  type ApprovalProcessMetadata,
-  type ApprovalProcessInput,
-  type ConnectorProviderMetadata,
-  type IntegrationConnectionMetadata,
-  type LightningPageMetadata,
-  type PageLayoutVariant,
-  type PageComponentMetadata,
-  type LibraryComponentMetadata,
-  type DashboardFilterMetadata,
-  type DashboardMetadata,
-  type DashboardFolderMetadata,
-  type DashboardFolderInput,
-  type DashboardTerritoryMetadata,
-  type DashboardSubscription,
-  type DashboardSubscriptionInput,
-  type DashboardSnapshot,
-  type ReportMetadata,
-  type ReportBucketMetadata,
-  type ReportFolderMetadata,
-  type ReportFolderInput,
-  type ReportRunMetadata,
-  type ReportStandardFiltersMetadata,
-  type ReportFilterMetadata,
-  type ReportDateRange,
-  type ReportDateGrouping,
-  type ReportSummaryOperation,
-  type ReportCrossFilterMetadata,
-  type AccessControlMetadata,
-  type CurrencySettingsMetadata,
-  type LightningAppMetadata,
-  type PermissionSetMetadata,
-  type PermissionSetGroupMetadata,
-  type PublicGroupMetadata,
-  type QueueMetadata,
-  type SharingRuleMetadata,
-  type UserMetadata,
-  type WorkspaceId
-} from '../../metadata/Definitions/metadata';
+import { defaultLightningPage, type ObjectMetadata, type FieldMetadata, type PageLayoutMetadata, type PageLayoutCustomLinkMetadata, type CompactLayoutMetadata, type RecordTypeMetadata, type RelatedLookupFilterMetadata, type ObjectActionMetadata, type ObjectSettingsMetadata, type ProfileMetadata, type PageActivationAssignmentMetadata, type FlowDefinitionMetadata, type LightningPageMetadata, type PageLayoutVariant, type DashboardMetadata, type ReportMetadata } from '../../metadata/Definitions/metadata';
 type FieldTypeMigrationMetadata = {
   id: string;
   fromDataType: string;
