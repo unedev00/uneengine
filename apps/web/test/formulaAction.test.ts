@@ -537,3 +537,28 @@ test('multi-Object Formula reads and writes reserve both Objects once per action
  assert.deepEqual(planReadWriteObjects({actionType:'AdjustNumber'},'Counter'),['Counter']);
  assert.deepEqual(planReadWriteObjects({actionType:'PageState',stateKey:'count'},'Counter'),[]);
 });
+
+
+test('formula mutex reserves aggregate read objects even when the write targets a different Object',()=>{
+ const binding={actionType:'Formula',formula:
+  '=ACTIONS(GETRECORD(Cart, SessionKey, "session", AS(cart)), '+
+  'IF(COUNTIFS(CartLine, Cart, cart.Id)>0, UPDATERECORD(Cart, cart.Id, Total, 1), '+
+  'CREATERECORD(CartLine, Cart, cart.Id)))'};
+ assert.deepEqual(planReadWriteObjects(binding,'Cart',
+  [{apiName:'Cart'},{apiName:'CartLine'}]),['Cart','CartLine']);
+});
+
+test('collection and sum aggregate reads share their source Object lock',()=>{
+ const binding={actionType:'Formula',formula:
+  '=ACTIONS(GETRECORD(Order, Name, "a", AS(order)), '+
+  'UPDATERECORD(Order, order.Id, Total, SUMIFS(OrderLine, Amount, Order, order.Id)))'};
+ assert.deepEqual(planReadWriteObjects(binding,'Order',
+  [{apiName:'Order'},{apiName:'OrderLine'}]),['Order','OrderLine']);
+});
+
+test('unrelated object actions still run without false data locks',()=>{
+ const binding={actionType:'Formula',formula:
+  '=UPDATERECORD(Counter, "11111111-1111-4111-8111-111111111111", Value, 1)'};
+ assert.deepEqual(planReadWriteObjects(binding,'Counter',
+  [{apiName:'Counter'},{apiName:'CartLine'}]),['Counter']);
+});
