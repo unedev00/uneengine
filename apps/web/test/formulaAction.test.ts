@@ -609,6 +609,9 @@ test('read-only guarded action explains missing writes without falsely reporting
   }
  });
  assert.equal(result.recordChanged,false);
+ assert.equal(result.noRecordWriteReason,'guard-skipped-write');
+ assert.equal(result.plannedRecordWrites,1);
+ assert.equal(result.skippedRecordWrites,1);
  assert.deepEqual(methods,['GET']);
  assert.equal(samples.length,1);
  assert.equal(samples[0].status,'completed');
@@ -630,4 +633,12 @@ test('Flow and conditional Flow expressions reserve all metadata Objects for ses
   ['Cart','CartLine','Product']);
  assert.deepEqual(planReadWriteObjects({actionType:'Formula',
   formula:'=@counter+1'},'Cart',objects),[]);
+});
+
+test('missing-write reason remains absent for intentionally read-only plans',async()=>{
+ const result=await executeActionPlan('=ACTIONS(GETRECORD(Cart, Name, "current", AS(cart)), STATE(viewed, TRUE))',{},
+  timingEvaluator,{request:async()=>({records:[],total:0}) as never});
+ assert.equal(result.recordChanged,false);
+ assert.equal(result.plannedRecordWrites,0);
+ assert.equal(result.noRecordWriteReason,undefined);
 });
