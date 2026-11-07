@@ -238,7 +238,7 @@ export default function MetadataBoundPageComponent({
         ...(recordQuery.filters??[]).map(item=>item.field),
         properties.sortFieldApiName,properties.sortBy,properties.orderBy
       ].filter((name):name is string=>typeof name==='string'&&name.length>0);
-      if(ownOnly&&detail.sessionId===sessionId&&recordOffset===0&&
+      if(ownOnly&&detail?.sessionId===sessionId&&recordOffset===0&&
         recordsForRequest===recordRequestKey&&recordTotal===records.length&&
         !combinedRecordFormula&&recordQuery.serverFilterable&&
         !properties.collectionFormula&&!properties.recordPresenterApiName){
