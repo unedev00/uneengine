@@ -78,9 +78,15 @@ function refresh(current:Registry):void{
 export function registerSessionCollection(scope:string,owner:string,collection:SessionCollection|null):()=>void{
  if(!scope||!owner)return ()=>{};
  const current=registry(scope);
- if(collection)current.owners.set(owner,{owner,collection});
- else current.owners.delete(owner);
- refresh(current);
+ const prior=current.owners.get(owner)?.collection;
+ // Components without a named Collection must not invalidate every consumer.
+ // Likewise a second publication of the same collection does not change the snapshot.
+ const changed=collection ? prior!==collection : prior!==undefined;
+ if(changed){
+  if(collection)current.owners.set(owner,{owner,collection});
+  else current.owners.delete(owner);
+  refresh(current);
+ }
  return ()=>{
   const entry=current.owners.get(owner);
   if(entry?.collection===collection){current.owners.delete(owner);refresh(current);}
