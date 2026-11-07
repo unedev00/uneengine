@@ -86,12 +86,15 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
  readLines(11),...addTotals.elements,
  node(16,'End','Cart updated'),
  node(20,'Custom Error','Invalid product or session',{
-  errorLocation:'Page',errorMessage:'Select an available product with a valid price.'})
+  errorLocation:'Page',errorMessage:'Select an available product with a valid price.'}),
+ decision(21,'No Cart selected?', [{field:'{!cartId}',operator:'Equals',value:''}],'New'),
+ node(22,'Custom Error','Invalid Cart ID',{errorLocation:'Page',
+  errorMessage:'Cart is closed or does not belong to this user.'})
 ],[
  edge(1,2),edge(2,3,'Valid'),edge(2,20,'Default'),
  edge(3,4),edge(4,5,'Found'),edge(4,20,'Default'),
  edge(5,6,'Valid'),edge(5,20,'Default'),
- edge(6,7),edge(7,8,'Found'),edge(7,9,'Default'),
+ edge(6,7),edge(7,8,'Found'),edge(7,21,'Default'),edge(21,9,'New'),edge(21,22,'Default'),edge(22,16),
  edge(8,10),edge(9,10),edge(10,11),edge(11,12),
  ...addTotals.links,edge(15,16)
 ],[variable('productId','Text',true),{name:'product',type:'Record',dataType:'Product'},

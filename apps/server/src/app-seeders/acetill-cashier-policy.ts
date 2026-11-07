@@ -12,11 +12,12 @@ export async function seedAcetillCashierPolicy(client:PoolClient,tenantId:string
   ...['HoldSale','RetrieveSale','SalesReturn'].map(name=>['Action:Acetill'+name,'execute'] as [string,string]),
   ...['GetProducts','GetCategories','HoldCart','ListHeldCarts','ResumeHeldCart','LoadReturnInvoice',
     'CreateSalesReturn','VerifyUserPin','ScanProduct','PaymentCash','PaymentCard',
-    'CopilotAddProduct','CopilotReadCart','CopilotChangeQuantity','CopilotDefaultCategory',
+    'CopilotNewCart','CopilotAddProduct','CopilotReadCart','CopilotChangeQuantity','CopilotDefaultCategory',
     'CopilotVerifyPin'].map(name=>['Flow:Acetill'+name,'execute'] as [string,string]),
   ...['Cart','CartLine','MenuCategory','Invoice','InvoiceLine','Product'].map(name=>[name,'read'] as [string,string]),
   ['create'],['CartLine','delete'],
   ...['Cart','CartLine'].flatMap(name=>[[name,'create'],[name,'edit']] as Array<[string,string]>),
+  ...['Status','Subtotal','Total','HoldReference','HeldBy'].map(name=>['Cart.'+name,'edit'] as [string,string]),
   ...['Name','Status','SessionKey','UserId'].flatMap(name=>
     ['read','create'].map(action=>['Cart.'+name,action] as [string,string])),
   ...['Name','Active','IsVisiblePOS'].map(name=>['MenuCategory.'+name,'read'] as [string,string]),

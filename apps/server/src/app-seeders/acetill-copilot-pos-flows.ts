@@ -70,9 +70,13 @@ export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add autho
  basket(9),...addTotal.elements,
  n(14,'Custom Error','Unavailable product',{errorLocation:'Page',
   errorMessage:'Select an active product with a valid price.'}),
- n(15,'End','Basket updated')
+ n(15,'End','Basket updated'),
+ n(16,'Decision','New Cart requested?',{outcomes:[{name:'New',label:'New',conditionLogic:'All',
+  conditions:[{field:'{!cartId}',operator:'Equals',value:''}]}]}),
+ n(17,'Custom Error','Invalid selected Cart',{errorLocation:'Page',
+  errorMessage:'Your selected Cart is not open or is not accessible.'})
 ],[
- e(1,2),e(2,3),e(3,4,'Found'),e(3,5,'Default'),e(4,6),e(5,6),
+ e(1,2),e(2,3),e(3,4,'Found'),e(3,16,'Default'),e(16,5,'New'),e(16,17,'Default'),e(17,15),e(4,6),e(5,6),
  e(6,7),e(7,8,'Valid'),e(7,14,'Default'),e(8,9),e(9,10),
  ...addTotal.links,e(13,15)
 ],[variable('productId','Text',true),{name:'product',type:'Record',dataType:'Product'},
@@ -124,7 +128,7 @@ export const copilotNewCart=graph('AcetillCopilotNewCart','Till: open a new inde
   fieldValues:[{field:'Name',value:'Till basket'},{field:'UserId',value:'{!$User.Id}'},
    {field:'SessionKey',value:'{!sessionKey}'},{field:'Status',value:'Open'}]}),
  n(3,'End','Cart ready')
-],[e(1,2),e(2,3)],[variable('sessionKey','Text',true),variable('cartId','Text',false,true)]);
+],[e(1,2),e(2,3)]);
 
 export const copilotDefaultCategory=graph('AcetillCopilotDefaultCategory','Till: choose available POS category',[
  n(1,'Start','Start'),
@@ -169,7 +173,7 @@ export const copilotPosGraphs=[copilotNewCart,copilotAddProduct,copilotReadCart,
 export async function seedAcetillCopilotPosFlows(client:Pick<PoolClient,'query'>,tenant:string){
  const prerequisites=await client.query<{object_api:string;api_name:string}>(
   "SELECT object_api,api_name FROM md_field_definitions WHERE tenant_id=$1 AND object_api IN ('Product','Cart','CartLine','MenuCategory')",[tenant]);
- const required=['Cart.UserId','Cart.SessionKey','Cart.Status','CartLine.Cart','MenuCategory.Active','MenuCategory.IsVisiblePOS','Product.Name','Product.Price','Product.Active','Cart.SessionKey',
+ const required=['Cart.UserId','MenuCategory.Active','MenuCategory.IsVisiblePOS','Product.Name','Product.Price','Product.Active','Cart.SessionKey',
   'Cart.Name','Cart.Status','CartLine.Cart','CartLine.Product',
   'CartLine.Name','CartLine.Quantity','CartLine.UnitPrice',
   'CartLine.OriginalUnitPrice','CartLine.LineTotal'];
