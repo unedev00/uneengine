@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {
   PageFormulaScope,usePageFormulaScope,useComponentFormulaState,
@@ -7,6 +7,7 @@ import {
 import {loadFlowScreenRecordPage,apiRequest} from '../src/core/authentication/Client/authClient';
 import {runSerializedPageAction,planReadWriteObjects} from '../src/core/pages/PageRuntime/pageActionCoordinator';
 import {executePageFormulaAction} from '../src/core/pages/PageRuntime/formulaAction';
+import {shouldInvalidatePageComponent,type PageMutationDetail} from '../src/core/pages/PageRuntime/pageMutationScope';
 import {useSharedRendererStyle} from '../src/core/components/RegisteredComponent/sharedRendererStyle';
 import type {LibraryComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 
@@ -35,6 +36,21 @@ const catalog=[
   {apiName:'smart_card_grid',propertyDefinitions:[{propertyKey:'label',kind:'TEXT'}]}
 ] as unknown as LibraryComponentMetadata[];
 const counts:Record<string,number>={};
+function CartDataSubscriber({name}:{name:string}){
+ const [total,setTotal]=useState<number|null>(null);
+ useEffect(()=>{
+  let active=true;
+  const sync=(event:Event)=>{
+   const detail=(event as CustomEvent<PageMutationDetail>).detail;
+   if(!shouldInvalidatePageComponent(detail,'fixture-page','fixture-session',['CartLine']))return;
+   void loadFlowScreenRecordPage('CartLine',{limit:100})
+    .then(page=>{if(active)setTotal(page.total);});
+  };
+  window.addEventListener('metadrive:page-flow-mutated',sync);
+  return ()=>{active=false;window.removeEventListener('metadrive:page-flow-mutated',sync);};
+ },[]);
+ return <span data-cart-total={name}>{total===null?'—':total}</span>;
+}
 function Instance({item}:{item:typeof components[number]}){
   const scope=usePageFormulaScope();
   useComponentFormulaState({},item.properties);
@@ -48,6 +64,7 @@ function Instance({item}:{item:typeof components[number]}){
   return <div data-component={name} data-renders={counts[name]}>
     <PublishedFormulaProperties id={item.id} values={item.properties} rendered={{}}/>
     <span data-display={name}>{String(text)}</span>
+    {item.type==='Custom:smart_cart'&&<CartDataSubscriber name={name}/>}
   </div>;
 }
 const formula='=ACTIONS(GETRECORD(Counter, Name, "current", AS(row)), '+
@@ -63,11 +80,15 @@ async function readTest(){
   await apiRequest('/records/CartLine',{
     method:'POST',body:JSON.stringify({Quantity:2})
   });
+  const postWriteAt=performance.now();
+  window.dispatchEvent(new CustomEvent('metadrive:page-flow-mutated',{
+   detail:{pageSessionKey:'fixture-page',sessionId:'fixture-session',objectApiNames:['CartLine']}
+  }));
   const after=await Promise.all([
     loadFlowScreenRecordPage('CartLine',{limit:100}),
     loadFlowScreenRecordPage('CartLine',{limit:2})
   ]);
-  return {before:before.map(p=>({total:p.total,rows:p.records.length})),
+  return {postWriteAt,before:before.map(p=>({total:p.total,rows:p.records.length})),
     after:after.map(p=>({total:p.total,rows:p.records.length}))};
 }
 async function tenActions(){
