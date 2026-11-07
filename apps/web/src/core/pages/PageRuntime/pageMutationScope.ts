@@ -45,6 +45,15 @@ export function pageComponentReadObjectNames(
     const lookup=field?.dataType?.match(/^Lookup\(([^)]+)\)$/i)?.[1];
     if(parts.length>1&&lookup&&known.has(lookup))reads.add(lookup);
    }else if(ast.kind==='call'){
+    // Aggregate reads are dependencies even when the Object was not selected as
+    // a component's primary/secondary record source. A CartLine write must
+    // refresh =COUNTIFS(CartLine, ...) and =SUMIFS(CartLine, ...).
+    if(['COUNTIFS','SUMIFS','AVERAGEIFS','MINIFS','MAXIFS'].includes(ast.name)){
+     const source=ast.args[0];
+     if(source&&(source.kind==='reference'||source.kind==='literal')
+       &&typeof source.value==='string'&&known.has(source.value))
+      reads.add(source.value);
+    }
     if((ast.name==='TABLE'||ast.name==='COLLECTION')&&ast.args[0]?.kind==='reference'){
      const name=ast.args[0].value.replace(/^@/,'').split('.')[0];
      if(known.has(name)&&selected.has(name))reads.add(name);
