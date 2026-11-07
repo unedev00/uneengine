@@ -182,6 +182,56 @@ export async function runDesign2BrowserCheck({page,origin,db,tenantId,token}){
   }
  }
 
+ // A tiny text field must retain Data editing, and a compact Cart must expose
+ // every metadata-approved formula binding without growing either component.
+ {
+  const compactPage={apiName:'browsercompactdatabindings',label:'Compact Data Binding Icons',
+   targetObject:'',pageType:'App Page',layoutMode:'free-canvas',
+   canvasWidth:1280,canvasHeight:900,status:'Draft',devices:['Desktop'],
+   activationAssignments:[],components:[
+    {id:'compact-data-text',type:'Custom:smart_text',label:'Tiny formula field',
+     region:'main',visible:true,properties:{textSource:'=IF(TRUE, "Ready", "Fallback")'},
+     position:{x:30,y:30,width:150,height:18}},
+    {id:'compact-data-cart',type:'Custom:smart_cart',label:'Compact formula cart',
+     region:'main',visible:true,properties:{label:'Compact Cart'},
+     position:{x:30,y:110,width:180,height:110}}
+   ]};
+  const saved=await page.evaluate(async({token,payload})=>(await fetch('/api/metadata/pages/'+payload.apiName,{
+   method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify(payload)
+  })).status,{token,payload:compactPage});
+  assert.equal(saved,200,'Cannot save compact Data binding smoke page');
+  await page.goto(origin+'/une/setup/page-builder',{waitUntil:'domcontentloaded'});
+  await page.getByLabel('Search pages').fill('Compact Data Binding Icons');
+  await page.getByRole('button',{name:'Design Compact Data Binding Icons',exact:true}).click();
+  await page.getByRole('tab',{name:'Design',exact:true}).waitFor({timeout:20000});
+  const tiny=page.locator('[data-component-id="compact-data-text"]').first();
+  await tiny.waitFor({state:'visible'});
+  await tiny.click({position:{x:8,y:8}});
+  const picker=page.locator('.canvas-data-overflow-trigger');
+  await picker.waitFor({state:'visible',timeout:10000});
+  assert.ok((await picker.boundingBox())?.height>=24,
+   'Tiny text field lost its clickable Data control');
+  await picker.click();
+  const menu=page.getByRole('dialog',{name:'Choose component data field'});
+  await menu.getByRole('searchbox',{name:'Search data fields'}).fill('textSource');
+  assert.ok(await menu.locator('.canvas-data-overflow-choice').count()>0,
+   'Tiny text field cannot select its formula binding');
+  await menu.locator('.canvas-data-overflow-choice').first().click();
+  const cart=page.locator('[data-component-id="compact-data-cart"]').first();
+  await cart.click({position:{x:8,y:8}});
+  await picker.waitFor({state:'visible',timeout:10000});
+  await picker.click();
+  const cartMenu=page.getByRole('dialog',{name:'Choose component data field'});
+  await cartMenu.getByRole('searchbox',{name:'Search data fields'}).fill('totalValue');
+  assert.ok(await cartMenu.locator('.canvas-data-overflow-choice').count()>0,
+   'Compact Cart hides its Total formula binding');
+  await cartMenu.locator('.canvas-data-overflow-choice').first().click();
+  assert.equal(await picker.getAttribute('aria-expanded'),'false',
+   'Data menu must close after choosing a binding');
+  console.info('Compact text and Cart Data formula picker browser checks passed');
+ }
+
  // A persisted page with two real smart components, not mocked React widgets.
  const pageName='browserdesign2';
  const payload={
