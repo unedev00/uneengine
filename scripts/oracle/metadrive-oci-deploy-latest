@@ -64,9 +64,9 @@ fetched=$(builder git -C "$workspace" rev-parse FETCH_HEAD)
   exit 1
 }
 builder git -C "$workspace" checkout --quiet --force --detach "$sha"
-# Freeze a digest of all privileged deployment scripts before running any
-# untrusted npm lifecycle hooks as the isolated build identity.
-script_digest=$(tar -C "$workspace" --sort=name -cf - scripts/oracle | sha256sum | awk '{print $1}')
+# Freeze all release/DB migration scripts before untrusted npm lifecycle hooks.
+# Cart migrations now run from the bundled release and must also be tamper checked.
+script_digest=$(tar -C "$workspace" --sort=name -cf - scripts/oracle scripts/cart scripts/codextill | sha256sum | awk '{print $1}')
 
 stage=validating
 write_status running "$stage"
@@ -88,15 +88,15 @@ remote_sha=$(builder git -C "$workspace" ls-remote origin refs/heads/main | awk 
 }
 # Refuse any build which modified the deployment scripts. Lock ownership of
 # these paths and their parent directories before invoking them as root.
-updated_digest=$(tar -C "$workspace" --sort=name -cf - scripts/oracle | sha256sum | awk '{print $1}')
+updated_digest=$(tar -C "$workspace" --sort=name -cf - scripts/oracle scripts/cart scripts/codextill | sha256sum | awk '{print $1}')
 [[ "$updated_digest" == "$script_digest" ]] || {
   stage=modified-deployment-scripts
   exit 1
 }
 chown root:root "$workspace" "$workspace/scripts"
-chown -R root:root "$workspace/scripts/oracle"
-chmod 0755 "$workspace" "$workspace/scripts" "$workspace/scripts/oracle"
-find "$workspace/scripts/oracle" -type f -exec chmod a-w {} +
+chown -R root:root "$workspace/scripts/oracle" "$workspace/scripts/cart" "$workspace/scripts/codextill"
+chmod 0755 "$workspace" "$workspace/scripts" "$workspace/scripts/oracle" "$workspace/scripts/cart" "$workspace/scripts/codextill"
+find "$workspace/scripts/oracle" "$workspace/scripts/cart" "$workspace/scripts/codextill" -type f -exec chmod a-w {} +
 stage=deploying
 write_status running "$stage"
 # Reuse the protected existing combined SQL-backup/API/worker/frontend deployment.
