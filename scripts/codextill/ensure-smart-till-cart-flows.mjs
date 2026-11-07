@@ -98,7 +98,7 @@ export const SMART_TILL_ADD=graph('SmartTillAddProduct','Smart Till: add selecte
  variable('cartLineId','Text',false,true)]);
 
 export const SMART_TILL_OUTPUTS={
- cartId:'cartId',cartItems:'cartItems',
+ cartId:'activeCartId',cartItems:'cartItems',
  subtotal:'subtotal',total:'total'
 };
 export const SMART_TILL_CLICK={

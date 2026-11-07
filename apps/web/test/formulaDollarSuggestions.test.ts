@@ -27,7 +27,7 @@ test('$ autocomplete lists page-declared keys and nested authenticated session f
  const keys=choices.filter(entry=>entry.source==='PageState').map(entry=>entry.key);
  assert.deepEqual(keys,['cartTotal','currentCategory','flowStatus','selectedProduct']);
  const all=formulaDollarSuggestions(choices).map(entry=>entry.reference);
- assert.deepEqual(all,['$session.id','$session.user.id','$session.user.email','$session.user.name','$session.user.locale','$session.user.timeZone','$session.user.currencyIsoCode','$session.tenant.id','$session.tenant.name','$session.tenant.logo','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
+ assert.deepEqual(all,['$session.id','$session.cartId','$session.user.id','$session.user.email','$session.user.name','$session.user.locale','$session.user.timeZone','$session.user.currencyIsoCode','$session.tenant.id','$session.tenant.name','$session.tenant.logo','$state.cartTotal','$state.currentCategory','$state.flowStatus','$state.selectedProduct']);
  assert.deepEqual(formulaDollarSuggestions(choices,'state.').map(x=>x.reference),all.slice(10));
  assert.deepEqual(formulaDollarSuggestions(choices,'tenant').map(x=>x.reference),['$session.tenant.id','$session.tenant.name','$session.tenant.logo']);
  assert.deepEqual(formulaDollarSuggestions(choices,'sess').map(x=>x.reference),all.slice(0,10));
@@ -115,7 +115,7 @@ test('session hierarchy reads only authenticated scalar identity, never record f
   tenant:{name:'Trading Company',logo:'https://example.test/logo.png'}};
  const fakeRecord={session:{user:{id:'forged-user',email:'forged@example.test'}},User:{Id:'record-user'}};
  for(const [source,expected] of [
-  ['$session.id','page-123'],['$session.user.id','user-42'],
+  ['$session.id','page-123'],['$session.cartId',''],['$session.user.id','user-42'],
   ['$session.user.email','signed-in@example.test'],['$session.user.name','Cashier'],
   ['$session.tenant.id','tenant-42'],['$session.tenant.name','Trading Company'],
   ['$session.tenant.logo','https://example.test/logo.png']

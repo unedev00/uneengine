@@ -10,7 +10,7 @@ type Block=Record<string,unknown> & {
 const flow=(name:string,inputs:Record<string,unknown>={},outputs:Record<string,string>={})=>({
  actionType:'Flow',flowType:'Autolaunched Flow',flowApiName:name,inputs,outputs
 });
-const totals={activeCartId:'activeCartId',cartItems:'cartItems',subtotal:'subtotal',total:'total'};
+const totals={cartId:'activeCartId',cartItems:'cartItems',subtotal:'subtotal',total:'total'};
 const read=flow('AcetillCopilotReadCart',{cartId:'$session.cartId'},totals);
 const add=flow('AcetillCopilotAddProduct',{
  sessionKey:'$session',cartId:'$session.cartId',productId:'$event.recordId'
@@ -97,7 +97,7 @@ export const copilotTillLayout=[
  box('hold','smart_button','Hold sale','sidebar',846,750,164,48,{
   label:'Hold sale',backgroundColor:'#334E72',labelColor:'#FFFFFF',radius:8,
   actionFlows:{click:{
-   ...flow('AcetillHoldCart',{requestId:'$session',label:'Till held sale',
+   ...flow('AcetillHoldCart',{cartId:'$session.cartId',requestId:'$session',label:'Till held sale',
     cartItems:{source:'ProjectRecords',value:'$state.cartItems',
      fields:['Product','Quantity','OriginalUnitPrice']}},
     {holdReference:'holdReference',cartId:'activeCartId'}),

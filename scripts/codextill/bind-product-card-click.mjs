@@ -11,7 +11,7 @@ export const CARD_CLICK={
  actionType:'Flow',flowType:'Autolaunched Flow',
  flowApiName:'AcetillCopilotAddProduct',
  inputs:{sessionKey:'$session',cartId:'$session.cartId',productId:'$event.recordId'},
- outputs:{activeCartId:'activeCartId',cartItems:'cartItems',
+ outputs:{cartId:'activeCartId',cartItems:'cartItems',
   subtotal:'subtotal',total:'total'}
 };
 const checksum=createHash('sha256').update(JSON.stringify(CARD_CLICK)).digest('hex');

@@ -13,7 +13,7 @@ const readSession=n(2,'Get Records','Find current till session',{
  conditions:[{field:'Id',operator:'Equals',value:'{!cartId}'},
   {field:'UserId',operator:'Equals',value:'{!$User.Id}'},
   {field:'Status',operator:'Equals',value:'Open'}]});
-const sessionChoice=n(3,'Decision','Session exists?',{outcomes:[{
+const sessionChoice=n(3,'Decision','Selected cart exists?',{outcomes:[{
  name:'Found',label:'Found',conditionLogic:'All',
  conditions:[{field:'{!existingSession}',operator:'IsNotNull'}]}]});
 const basket=(id:number)=>n(id,'Get Records','Retrieve basket lines',{
@@ -48,7 +48,7 @@ const addTotal=summaries(10);
 export const copilotAddProduct=graph('AcetillCopilotAddProduct','Till: add authorised product',[
  n(1,'Start','Start'),readSession,sessionChoice,
  n(4,'Assignment','Use current session',{variable:'cartId',operator:'Assign',value:'{!existingSession.Id}'}),
- n(5,'Create Records','Open basket session',{
+ n(5,'Create Records','Open new cart',{
   object:'Cart',recordSource:'fields',resultVariable:'cartId',
   fieldValues:[{field:'Name',value:'Till basket'},{field:'SessionKey',value:'{!sessionKey}'},
    {field:'UserId',value:'{!$User.Id}'},

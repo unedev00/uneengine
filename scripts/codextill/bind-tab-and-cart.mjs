@@ -12,7 +12,7 @@ const cartRead={
  flowApiName:'AcetillCopilotReadCart',
  inputs:{cartId:'$session.cartId'},
  outputs:{
-  activeCartId:'activeCartId',
+  cartId:'activeCartId',
   cartItems:'cartItems',
   subtotal:'subtotal',
   total:'total'
