@@ -3,7 +3,7 @@ import SmartNumpad from "../../smart_numpad/SmartNumpad.jsx";
 import icons from "../../smart_icon/iconCatalog.json";
 import {smartShapeAppearance} from "./SmartShapeAppearance.js";
 import {smartCustomButtonAppearance} from "./SmartCustomButtonAppearance.js";
-import {evaluateFieldExpression} from "../../shared/FieldExpression.js";
+import {evaluateFieldExpressionDetailed} from "../../shared/FieldExpression.js";
 import {useTenantImageSource} from "../../shared/TenantImage.jsx";
 import {getTenantBrand,subscribeTenantBrand} from "../../shared/TenantBrand.js";
 const number=(v,f,min=0,max=2000)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
@@ -16,7 +16,9 @@ const expression=(v,record,pageState,objectApiName,collectionSources,namedCollec
  if(/^(?:https:\/\/|asset:|data:image\/)/i.test(v.trim()))return v;
  if(!/^\s*=/.test(v)&&!/@[A-Za-z]/.test(v)&&!/\$(?:component\.|state\.|session\b|tenant\.)/i.test(v)&&!/^\s*"/.test(v)&&
    !/^\s*-?(?:\d+(?:\.\d*)?|\.\d+)\s*[+\-*/&]/.test(v))return v;
- try{return text(evaluateFieldExpression(v,record||{},{readComponent,namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows,pageState,sessionId}));}catch{return "";}
+ try{const result=evaluateFieldExpressionDetailed(v,record||{},{readComponent,namedCollectionSelections:pageState?.collectionSelections,rootObjectApiName:objectApiName,collectionSources,namedCollections,collectionRows,pageState,sessionId});
+  return result.error?"Formula error":text(result.value);
+ }catch{return "Formula error";}
 };
 function SmartPicture({src,alt,loadAsset,style}){
  const source=useTenantImageSource(src,loadAsset);
