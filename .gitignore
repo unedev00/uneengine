@@ -5,3 +5,4 @@ coverage
 *.log
 .DS_Store
 .artifacts/
+apps/server/dist-system/
