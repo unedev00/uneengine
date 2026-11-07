@@ -1,3 +1,4 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,7 +38,7 @@ test('one builder-only overlay routes selected icons to SQL-approved expressions
  const icons=source('../src/core/builders/PageBuilder/CanvasDataBindingIcons.tsx');
  const builder=readPageBuilderModules();
  const ribbon=source('../src/core/builders/PageBuilder/SmartRibbon.tsx');
- const sql=source('../../server/src/system-support/migrations/20271113-canvas-formula-binding-icons.sql');
+ const sql=readRetiredMigration('20271113-canvas-formula-binding-icons.sql');
  const cart=source('../src/component-libraries/smart_cart/SmartCart.jsx');
  const runtime=source('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(icons,/p\.tab==='Data'&&p\.components\.includes\(api\)/);
