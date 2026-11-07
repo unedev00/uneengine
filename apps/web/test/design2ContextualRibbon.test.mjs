@@ -1,12 +1,13 @@
+import {readRetiredMigration} from '../../../scripts/read-retired-migration.mjs';
 import { readPageBuilderModules } from './helpers/builderSources.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
-const sql=read('../../server/src/system-support/migrations/20270309-design2-contextual-ribbon.sql');
-const approved=read('../../server/src/system-support/migrations/20271104-zz-design2-exact-approved-matrix.sql');
-const imageGapMigration=read('../../server/src/system-support/migrations/20271112-design2-image-placement-gap.sql');
+const sql=readRetiredMigration('20270309-design2-contextual-ribbon.sql');
+const approved=readRetiredMigration('20271104-zz-design2-exact-approved-matrix.sql');
+const imageGapMigration=readRetiredMigration('20271112-design2-image-placement-gap.sql');
 const shared=read('../src/core/builders/PageBuilder/SmartRibbon.tsx');
 const builder=readPageBuilderModules();
 const css=read('../src/core/builders/PageBuilder/SmartRibbonDesign2.css');
@@ -193,7 +194,7 @@ test('the six fixed C1-C6 tracks are shared across all property rows',()=>{
 });
 
 test('all 319 source properties appear, including missing Cart Button 5',()=>{
- const extension=read('../../server/src/system-support/migrations/20271104-zzz-design2-row-zero-button-matrix-corrections.sql');
+ const extension=readRetiredMigration('20271104-zzz-design2-row-zero-button-matrix-corrections.sql');
  const slotRows=[...extension.matchAll(/\('Button 5',13,'([^']+)',([123]),(\d+),(\d+),26/g)];
  assert.equal(slotRows.length,6);
  assert.equal(fixedRows.length+slotRows.length,124);
@@ -206,7 +207,7 @@ test('all 319 source properties appear, including missing Cart Button 5',()=>{
 
 
 test('R0 C3/C4 reuses canvas x/y for all 15 requested Smart component APIs',()=>{
- const migration=read('../../server/src/system-support/migrations/20271106-design2-row0-xy-position.sql');
+ const migration=readRetiredMigration('20271106-design2-row0-xy-position.sql');
  const required=['smart_button','smart_calendar','smart_card_grid','smart_cart',
   'smart_container','smart_icon','smart_image','smart_lookup','smart_navigation',
   'smart_table','smart_tabs','smart_text','smart_textbox','smart_toggle','smart_input'];
@@ -257,7 +258,7 @@ test('approved R3C2 alignment and R2/R3C6 image controls use icon dropdowns',()=
  assert.match(menu,/onChange\(option\.value\)/);
 });
 test('footer alignment menus target renderer keys rather than unused aliases',()=>{
- const migration=read('../../server/src/system-support/migrations/20271107-design2-alignment-icon-bindings.sql');
+ const migration=readRetiredMigration('20271107-design2-alignment-icon-bindings.sql');
  const runtime=read('../src/component-libraries/smart/shared/SmartRuntime.jsx');
  assert.match(migration,/\('smart_cart','Footer','alignment','summary2Alignment'\)/);
  assert.match(migration,/\('smart_table','Footer','alignment','summaryAlignment'\)/);
@@ -313,7 +314,7 @@ test('Design 2 icon palettes and choice controls preserve R0 and the approved SQ
 
 
 test('all 14 approved dropdown areas remain visible, regardless of component API',()=>{
- const extension=read('../../server/src/system-support/migrations/20271104-zzz-design2-row-zero-button-matrix-corrections.sql');
+ const extension=readRetiredMigration('20271104-zzz-design2-row-zero-button-matrix-corrections.sql');
  assert.match(extension,/\('Button 5',13,'fill',1,1,40,26/);
  assert.match(shared,/const design2Areas=\[\.\.\.new Map\(design2Slots/);
  assert.match(shared,/\.map\(slot=>\[slot\.area,slot\.areaOrder\] as const\)/);
@@ -362,8 +363,8 @@ test('Body R1C3 Shape to R1C4 Shape Fill has no empty 80px phantom column',()=>{
 });
 
 test('Badge visibility is derived from badge text and no longer has a ribbon switch',()=>{
- const migration=read('../../server/src/system-support/migrations/20271109-badge-visibility-layout.sql');
- const catalog=read('../../server/src/system-support/migrations/20270124-smart-component-library.sql');
+ const migration=readRetiredMigration('20271109-badge-visibility-layout.sql');
+ const catalog=readRetiredMigration('20270124-smart-component-library.sql');
  assert.match(migration,/UPDATE md_builder_shared_properties/);
  assert.match(migration,/SET tab='Layout',section_group='Badge'/);
  assert.match(migration,/WHERE property_key='badgeVisible'/);
