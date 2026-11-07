@@ -177,6 +177,7 @@ export function PublishedFormulaProperties({id,values,rendered}:{id?:string;valu
  const entry=scope?.entries.find(item=>item.id===id);
  const publish=scope?.publish;
  const output:Record<string,Scalar>=Object.create(null);
+ const bindingErrors:string[]=[];
  const rows=Array.isArray(values.records)?values.records:[];
  const record=values.record??rows[0];
  for(const key of entry?.keys??[]){
@@ -190,7 +191,14 @@ export function PublishedFormulaProperties({id,values,rendered}:{id?:string;valu
     value=resolveFieldText(value,record,{...getAuthenticatedFormulaBindingContext(),
      rootObjectApiName:typeof values.objectApiName==='string'?values.objectApiName:undefined,
      pageState:values.pageState as Record<string,unknown>,readComponent:scope?.read});
-   }catch{continue;}
+   }catch(error){
+    // Do not render stale dependent values or silently hide authored errors.
+    // Avoid echoing input values or private record contents into the message.
+    bindingErrors.push('Cannot evaluate formula for '+key+
+     (error instanceof Error&&/^(Unknown component property|Circular component reference|Field [A-Za-z][A-Za-z0-9_]* is not available)/.test(error.message)
+      ?': '+error.message:''));
+    continue;
+   }
   }
   if(typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value))output[key]=value;
  }
@@ -199,5 +207,8 @@ export function PublishedFormulaProperties({id,values,rendered}:{id?:string;valu
   if(id&&entry&&publish)publish(id,JSON.parse(snapshot));
  },[id,entry?.token,publish,snapshot]);
  useEffect(()=>()=>{if(id&&publish)publish(id,null)},[id,publish]);
- return null;
+ return bindingErrors.length
+  ?<span role="alert" className="registered-component-error">
+    {bindingErrors.join('; ')}
+   </span>:null;
 }
