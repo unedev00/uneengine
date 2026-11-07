@@ -49,25 +49,6 @@ export async function seedAppointmentObjects(client:PoolClient,tenantId:string):
  }
 }
 
-/** Ace Assist users get Appointment object and field CRUD only, not platform-wide access. */
-export async function grantAceAssistAppointmentAccess(client:PoolClient,tenantId:string):Promise<void>{
- await client.query(`
-  INSERT INTO md_permission_rules(tenant_id,permission_set_id,resource,action,effect)
-  SELECT s.tenant_id,s.id,permissions.resource,permissions.action,'allow'
-  FROM md_permission_sets s
-  CROSS JOIN LATERAL (
-   SELECT 'Appointment'::text AS resource,action
-   FROM unnest(ARRAY['read','create','edit']::text[]) AS action
-   UNION ALL
-   SELECT 'Appointment.'||f.api_name AS resource,action
-   FROM md_field_definitions f
-   CROSS JOIN unnest(ARRAY['read','create','edit']::text[]) AS action
-   WHERE f.tenant_id=s.tenant_id AND f.object_api='Appointment' AND f.deleted_at IS NULL
-  ) AS permissions
-  WHERE s.tenant_id=$1 AND s.api_name='AceAssistUser'
-  ON CONFLICT DO NOTHING`,[tenantId]);
-}
-
 /** Versioned reconciliation for all existing tenants, safely rerunnable on startup. */
 export async function seedAppointmentObjectsForExistingTenants(db:SqlPersistence):Promise<number>{
  const checksum=createHash('sha256').update(JSON.stringify([
@@ -84,7 +65,6 @@ export async function seedAppointmentObjectsForExistingTenants(db:SqlPersistence
    'SELECT id FROM md_tenants ORDER BY id');
   for(const tenant of tenants){
    await seedAppointmentObjects(client,tenant.id);
-   await grantAceAssistAppointmentAccess(client,tenant.id);
   }
   if(!applied.rows[0])await client.query(
    'INSERT INTO md_system_migrations(version,checksum) VALUES($1,$2)',

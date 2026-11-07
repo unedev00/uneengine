@@ -14,7 +14,7 @@ const hhmm=(value:number)=>String(Math.floor(value/60)).padStart(2,'0')+
  ':'+String(value%60).padStart(2,'0');
 const string=(value:unknown)=>typeof value==='string'?value.trim():'';
 
-/** Generic, metadata-configured Flow action, not tied to AceAssist.
+/** Generic, metadata-configured Flow action, not tied to a particular app.
  * Reuses the same SQL-backed overlap and staff-availability guards as Create Records.
  * A time is suggested only when both guards permit it. Booking rechecks in its own
  * transaction, closing the slot-discovery vs. appointment-save race.

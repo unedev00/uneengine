@@ -5,7 +5,7 @@ import type {PlatformTenantService} from '../system-files/platform-tenant-servic
 import {FRESH_CORE_OBJECTS} from '../app-seeders/fresh-core-objects.js';
 import {FRESH_STANDARD_FIELDS} from '../app-seeders/fresh-standard-fields.js';
 import {CART_OBJECTS} from '../app-seeders/cart-objects.js';
-import {APPOINTMENT_OBJECTS,seedAppointmentObjects,grantAceAssistAppointmentAccess} from '../app-seeders/core-appointment-objects.js';
+import {APPOINTMENT_OBJECTS,seedAppointmentObjects} from '../app-seeders/core-appointment-objects.js';
 import {PRODUCT_IMAGE_FIELD} from '../app-seeders/product-image-field.js';
 
 type SeedField={apiName:string;label:string;dataType:string;relatedObject?:string;maxLength?:number};
@@ -85,7 +85,6 @@ export function registerSeederManagerRoutes(app:Express,db:SqlPersistence,platfo
        [tenantId,o.apiName,f.apiName,f.label,f.dataType,f.relatedObject??null,f.maxLength??null]);
     if(seed.id==='appointment-objects'){
       await seedAppointmentObjects(client,tenantId);
-      await grantAceAssistAppointmentAccess(client,tenantId);
     }
     const after=await diff(client,tenantId,seed);
     return {seedId:seed.id,createdObjects:before.missingObjects.filter(x=>!after.missingObjects.includes(x)),createdFields:before.missingFields.filter(x=>!after.missingFields.includes(x)),...after};

@@ -76,7 +76,7 @@ export async function enforceCashLedgerReversal(context:FlowNodeContext,raw:unkn
  fields.Customer=invoice.Customer??null;
  fields.CurrencyCode=invoice.CurrencyCode??null;
  fields.User=context.userId;
- fields.SourceApp='AceAssist';
+ fields.SourceApp='OneEngine';
  fields.TransactionDate=new Date().toISOString();
  await context.client.query("SELECT set_config('metadrive.cash_ledger_guarded','yes',true)");
 }
@@ -113,7 +113,7 @@ export async function enforceManualPaymentGuard(context:FlowNodeContext,raw:unkn
   // Actor and timestamp are trusted server values; ignore caller-supplied identity.
   fields.User=context.userId;
   fields.TransactionDate=new Date().toISOString();
-  fields.SourceApp='AceAssist';
+  fields.SourceApp='OneEngine';
  }
  const received=money(fields[config.amountField]);
  if(received<=0)throw Error('Payment amount must be positive');
