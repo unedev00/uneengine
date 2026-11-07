@@ -1,7 +1,7 @@
 import type {SqlPersistence} from '../system-files/sql-persistence.js';
 import type {RecordEngine} from '../system-files/record-engine.js';
 import {parseRecordFilters,parseRecordCursor} from '../object-engine/QueryBuilder.js';
-import {executeActionPlan,splitServerDataActionPlan} from '../expression-engine/ActionFormulas.js';
+import {executeActionPlan,splitServerDataActionPlan,PartialActionError} from '../expression-engine/ActionFormulas.js';
 import {evaluateFlowFormulaNode} from '../system-files/flow-formula-runtime.js';
 import type {Expression} from '../expression-engine/FormulaParser.js';
 
@@ -105,6 +105,7 @@ export async function executeServerDataAction(
  // An explicit serial queue protects nested PostgreSQL savepoints when the
  // shared interpreter later parallelizes independent read-only functions.
  let pending:Promise<unknown>=Promise.resolve();
+ const confirmedObjects=new Set<string>();
  const request=<T>(path:string,init?:{method:string;body?:string}):Promise<T>=>{
   const operation=pending.then(()=>db.transaction(async()=>{
    const {url,object,id,method,body}=parseRecordOperation(path,init);
@@ -123,6 +124,7 @@ export async function executeServerDataAction(
     let record:Record<string,unknown>={Id:savedId};
     try{record=await db.transaction(()=>records.get(tenant,user,object,savedId));}
     catch{/* A write-only actor must retain the existing Id-only response. */}
+    confirmedObjects.add(object);
     return {record};
    }
    if(method==='PUT'&&id){
@@ -130,10 +132,12 @@ export async function executeServerDataAction(
     let record:Record<string,unknown>={Id:id};
     try{record=await db.transaction(()=>records.get(tenant,user,object,id));}
     catch{/* Preserve successful write even if read access is absent. */}
+    confirmedObjects.add(object);
     return {record};
    }
    if(method==='DELETE'&&id){
     await records.remove(tenant,user,object,id);
+    confirmedObjects.add(object);
     return {record:{Id:id}};
    }
    throw Error('Unsupported Formula data action');
@@ -154,7 +158,10 @@ export async function executeServerDataAction(
    });
    return {supported:true,...result};
   }catch(error){
-   return {supported:true,error:error instanceof Error?error.message:'Formula data action failed'};
+   // Earlier commits survive a later step failure: reconcile but never replay.
+   return {supported:true,error:error instanceof Error?error.message:'Formula data action failed',
+    recordChanged:confirmedObjects.size>0,mutatedObjectApiNames:[...confirmedObjects],
+    completedActionCount:error instanceof PartialActionError?error.completedActionCount:0};
   }
  });
 }
