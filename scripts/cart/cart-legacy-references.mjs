@@ -11,10 +11,10 @@ export function rewriteLegacyCartText(text,{page=false,cartIds=new Map()}={}){
  let result=text
   // A Cart has no unique SessionKey: every single-record lookup selects Cart.Id.
   .replace(/\bGETRECORD\s*\(\s*(['"]?)CartSession\1\s*,\s*(['"]?)SessionKey\2\s*,\s*([^,()]+)(?=\s*,)/gi,
-    (_match,value)=>'GETRECORD(Cart, Id, '+(value.includes('$session')?'$session.cartId':
+    (_match,_objectQuote,_fieldQuote,value)=>'GETRECORD(Cart, Id, '+(value.includes('$session')?'$session.cartId':
       value.includes('{!')?'{!cartId}':page?'$session.cartId':'{!cartId}'))
   .replace(/\bGETRECORD\s*\(\s*(['"]?)Cart\1\s*,\s*(['"]?)SessionKey\2\s*,\s*([^,()]+)(?=\s*,)/gi,
-    (_match,value)=>'GETRECORD(Cart, Id, '+(value.includes('$session')?'$session.cartId':
+    (_match,_objectQuote,_fieldQuote,value)=>'GETRECORD(Cart, Id, '+(value.includes('$session')?'$session.cartId':
       value.includes('{!')?'{!cartId}':page?'$session.cartId':'{!cartId}'))
   .replace(/\$state\.cartSessionId\b/g,'$state.activeCartId')
   .replace(/\$session\.cartSessionId\b/g,'$session.cartId')
