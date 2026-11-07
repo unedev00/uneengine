@@ -11,6 +11,7 @@ on:
       - 'scripts/ui-84-app-manager-browser.mjs'
       - 'scripts/ui-84-data-loader-browser.mjs'
       - 'scripts/all-apps-ui-100pct-audit.mjs'
+      - 'scripts/formula-runtime-stress-browser.mjs'
       - '.github/workflows/ui-foundation-browser.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -64,6 +65,10 @@ jobs:
         env:
           PHASE1_SCREENSHOT_DIR: artifacts/phase1-ui
         run: node scripts/setup-ux-browser-smoke.mjs
+      - name: Verify 56-component formula runtime and rapid actions in Chromium
+        env:
+          FORMULA_STRESS_ARTIFACT_DIR: artifacts/formula-runtime-stress
+        run: node scripts/formula-runtime-stress-browser.mjs
       - name: Check login and password recovery at 19 original audit viewport sizes
         env:
           UI_84_AUTH_SCREENSHOT_DIR: artifacts/ui-84-auth
@@ -126,6 +131,13 @@ jobs:
         with:
           name: ui-84-auth-19-viewports
           path: artifacts/ui-84-auth/
+          if-no-files-found: ignore
+      - name: Upload isolated formula runtime stress evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formula-runtime-56-component-stress
+          path: artifacts/formula-runtime-stress/
           if-no-files-found: ignore
       - name: Upload before-review responsive evidence
         if: always()
