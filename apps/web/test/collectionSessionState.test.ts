@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {formulaSignatureAt} from '../src/core/builders/PageBuilder/formulaSignatureHelp';
 import {pageStateChoices} from '../src/core/builders/PageBuilder/pageStateChoices';
-import {isCollectionSourceExpression,namedCollectionName,namedCollectionNames,registerSessionCollection,getSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
+import {isCollectionSourceExpression,namedCollectionName,namedCollectionNames,registerSessionCollection,getSessionCollection,equalSessionCollection} from '../src/core/pages/PageRuntime/pageCollectionSession';
 import {collectionRecordFilterFormula,pageComponentRecordQuery,filterPageComponentRecords,resolvePageFilterValue} from '../src/core/pages/PageRuntime/pageComponentBindings';
 import {createNamedFormulaCollection,formulaCollectionReferenceKey} from '../../server/src/expression-engine/FormulaCollection';
 import {parseCollectionListBinding,filteredCollectionItems} from '../src/core/pages/PageRuntime/pageCollectionListBinding';
@@ -526,4 +526,20 @@ test('COLLECTION joins selected category to nullable authorised lookups without 
  const categoryChoice=evaluateCollectionFormula(allOrSelected,{Product:products},context);
  assert.equal(categoryChoice.error,undefined);
  assert.deepEqual(categoryChoice.value.items.map((item:any)=>item.value),['p1','p3']);
+});
+
+
+test('equivalent collection publications do not replace data values or leave an orphan owner',()=>{
+ const scope='equal-collection-test',first={name:'Items',items:[{Id:'1',Name:'One',Flags:[true,2]}]};
+ const second={name:'Items',items:[{Flags:[true,2],Name:'One',Id:'1'}]};
+ assert.equal(equalSessionCollection(first,second),true);
+ assert.equal(equalSessionCollection(undefined,null),true);
+ assert.equal(equalSessionCollection(first,{name:'Items',items:[{Id:'1',Name:'Changed',Flags:[true,2]}]}),false);
+ const firstCleanup=registerSessionCollection(scope,'owner',first);
+ const secondCleanup=registerSessionCollection(scope,'owner',second);
+ assert.equal(getSessionCollection(scope,'Items'),second);
+ firstCleanup();
+ assert.equal(getSessionCollection(scope,'Items'),second,'old cleanup cannot remove newer equivalent owner');
+ secondCleanup();
+ assert.equal(getSessionCollection(scope,'Items'),undefined);
 });
