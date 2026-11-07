@@ -1,4 +1,5 @@
 import {usePageFormulaScope,useFormulaDependencyVersion,PublishedFormulaProperties} from './PageFormulaScope';
+import {useSharedRendererStyle} from './sharedRendererStyle';
 import * as React from 'react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { LibraryComponentMetadata } from '../../metadata/Definitions/metadata';
@@ -47,12 +48,13 @@ function resolveTrustedModule(source:string){
 }
 function RegisteredComponentBody({ definition, props, appearanceProps, layoutTransparent=false }: { definition: LibraryComponentMetadata; props: Record<string, unknown>; appearanceProps: Record<string, unknown>; layoutTransparent?:boolean }) {
   const Component = useMemo(() => resolveTrustedModule(definition.compiledJs), [definition.compiledJs]);
+  useSharedRendererStyle(definition.scopedCss);
 
   const appearanceStyle = registeredComponentAppearance(appearanceProps);
   const appearanceClass = registeredComponentAppearanceClasses(appearanceProps);
   return <div className={`registered-component metadrive-component-${definition.apiName.toLowerCase()} ${appearanceClass}`}
     style={layoutTransparent?{...appearanceStyle,display:'contents'}:appearanceStyle}>
-    {definition.scopedCss && <style>{definition.scopedCss}</style>}
+    {typeof document==='undefined'&&definition.scopedCss&&<style>{definition.scopedCss}</style>}
     <Component {...props} {...((definition as LibraryComponentMetadata & {sharedSmartRuntime?:boolean}).sharedSmartRuntime===true
       ?{kind:definition.apiName}:{})} />
   </div>;
