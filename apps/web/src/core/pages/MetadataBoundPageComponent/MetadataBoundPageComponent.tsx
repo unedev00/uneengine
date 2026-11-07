@@ -143,7 +143,7 @@ export default function MetadataBoundPageComponent({
     properties,component.type,fields,objects,pageState,sessionId,revision,
     loadFlowScreenRecordPage,
     relatedKey?selectedFilterRecords[relatedKey]?.recordId||pageState[relatedKey]:undefined,
-    disableActions);
+    disableActions,pageSessionKey);
   const selectedRecordFilters=activePageRecordFilters(properties);
  const collectionPredicate=collectionRecordFilterFormula(properties,objectApiName,fields);
  const combinedRecordFormula=collectionPredicate
