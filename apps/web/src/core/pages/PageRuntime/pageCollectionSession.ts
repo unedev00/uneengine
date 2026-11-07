@@ -4,6 +4,33 @@ import {tokenize} from '../../../../../server/src/expression-engine/FormulaToken
 import {validFormulaCollectionName,formulaCollectionReferenceKey} from '../../../../../server/src/expression-engine/FormulaCollection.js';
 
 export type SessionCollection={name:string;items:unknown[]};
+/** Compare authorised collection snapshots without relying on a new object identity.
+ * Bound work: avoid deep walks of unexpectedly large or non-plain user values.
+ * Unknown shapes are treated as changed rather than risking stale UI.
+ */
+export function equalSessionCollection(a:SessionCollection|undefined,b:SessionCollection|null):boolean{
+ if(a===b)return true;
+ if(!a||!b||a.name!==b.name)return false;
+ let budget=6000;
+ const same=(left:unknown,right:unknown,depth:number):boolean=>{
+  if(Object.is(left,right))return true;
+  if(--budget<0||depth>6||!left||!right||
+   typeof left!=='object'||typeof right!=='object')return false;
+  if(Array.isArray(left)||Array.isArray(right)){
+   return Array.isArray(left)&&Array.isArray(right)&&left.length===right.length
+    &&left.every((value,index)=>same(value,right[index],depth+1));
+  }
+  const plain=(value:object)=>Object.getPrototypeOf(value)===Object.prototype
+   ||Object.getPrototypeOf(value)===null;
+  if(!plain(left)||!plain(right))return false;
+  const first=Object.keys(left),second=Object.keys(right);
+  if(first.length!==second.length)return false;
+  const other=right as Record<string,unknown>,current=left as Record<string,unknown>;
+  return first.every(key=>Object.prototype.hasOwnProperty.call(other,key)
+   &&same(current[key],other[key],depth+1));
+ };
+ return same(a.items,b.items,0);
+}
 type Entry={owner:string;collection:SessionCollection};
 type Snapshot={collections:Readonly<Record<string,SessionCollection>>;errors:Readonly<Record<string,string>>};
 type Registry={owners:Map<string,Entry>;subscribers:Set<()=>void>;snapshot:Snapshot};
@@ -81,12 +108,12 @@ export function registerSessionCollection(scope:string,owner:string,collection:S
  const prior=current.owners.get(owner)?.collection;
  // Components without a named Collection must not invalidate every consumer.
  // Likewise a second publication of the same collection does not change the snapshot.
- const changed=collection ? prior!==collection : prior!==undefined;
- if(changed){
-  if(collection)current.owners.set(owner,{owner,collection});
-  else current.owners.delete(owner);
-  refresh(current);
- }
+ const changed=!equalSessionCollection(prior,collection);
+ // Always transfer the owner pointer to the latest publication. Otherwise
+ // effect cleanup after an equivalent republish would leave an orphan entry.
+ if(collection)current.owners.set(owner,{owner,collection});
+ else current.owners.delete(owner);
+ if(changed)refresh(current);
  return ()=>{
   const entry=current.owners.get(owner);
   if(entry?.collection===collection){current.owners.delete(owner);refresh(current);}
