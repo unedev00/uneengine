@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
+import {hasActiveLegacyCartReference} from './cart-legacy-references.mjs';
 
 const conn=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!conn)throw Error('DATABASE_URL is required');
@@ -55,6 +56,30 @@ try{
    if(unowned.rows[0].total)checks.push(unowned.rows[0].total+' open/held Carts have no UserId');
 
   }
+  // Detect literal legacy record IDs in live metadata, not just the old API name.
+  if(exists.rows[0]?.name){
+   const oldPointers=await db.query(`
+    SELECT 1 FROM md_cart_session_migration_map m
+    WHERE m.tenant_id=$1 AND (
+     EXISTS(SELECT 1 FROM md_flow_editor_values v JOIN md_flow_definitions f
+       ON f.tenant_id=v.tenant_id AND f.id=v.flow_id
+       WHERE f.tenant_id=m.tenant_id AND f.active=true AND f.archived=false
+         AND strpos(COALESCE(v.value_text,''),m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_field_definitions d WHERE d.tenant_id=m.tenant_id
+       AND d.deleted_at IS NULL
+       AND strpos(COALESCE(d.formula_expression,''),m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_field_default_formulas d WHERE d.tenant_id=m.tenant_id
+       AND strpos(d.expression,m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_validation_rules d WHERE d.tenant_id=m.tenant_id
+       AND strpos(d.expression,m.legacy_session_id::text)>0)
+     OR EXISTS(SELECT 1 FROM md_page_layout_heads h
+       JOIN md_page_layout_version_properties p ON p.tenant_id=h.tenant_id
+        AND p.page_id=h.page_id AND p.variant=h.variant AND p.version=h.published_version
+       WHERE h.tenant_id=m.tenant_id
+        AND strpos(COALESCE(p.value_text,''),m.legacy_session_id::text)>0)
+    ) LIMIT 1`,[tenant]);
+   if(oldPointers.rows.length)checks.push('active metadata still references a legacy CartSession record ID');
+  }
   const otherLinks=await db.query(`
    SELECT object_api,api_name FROM md_field_definitions
    WHERE tenant_id=$1 AND related_object='CartSession' AND deleted_at IS NULL
@@ -65,9 +90,25 @@ try{
    SELECT DISTINCT f.api_name FROM md_flow_definitions f JOIN md_flow_editor_values v
     ON v.tenant_id=f.tenant_id AND v.flow_id=f.id
    WHERE f.tenant_id=$1 AND f.active=true AND f.archived=false
+    AND v.property_path<>'/builder/apiName'
+    AND v.property_path NOT LIKE '%/flowApiName'
+    AND v.property_path NOT LIKE '%/subflowApiName'
     AND (v.value_text LIKE '%CartSession%' OR v.value_text LIKE '%cartSessionId%')`,[tenant]);
   if(activeFlows.rows.length)checks.push('active legacy Flows: '+
     activeFlows.rows.map(f=>f.api_name).join(','));
+  // Metadata formulas can refer to CartSession even without a Flow or page action.
+  const formulaReferences=await db.query(
+   "SELECT 'field' AS source,object_api AS object,api_name AS name FROM md_field_definitions WHERE tenant_id=$1 AND deleted_at IS NULL AND formula_expression LIKE '%CartSession%'"+
+   " UNION ALL SELECT 'default',object_api,field_api FROM md_field_default_formulas WHERE tenant_id=$1 AND expression LIKE '%CartSession%'"+
+   " UNION ALL SELECT 'validation',object_api,api_name FROM md_validation_rules WHERE tenant_id=$1 AND expression LIKE '%CartSession%'",[tenant]);
+  if(formulaReferences.rows.length)checks.push('legacy Formula references: '+
+   formulaReferences.rows.map(x=>x.source+':'+x.object+'.'+x.name).join(','));
+  const stateReferences=await db.query(
+   "SELECT 'field' AS source,object_api AS object,api_name AS name FROM md_field_definitions WHERE tenant_id=$1 AND deleted_at IS NULL AND formula_expression LIKE '%cartSessionId%'"+
+   " UNION ALL SELECT 'default',object_api,field_api FROM md_field_default_formulas WHERE tenant_id=$1 AND expression LIKE '%cartSessionId%'"+
+   " UNION ALL SELECT 'validation',object_api,api_name FROM md_validation_rules WHERE tenant_id=$1 AND expression LIKE '%cartSessionId%'",[tenant]);
+  if(stateReferences.rows.length)checks.push('legacy Formula state references: '+
+   stateReferences.rows.map(x=>x.source+':'+x.object+'.'+x.name).join(','));
   const pages=await db.query(`
    SELECT DISTINCT p.api_name FROM md_page_definitions p
    JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
@@ -81,8 +122,7 @@ try{
     }
     const page=loaded?.page;
     if(!page||!Array.isArray(page.components))continue;
-    const offenders=page.components.filter(c=>JSON.stringify(c.properties??{}).includes('CartSession')
-      ||JSON.stringify(c.properties??{}).includes('cartSessionId'));
+    const offenders=page.components.filter(c=>hasActiveLegacyCartReference(c.properties??{}));
     if(offenders.length)checks.push(pageName+' '+variant+': '+offenders.length+' published legacy components');
    }
   }

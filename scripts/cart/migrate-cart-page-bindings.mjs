@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
+import {rewriteLegacyCartPage,loadLegacyCartIdMap} from './cart-legacy-references.mjs';
 
 const conn=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!conn)throw Error('DATABASE_URL is required');
@@ -85,8 +86,10 @@ try{
   SELECT DISTINCT p.tenant_id,p.api_name FROM md_page_definitions p
    JOIN md_lightning_page_details d ON d.tenant_id=p.tenant_id AND d.page_id=p.id
   WHERE p.enabled=true ORDER BY p.tenant_id,p.api_name`);
- const output=[];
+ const output=[],maps=new Map();
  for(const {tenant_id:tenant,api_name:page} of pages.rows){
+  if(!maps.has(tenant))maps.set(tenant,await loadLegacyCartIdMap(db,tenant));
+  const cartIds=maps.get(tenant);
   for(const variant of variants){
    let current;
    try{current=await runtime.editor(tenant,page,variant);}catch(error){
@@ -95,15 +98,16 @@ try{
    }
    if(!Array.isArray(current.components))continue;
    const components=current.components.map(patchComponent);
-   if(JSON.stringify(components)===JSON.stringify(current.components))continue;
-   const legacy=components.filter(c=>c.properties?.objectApiName==='CartLine'
+   const {page:converted,changed}=rewriteLegacyCartPage({...current,components},{cartIds});
+   if(!changed&&JSON.stringify(components)===JSON.stringify(current.components))continue;
+   const legacy=converted.components.filter(c=>c.properties?.objectApiName==='CartLine'
      &&(c.properties?.relatedFieldApiName==='CartSession'||c.properties?.relatedFilterKey==='cartSessionId'));
    assert.equal(legacy.length,0,'Legacy CartLine binding remains');
-   output.push({tenant,page,variant,changed:components.filter((c,i)=>JSON.stringify(c)!==JSON.stringify(current.components[i])).length});
+   output.push({tenant,page,variant,changed:converted.components.filter((c,i)=>JSON.stringify(c)!==JSON.stringify(current.components[i])).length});
    if(!apply)continue;
    const reloaded=await runtime.editor(tenant,page,variant);
    assert.deepEqual(reloaded,current,'Page draft changed during migration');
-   await runtime.saveLayoutDraft(tenant,page,variant,{...current,components});
+   await runtime.saveLayoutDraft(tenant,page,variant,converted);
    if(publish)await runtime.publishLayout(tenant,page,variant);
   }
  }

@@ -14,6 +14,7 @@ test -f "$SOURCE/scripts/cart/retire-cart-session.mjs"
  cd "$SOURCE"
  runuser -u metadrive -- node scripts/cart/migrate-cart-session-to-cart.mjs --apply
  runuser -u metadrive -- node scripts/cart/upgrade-cart-flow-metadata.mjs --apply
+ runuser -u metadrive -- node scripts/cart/migrate-cart-formulas.mjs --apply
  runuser -u metadrive -- node scripts/cart/migrate-cart-page-bindings.mjs --apply --publish
  runuser -u metadrive -- node scripts/cart/retire-cart-session.mjs --apply
 )

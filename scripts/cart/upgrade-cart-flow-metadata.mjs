@@ -13,6 +13,7 @@ import {encodeMetadataValue,decodeMetadataValues} from '../../apps/server/dist-s
 import {copilotPosGraphs} from '../../apps/server/dist-system/app-seeders/acetill-copilot-pos-flows.js';
 import {acetillCartGraphs} from '../../apps/server/dist-system/app-seeders/acetill-cart-flows.js';
 import {SMART_TILL_ADD} from '../codextill/ensure-smart-till-cart-flows.mjs';
+import {hasLegacyCartReference,hasActiveLegacyCartReference,rewriteLegacyCartFlow,loadLegacyCartIdMap} from './cart-legacy-references.mjs';
 
 const connectionString=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!connectionString)throw Error('DATABASE_URL is required');
@@ -40,7 +41,7 @@ const legacy=graph=>{
   case 'AcetillPaymentCash':case 'AcetillPaymentCard':
    return nodes.some(n=>n.type==='Create Records'&&n.config?.object==='Invoice')
     && !nodes.some(n=>n.type==='Update Records'&&n.config?.object==='Cart');
-  default:return related(graph);
+  default:return hasActiveLegacyCartReference(graph);
  }
 };
 const knownLegacyCounts=new Map([
@@ -72,44 +73,55 @@ try{
  for(const {id:tenant,slug} of tenants.rows){
   const run=async client=>{
    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['cart-flow-upgrade:'+tenant]);
-   for(const [name,target] of targets){
-    const active=await client.query(`
-     SELECT id,version FROM md_flow_definitions WHERE tenant_id=$1
-       AND api_name=$2 AND active=true AND archived=false ORDER BY version DESC LIMIT 1 FOR UPDATE`,
-     [tenant,name]);
-    if(!active.rows[0])continue;
-    const previous=active.rows[0];
-    const {rows}=await client.query(`
-     SELECT property_path,value_kind,value_text FROM md_flow_editor_values
-     WHERE tenant_id=$1 AND flow_id=$2 ORDER BY property_path`,[tenant,previous.id]);
+   // Inspect ALL active Flows, including tenant-authored custom graphs.
+   const {rows:active}=await client.query(
+    'SELECT id,api_name,version,label,flow_type,system_context_approved_by FROM md_flow_definitions WHERE tenant_id=$1 AND active=true AND archived=false ORDER BY api_name,version DESC FOR UPDATE',[tenant]);
+   const cartIds=await loadLegacyCartIdMap(client,tenant);
+   for(const previous of active){
+    const name=previous.api_name,target=targets.get(name);
+    const {rows}=await client.query(
+     'SELECT property_path,value_kind,value_text FROM md_flow_editor_values WHERE tenant_id=$1 AND flow_id=$2 ORDER BY property_path',[tenant,previous.id]);
+    // Do not decode unrelated active Flows: some legacy definitions have no
+    // editor graph and must not block this narrowly scoped migration.
+    const relevant=rows.some(v=>hasLegacyCartReference(v.property_path)||
+      hasLegacyCartReference(v.value_text)||
+      [...cartIds.keys()].some(id=>typeof v.value_text==='string'&&v.value_text.includes(id)));
+    if(!target&&!relevant)continue;
     const graph=decodeMetadataValues(rows).builder;
-    if(!graph||typeof graph!=='object'||Array.isArray(graph))throw Error(name+': missing graph');
-    if(!legacy(graph))continue;
-    if(!compatible(name,graph))throw Error(name+': customised or unknown legacy graph; needs manual review');
-    const next=await client.query(`
-     SELECT COALESCE(MAX(version),0)::int+1 AS version FROM md_flow_definitions
-     WHERE tenant_id=$1 AND api_name=$2`,[tenant,name]);
+    if(!graph||typeof graph!=='object'||Array.isArray(graph))throw Error(name+': active Flow metadata invalid');
+    const serialized=JSON.stringify(graph);
+    if(!legacy(graph)&&!hasActiveLegacyCartReference(graph)&&
+       ![...cartIds.keys()].some(id=>serialized.includes(id)))continue;
+    const canonical=Boolean(target&&legacy(graph)&&compatible(name,graph));
+    const newer=canonical?structuredClone(target):rewriteLegacyCartFlow(graph,{cartIds}).graph;
+    if(hasActiveLegacyCartReference(newer))throw Error(name+': legacy Cart reference remains');
+    const next=await client.query(
+     'SELECT COALESCE(MAX(version),0)::int+1 AS version FROM md_flow_definitions WHERE tenant_id=$1 AND api_name=$2',[tenant,name]);
     const version=Number(next.rows[0].version);
-    const newer=structuredClone(target);
     newer.version=version;
-    // Preserve authoritative payment attestation added after original seeding.
-    if(name.startsWith('AcetillPayment')&&graph.startConfig?.recordAttestationGuard)
-     newer.startConfig={...(newer.startConfig??{}),
-       recordAttestationGuard:graph.startConfig.recordAttestationGuard};
-    log.push({tenant:slug,flow:name,from:previous.version,to:version});
+    if(canonical&&graph.startConfig?.recordAttestationGuard)
+     newer.startConfig={...(newer.startConfig??{}),recordAttestationGuard:graph.startConfig.recordAttestationGuard};
+    log.push({tenant:slug,flow:name,from:previous.version,to:version,mode:canonical?'canonical':'authored'});
     if(!apply)continue;
-    const created=await client.query(`
-     INSERT INTO md_flow_definitions(tenant_id,api_name,label,flow_type,version,active)
-     VALUES($1,$2,$3,$4,$5,false) RETURNING id`,
-     [tenant,name,newer.label,newer.flowType,version]);
+    const created=await client.query(
+     'INSERT INTO md_flow_definitions (tenant_id,api_name,label,flow_type,version,active,system_context_approved_by) VALUES($1,$2,$3,$4,$5,false,$6) RETURNING id',
+     [tenant,name,newer.label??previous.label,newer.flowType??previous.flow_type,version,previous.system_context_approved_by]);
+    const createdId=created.rows[0].id;
     const values=[];encodeMetadataValue(newer,'/builder',values);
-    for(const v of values)await client.query(`
-     INSERT INTO md_flow_editor_values(tenant_id,flow_id,property_path,value_kind,value_text)
-     VALUES($1,$2,$3,$4,$5)`,[tenant,created.rows[0].id,v.path,v.kind,v.text]);
-    await client.query('UPDATE md_flow_definitions SET active=false WHERE tenant_id=$1 AND id=$2',
-      [tenant,previous.id]);
-    await client.query('UPDATE md_flow_definitions SET active=true WHERE tenant_id=$1 AND id=$2',
-      [tenant,created.rows[0].id]);
+    for(const v of values)await client.query(
+     'INSERT INTO md_flow_editor_values(tenant_id,flow_id,property_path,value_kind,value_text) VALUES($1,$2,$3,$4,$5)',
+     [tenant,createdId,v.path,v.kind,v.text]);
+    const {rows:subscriptions}=await client.query(
+     'SELECT flow_type,trigger_key,app_api_name,active FROM md_flow_trigger_subscriptions WHERE tenant_id=$1 AND flow_id=$2',[tenant,previous.id]);
+    await client.query('UPDATE md_flow_definitions SET active=false WHERE tenant_id=$1 AND id=$2',[tenant,previous.id]);
+    await client.query('UPDATE md_flow_trigger_subscriptions SET active=false,updated_at=now() WHERE tenant_id=$1 AND flow_id=$2',[tenant,previous.id]);
+    for(const subscription of subscriptions){
+     const triggerKey=subscription.trigger_key==='CartSession'?'Cart':subscription.trigger_key;
+     await client.query(
+      'INSERT INTO md_flow_trigger_subscriptions(tenant_id,flow_id,flow_type,trigger_key,app_api_name,active) VALUES($1,$2,$3,$4,$5,$6)',
+      [tenant,createdId,subscription.flow_type,triggerKey,subscription.app_api_name,subscription.active]);
+    }
+    await client.query('UPDATE md_flow_definitions SET active=true WHERE tenant_id=$1 AND id=$2',[tenant,createdId]);
    }
   };
   if(apply)await db.transaction(run);
