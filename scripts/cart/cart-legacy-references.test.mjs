@@ -81,3 +81,12 @@ test('literal stored CartSession record identifiers resolve to their migrated Ca
  assert.equal(rewriteLegacyCartPage({components:[],formula:'=REF("'+from+'")'},{cartIds}).page.formula,
   '=REF("'+to+'")');
 });
+
+test('page draft migration preserves Date metadata and other non-plain runtime values',()=>{
+ const updatedAt=new Date('2026-11-07T08:00:00Z');
+ const source={updatedAt,components:[{properties:{formula:'=CartSession.Status'}}]};
+ const {page}=rewriteLegacyCartPage(source);
+ assert.ok(page.updatedAt instanceof Date);
+ assert.equal(page.updatedAt.toISOString(),updatedAt.toISOString());
+ assert.equal(page.components[0].properties.formula,'=Cart.Status');
+});

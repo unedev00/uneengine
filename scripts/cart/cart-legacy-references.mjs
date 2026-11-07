@@ -32,6 +32,8 @@ export function rewriteLegacyCartTree(input,{page=false,cartIds=new Map()}={}){
  if(typeof input==='string')return rewriteLegacyCartText(input,{page,cartIds});
  if(Array.isArray(input))return input.map(v=>rewriteLegacyCartTree(v,{page,cartIds}));
  if(!input||typeof input!=='object')return input;
+ // PageRuntime metadata can include Date instances; preserve non-plain values.
+ if(Object.getPrototypeOf(input)!==Object.prototype&&Object.getPrototypeOf(input)!==null)return input;
  const result={};
  for(const [key,value] of Object.entries(input)){
   const nextKey=rewriteLegacyCartText(key,{page,cartIds});
