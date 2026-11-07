@@ -44,6 +44,7 @@ export async function executePageFormulaAction(
  /** Page data the action may read: TABLE()/COLLECTION() sources and $component values. */
  formulaContext:Pick<FormulaBindingContext,'namedCollections'|'collectionSources'|'readComponent'> & {timingName?:string}={}
 ):Promise<{changes:Change[];recordChanged:boolean;mutatedObjectApiNames?:string[];
+ noRecordWriteReason?:string;plannedRecordWrites?:number;skippedRecordWrites?:number;
  recordChanges?:Array<{objectApiName:string;operation:'create'|'update'|'delete';record:Record<string,unknown>}>}>{
  const formula=String(binding.formula??'');
  if(isActionPlan(formula)){
