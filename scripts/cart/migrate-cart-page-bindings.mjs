@@ -64,9 +64,9 @@ function patchComponent(component){
  const actions=p.actionFlows&&typeof p.actionFlows==='object'&&!Array.isArray(p.actionFlows)
   ?p.actionFlows:{};
  const oldActions=Object.values(actions).some(a=>a&&typeof a==='object'&&known.has(String(a.flowApiName??'')));
- if(!cart&&!oldActions)return component;
+ if(!oldLink&&!oldActions)return component;
  const props=structuredClone(p);
- if(cart&&(oldLink||props.autoRecordScope===true)){
+ if(cart&&oldLink){
   props.relatedFieldApiName='Cart';
   props.relatedFilterKey='activeCartId';
   props.autoRecordScope=false;
