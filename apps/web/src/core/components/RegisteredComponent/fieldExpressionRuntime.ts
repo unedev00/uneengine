@@ -2,6 +2,7 @@ import {
  evaluateFieldExpressionDetailed,FieldExpressionEvaluationError,setAuthenticatedFormulaSession,
  type FormulaBindingContext
 } from '../../../component-libraries/shared/FieldExpression.js';
+import {tokenize} from '../../../../../server/src/expression-engine/FormulaTokenizer.js';
 
 let authenticatedFormulaBindingContext:FormulaBindingContext|null=null;
 export function setAuthenticatedFormulaBindingContext(user:unknown):void {
@@ -119,6 +120,31 @@ export function resolveRegisteredTextProperties(
     const value=properties[definition.propertyKey];
     if(typeof value!=='string'||!isFieldExpression(value))continue;
     const localRefs=[...value.matchAll(/@([A-Za-z][A-Za-z0-9_]*)/g)].map(match=>match[1]);
+    // Validate explicit bound Object fields against the authorised metadata,
+    // not against returned row keys: a real nullable field may be absent from
+    // the record without being invalid. An unbound field remains empty.
+    const boundObject=typeof properties.objectApiName==='string'?
+      properties.objectApiName:'';
+    const objects=Array.isArray(properties.objects)?properties.objects:[];
+    const object=objects.find(entry=>entry&&typeof entry==='object'
+      &&(entry as {apiName?:unknown}).apiName===boundObject) as
+      {fields?:Array<{apiName:string}>}|undefined;
+    if(boundObject&&Array.isArray(object?.fields)){
+      try{
+        const allowed=new Set(object.fields.map(field=>field.apiName));
+        const named=formulaContext.namedCollections??{};
+        for(const token of tokenize(value)){
+          if(token.kind!=='reference'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(token.value))continue;
+          if(allowed.has(token.value)||Object.hasOwn(named,token.value)
+            ||['Record','state','session','event'].includes(token.value))continue;
+          throw new FieldExpressionEvaluationError(
+            'Field '+token.value+' is not available on Object '+boundObject);
+        }
+      }catch(error){
+        if(error instanceof FieldExpressionEvaluationError)throw error;
+        // Existing formula evaluator owns all syntax and complexity errors.
+      }
+    }
     if(!hasRecord&&rows&&rows.length>1&&value.includes('$component.')&&localRefs.length)continue;
     // SUM may be nested in a text expression (e.g. "£ " & SUM(@LineTotal)).
     // Do not pre-evaluate a partial record page and show a misleading total.
