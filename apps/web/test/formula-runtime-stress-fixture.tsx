@@ -7,6 +7,7 @@ import {
 import {loadFlowScreenRecordPage,apiRequest} from '../src/core/authentication/Client/authClient';
 import {runSerializedPageAction,planReadWriteObjects} from '../src/core/pages/PageRuntime/pageActionCoordinator';
 import {executePageFormulaAction} from '../src/core/pages/PageRuntime/formulaAction';
+import {useSharedRendererStyle} from '../src/core/components/RegisteredComponent/sharedRendererStyle';
 import type {LibraryComponentMetadata} from '../src/core/metadata/Definitions/metadata';
 
 const counterId='11111111-1111-4111-8111-111111111111';
@@ -37,6 +38,8 @@ const counts:Record<string,number>={};
 function Instance({item}:{item:typeof components[number]}){
   const scope=usePageFormulaScope();
   useComponentFormulaState({},item.properties);
+  // Each component kind has one trusted stylesheet regardless of instances.
+  useSharedRendererStyle('.fixture-'+item.type.slice(7)+'{box-sizing:border-box}');
   const name=String(item.properties.navigatorName);
   useFormulaDependencyVersion(scope,{reference:'$component.'+name+'.text'});
   counts[name]=(counts[name]??0)+1;
@@ -83,6 +86,7 @@ declare global {
       ready:boolean;readTest:typeof readTest;tenActions:typeof tenActions;
       renderCount:(name:string)=>number;
       setInput:(value:number)=>void;
+      unmount:()=>void;
     };
   }
 }
@@ -91,7 +95,8 @@ function Fixture(){
     window.__runtimeStress={
       ready:true,readTest,tenActions,
       renderCount:(name:string)=>counts[name]??0,
-      setInput:(value:number)=>publishComponentInput('text-0',value)
+      setInput:(value:number)=>publishComponentInput('text-0',value),
+      unmount:()=>root.unmount()
     };
     return()=>{delete window.__runtimeStress;};
   },[]);
@@ -108,7 +113,8 @@ function Fixture(){
     <span id="counter-id" hidden>{counterId}</span>
   </div>;
 }
-createRoot(document.getElementById('root')!).render(
+const root=createRoot(document.getElementById('root')!);
+root.render(
   <PageFormulaScope components={components} catalog={catalog}>
     <Fixture/>
   </PageFormulaScope>
