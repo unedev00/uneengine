@@ -608,7 +608,7 @@ export default function MetadataBoundPageComponent({
     catch{/* Session storage may be unavailable. */}
     const started=trace?performance.now():0;
     let executingAt=started;
-    let outcome:'completed'|'skipped'|'failed'='completed';
+    let outcome:'completed'|'no-record-write'|'failed'='completed';
     let recordWrite:boolean|undefined;
     const traceId=trace?crypto.randomUUID():'';
     setActionPending(count=>count+1);
@@ -620,8 +620,11 @@ export default function MetadataBoundPageComponent({
       const result=dependencyObjects.length
        ?await runSerializedPageAction(pageSessionKey+'|'+sessionId,dependencyObjects,execute)
        :await execute();
-      if((result as {skipped?:boolean}|undefined)?.skipped===true)outcome='skipped';
       recordWrite=(result as {recordChanged?:boolean}|undefined)?.recordChanged;
+      const planned=configured&&typeof configured==='object'&&!Array.isArray(configured)
+        ?configured as {actionType?:unknown;formula?:unknown}:null;
+      if(recordWrite===false&&planned?.actionType==='Formula'
+        &&typeof planned.formula==='string'&&isActionPlan(planned.formula))outcome='no-record-write';
       setActionError('');
       return result;
     } catch(error) {

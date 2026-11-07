@@ -285,6 +285,8 @@ export type ActionPlanStepTiming={
 export type ActionPlanTiming={
  formulaName:string;durationMs:number;stepCount:number;executedStepCount:number;
  completedActionCount:number;requestCount:number;status:'completed'|'failed';
+ /** A successful action can be read-only or skip every write via a guard. */
+ recordChanged:boolean;writeStepCount:number;skippedWriteStepCount:number;
  steps:ActionPlanStepTiming[];
 };
 /** A previous record write was confirmed before a later plan step failed.
@@ -712,6 +714,9 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
      formulaName:safeName,durationMs:Math.max(0,performance.now()-started),
      stepCount,executedStepCount:traceSteps.filter(step=>step.status!=='skipped').length,
      completedActionCount:completed,requestCount,status,
+     recordChanged,
+     writeStepCount:traceSteps.filter(step=>['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(step.name)).length,
+     skippedWriteStepCount:traceSteps.filter(step=>['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(step.name)&&step.status==='skipped').length,
      steps:traceSteps
     };
     try{onTiming!(timing);}catch{/* Diagnostics must not change successful or failed action behavior. */}

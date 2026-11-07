@@ -592,3 +592,30 @@ test('ten rapid Formula actions execute ten authorised writes without stale coun
  assert.equal(value,10);
  assert.ok(results.every(result=>result.recordChanged===true));
 });
+
+
+test('read-only guarded action explains missing writes without falsely reporting mutation',async()=>{
+ const samples:ActionPlanTiming[]=[];
+ const methods:string[]=[];
+ const formula='=ACTIONS(GETRECORD(Cart, Name, "current", AS(cart)), '+
+  'IF(FALSE, CREATERECORD(CartLine, Quantity, 1), STATE(noWrite, TRUE)))';
+ const result=await executeActionPlan(formula,{},timingEvaluator,{
+  formulaName:'Stress.Add',
+  onTiming:sample=>samples.push(sample),
+  request:async(path,init)=>{
+   methods.push(init?.method??'GET');
+   assert.match(path,/^\/records\/Cart\?/);
+   return {records:[],total:0} as never;
+  }
+ });
+ assert.equal(result.recordChanged,false);
+ assert.deepEqual(methods,['GET']);
+ assert.equal(samples.length,1);
+ assert.equal(samples[0].status,'completed');
+ assert.equal(samples[0].recordChanged,false);
+ assert.equal(samples[0].writeStepCount,1);
+ assert.equal(samples[0].skippedWriteStepCount,1);
+ assert.deepEqual(samples[0].steps.map(step=>[step.name,step.status]),[
+  ['GETRECORD','completed'],['CREATERECORD','skipped'],['STATE','completed']
+ ]);
+});

@@ -178,3 +178,28 @@ test('a larger page and a post-write generation never reuse an incomplete or sta
  assert.equal(fresh.records[0].Id,'fresh');
  assert.equal(calls.length,3);
 });
+
+
+test('COUNTIFS and SUMIFS Object reads are invalidated even without secondary source selector',()=>{
+ const known=[{apiName:'Cart',fields:[]},
+  {apiName:'CartLine',fields:[{apiName:'Quantity',dataType:'Number'}]},
+  {apiName:'Product',fields:[]}];
+ const reads=pageComponentReadObjectNames('Cart',{
+  textSource:'=COUNTIFS(CartLine, Quantity, 2)',
+  subtitle:'=SUMIFS(CartLine, Quantity, Quantity, 2)'
+ },known);
+ assert.deepEqual(reads,['Cart','CartLine']);
+ assert.equal(shouldInvalidatePageComponent({
+  pageSessionKey:page,sessionId:session,objectApiNames:['CartLine']
+ },page,session,reads),true);
+ assert.equal(shouldInvalidatePageComponent({
+  pageSessionKey:page,sessionId:session,objectApiNames:['Product']
+ },page,session,reads),false);
+});
+
+test('unknown aggregate Object never creates a data permission or false source',()=>{
+ const known=[{apiName:'Cart',fields:[]}];
+ assert.deepEqual(pageComponentReadObjectNames('Cart',{
+  textSource:'=COUNTIFS(SecretData, Status, "Open")'
+ },known),['Cart']);
+});
