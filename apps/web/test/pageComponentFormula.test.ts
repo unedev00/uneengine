@@ -4,6 +4,7 @@ import {loadBoundedCollectionSource} from '../src/core/pages/PageRuntime/loadBou
 import test from 'node:test';
 import {sameFormulaSnapshot} from '../src/core/components/RegisteredComponent/pageFormulaSnapshot';
 import {componentFormulaDependencies} from '../src/core/components/RegisteredComponent/PageFormulaScope';
+import {resolveRegisteredTextProperties} from '../src/core/components/RegisteredComponent/fieldExpressionRuntime';
 import {componentReaderKey,evaluateFieldExpressionDetailed,formulaSyntaxCacheStats} from '../src/component-libraries/shared/FieldExpression.js';
 import {resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
 import {compileRecordFilterFormula} from '../src/core/pages/PageRuntime/recordFilterFormula';
@@ -127,4 +128,27 @@ test('component reference subscriptions safely handle cyclic metadata objects',(
  const item:Record<string,unknown>={text:'$component.Other.value'};
  item.self=item;
  assert.deepEqual(componentFormulaDependencies(item),['Other.value']);
+});
+
+
+test('explicit unknown field bindings report an error while null and unbound values remain empty',()=>{
+ const definitions=[{propertyKey:'textSource',kind:'TEXT'}];
+ const base={objectApiName:'CartLine',
+  objects:[{apiName:'CartLine',fields:[{apiName:'Quantity'}]}],
+  record:{Quantity:2}};
+ assert.throws(()=>resolveRegisteredTextProperties(definitions,{
+  ...base,textSource:'@Subtotal'
+ }),/Field Subtotal is not available on Object CartLine/);
+ assert.equal(resolveRegisteredTextProperties(definitions,{
+  ...base,record:{Quantity:null},textSource:'@Quantity'
+ }).textSource,'');
+ assert.equal(resolveRegisteredTextProperties(definitions,{
+  ...base,textSource:''
+ }).textSource,'');
+ assert.equal(resolveRegisteredTextProperties(definitions,{
+  ...base,textSource:'@Quantity'
+ }).textSource,'2');
+ assert.equal(resolveRegisteredTextProperties(definitions,{
+  ...base,textSource:'"@Subtotal"'
+ }).textSource,'@Subtotal');
 });
