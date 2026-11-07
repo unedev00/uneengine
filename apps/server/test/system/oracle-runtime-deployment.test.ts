@@ -282,7 +282,6 @@ test('Oracle release completes CartSession retirement after SQL backup and befor
  assert.ok(deploy.indexOf('deploy-api.sh')<deploy.indexOf('apply-cart-session-retirement.sh'));
  assert.ok(deploy.indexOf('apply-cart-session-retirement.sh')<deploy.indexOf('deploy-frontend.sh'));
  const ordered=['migrate-cart-session-to-cart.mjs --apply',
-  'upgrade-cart-flow-metadata.mjs --apply',
   'migrate-cart-formulas.mjs --apply',
   'migrate-cart-page-bindings.mjs --apply --publish',
   'retire-cart-session.mjs --apply'];

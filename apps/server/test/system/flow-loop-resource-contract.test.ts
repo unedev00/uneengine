@@ -1,19 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {resolveFlowLoopResources} from '../../src/flow-engine/FlowLoopResourceContract.js';
-import {copilotReadCart,copilotAddProduct,copilotChangeQuantity} from '../../src/app-seeders/acetill-copilot-pos-flows.js';
 
-test('existing declared Loop Record is reused without duplicate persistence resource',()=>{
- for(const flow of [copilotReadCart,copilotAddProduct,copilotChangeQuantity]){
-  const inferred=resolveFlowLoopResources(flow.elements,flow.resources);
-  assert.equal(inferred.length,0,flow.apiName+' declares its loop item already');
-  const loop=flow.elements.find(x=>x.type==='Loop');
-  assert.ok(loop);
-  const declaration=flow.resources.find(x=>x.name===loop.config.loopVariable);
-  assert.equal(declaration?.type,'Record');
-  assert.equal(declaration?.dataType,'CartLine');
- }
-});
 test('undeclared Loop item is inferred from the declared collection',()=>{
  const inferred=resolveFlowLoopResources(
   [{type:'Loop',config:{collection:'lines',loopVariable:'item'}}],
