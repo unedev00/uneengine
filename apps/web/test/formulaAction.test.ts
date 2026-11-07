@@ -562,3 +562,33 @@ test('unrelated object actions still run without false data locks',()=>{
  assert.deepEqual(planReadWriteObjects(binding,'Counter',
   [{apiName:'Counter'},{apiName:'CartLine'}]),['Counter']);
 });
+
+
+test('ten rapid Formula actions execute ten authorised writes without stale counter reads',async()=>{
+ let value=0;
+ let writes=0;
+ const formula='=ACTIONS(GETRECORD(Counter, Name, "current", AS(row)), '+
+  'UPDATERECORD(Counter, row.Id, Count, row.Count + 1))';
+ const request=async<T>(path:string,options?:RequestInit):Promise<T>=>{
+  if(options?.method==='PUT'){
+   assert.equal(path,'/records/Counter/'+rowId);
+   const next=JSON.parse(String(options.body)).Count;
+   assert.equal(next,value+1,'queued actions must read the previous confirmed write');
+   await Promise.resolve();
+   value=next;writes++;
+   return {record:{Id:rowId,Count:value}} as T;
+  }
+  if(options)throw Error('Unexpected mutation method');
+  assert.match(path,/^\/records\/Counter\?limit=1/);
+  await Promise.resolve();
+  return {records:[{Id:rowId,Count:value}],total:1} as T;
+ };
+ const actions=Array.from({length:10},()=>runSerializedPageAction('rapid-action-test',
+  planReadWriteObjects({actionType:'Formula',formula},'Counter',[{apiName:'Counter'}]),
+  ()=>executePageFormulaAction(request,{actionType:'Formula',formula},
+   {},{},[{apiName:'Counter',fields:[]}],'Counter')));
+ const results=await Promise.all(actions);
+ assert.equal(writes,10);
+ assert.equal(value,10);
+ assert.ok(results.every(result=>result.recordChanged===true));
+});
