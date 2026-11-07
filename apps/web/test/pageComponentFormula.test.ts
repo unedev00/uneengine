@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {loadBoundedCollectionSource} from '../src/core/pages/PageRuntime/loadBoundedCollectionSource';
 import test from 'node:test';
 import {sameFormulaSnapshot} from '../src/core/components/RegisteredComponent/pageFormulaSnapshot';
+import {componentFormulaDependencies} from '../src/core/components/RegisteredComponent/PageFormulaScope';
 import {componentReaderKey,evaluateFieldExpressionDetailed,formulaSyntaxCacheStats} from '../src/component-libraries/shared/FieldExpression.js';
 import {resolveActionFormulaValue} from '../src/core/pages/PageRuntime/formulaAction';
 import {compileRecordFilterFormula} from '../src/core/pages/PageRuntime/recordFilterFormula';
@@ -106,4 +107,24 @@ test('cached syntax still evaluates volatile NOW with each supplied clock',()=>{
  const second=evaluateFieldExpressionDetailed(formula,{}, {now:new Date('2026-02-01T10:00:00Z')});
  assert.equal(first.value,'2025');
  assert.equal(second.value,'2026');
+});
+
+
+test('component reference subscriptions include only actual nested dependencies',()=>{
+ const properties={
+  textSource:'=IF($component.SaleCart.Total>5,$component.Product.Name,"")',
+  style:{caption:'$component.SaleCart.Total'},
+  unrelated:'@Quantity',
+  records:[{Id:'row',Name:'One'}]
+ };
+ assert.deepEqual(componentFormulaDependencies(properties),[
+  'Product.Name','SaleCart.Total'
+ ]);
+ assert.deepEqual(componentFormulaDependencies({textSource:'literal',subtotalValue:''}),[]);
+});
+
+test('component reference subscriptions safely handle cyclic metadata objects',()=>{
+ const item:Record<string,unknown>={text:'$component.Other.value'};
+ item.self=item;
+ assert.deepEqual(componentFormulaDependencies(item),['Other.value']);
 });
