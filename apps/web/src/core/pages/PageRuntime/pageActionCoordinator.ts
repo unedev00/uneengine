@@ -11,7 +11,7 @@ const tails=new Map<string,Promise<void>>();
 export async function runSerializedPageAction<T>(
  scope:string,objects:readonly string[],execute:()=>Promise<T>
 ):Promise<T>{
- const keys=[...new Set(objects.filter(name=>/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(name)))]
+ const keys=[...new Set(objects.filter(name=>/^[A-Za-z][A-Za-z0-9_]{0,199}$/.test(name)))]
   .sort().map(name=>scope+'|'+name);
  if(!keys.length)return execute();
  const earlier=keys.map(key=>tails.get(key)??Promise.resolve());
