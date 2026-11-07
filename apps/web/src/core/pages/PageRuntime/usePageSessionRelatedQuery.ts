@@ -54,7 +54,7 @@ export function usePageSessionRelatedQuery(
   return ()=>window.removeEventListener('metadrive:page-flow-mutated',changed);
  },[enabled,pageSessionKey,sessionId,parentKey]);
  // Older callers without page identity retain revision-driven behavior.
- const requestKey=JSON.stringify([scopeKey,pageSessionKey?parentRevision:revision]);
+ const requestKey=JSON.stringify([scopeKey,pageSessionKey,pageSessionKey?parentRevision:revision]);
  const [result,setResult]=useState<CachedRelatedQuery|null>(null);
  useEffect(()=>{
   if(!enabled)return;
