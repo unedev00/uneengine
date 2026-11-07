@@ -131,7 +131,8 @@ export function resolveRegisteredTextProperties(
       {fields?:Array<{apiName:string}>}|undefined;
     if(boundObject&&Array.isArray(object?.fields)){
       try{
-        const allowed=new Set(object.fields.map(field=>field.apiName));
+        const allowed=new Set(['Id','CreatedDate','LastModifiedDate','CreatedBy','LastModifiedBy',
+          ...object.fields.map(field=>field.apiName)]);
         const named=formulaContext.namedCollections??{};
         for(const token of tokenize(value)){
           if(token.kind!=='reference'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(token.value))continue;
