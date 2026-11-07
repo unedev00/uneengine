@@ -56,15 +56,17 @@ export function rewriteLegacyCartFlow(graph,{cartIds=new Map()}={}){
   const cfg=node.config;
   const old=graph.elements?.find?.(x=>x?.id===node.id);
   const fromSession=old?.config?.object==='CartSession';
-  if(node.type==='Get Records'&&fromSession&&cfg.recordLimit!=='all'&&Array.isArray(cfg.conditions)){
+  if(node.type==='Get Records'&&fromSession&&Array.isArray(cfg.conditions)){
+   if(cfg.recordLimit!=='all'){
    for(const condition of cfg.conditions){
     if(condition.field==='SessionKey' &&
       /^(?:\{!sessionKey\}|\$session(?:\.id)?)$/.test(String(condition.value))){
      condition.field='Id';condition.value='{!cartId}';needsCartInput=true;
     }
    }
-   if(cfg.conditions.some(c=>c.field==='Id'&&c.value==='{!cartId}') &&
-      !cfg.conditions.some(c=>c.field==='UserId')){
+   }
+   // Even multi-cart queries are user-scoped; a shared browser token is not ownership.
+   if(!cfg.conditions.some(c=>c.field==='UserId')){
     cfg.conditions.push({field:'UserId',operator:'Equals',value:'{!$User.Id}'});
    }
   }
