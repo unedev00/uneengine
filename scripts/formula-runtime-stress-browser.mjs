@@ -61,6 +61,8 @@ try {
  const readyMs=Date.now()-started;
  assert.equal(await page.locator('#fixture-count').textContent(),'56');
  assert.equal(await page.locator('[data-component]').count(),56);
+ assert.equal(await page.locator('style[data-metadrive-shared-renderer-style]').count(),3,
+  '50 Text, 3 Cart and 3 Card Grid instances need only three styles');
  assert.equal(await page.evaluate(()=>window.visualViewport?.scale),1);
  assert.ok(readyMs<10000,'56-component page must not freeze initialization for 10 seconds');
  const unrelatedBefore=await page.evaluate(()=>window.__runtimeStress.renderCount('Cart0'));
@@ -71,6 +73,8 @@ try {
  const chainMs=Date.now()-changeStarted;
  const unrelatedAfter=await page.evaluate(()=>window.__runtimeStress.renderCount('Cart0'));
  assert.equal(unrelatedAfter,unrelatedBefore,'Unrelated Cart should not rerender for Text dependency');
+ assert.equal(await page.locator('style[data-metadrive-shared-renderer-style]').count(),3,
+  'Formula updates must not duplicate style elements');
  report.results.render={components:56,firstChainMs:readyMs,updateChainMs:chainMs,
   unrelatedCartRendersBefore:unrelatedBefore,unrelatedCartRendersAfter:unrelatedAfter,
   finalText:'59'};
@@ -90,6 +94,11 @@ try {
  assert.deepEqual(exceptions,[],'No React errors, unhandled promises or console failures');
  report.results.javascriptErrors=exceptions;
  await page.screenshot({path:join(root,'56-components.png'),animations:'disabled',fullPage:true});
+ await page.evaluate(()=>window.__runtimeStress.unmount());
+ assert.equal(await page.locator('style[data-metadrive-shared-renderer-style]').count(),0,
+  'Unloading the last renderer must clean up shared styles');
+ report.results.render.sharedStyles=3;
+ report.results.render.stylesAfterUnmount=0;
  await writeFile(join(root,'result.json'),JSON.stringify(report,null,2)+'\n');
  console.info('Runtime formula stress E2E passed: '+JSON.stringify(report.results));
 } finally {
