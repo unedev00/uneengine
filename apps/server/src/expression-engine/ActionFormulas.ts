@@ -330,6 +330,11 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
     !Number.isSafeInteger(planWindow.completedBefore??0)||(planWindow.completedBefore??0)<0))
    throw Error('Invalid Formula execution segment');
   const selectedSteps=planWindow?steps.slice(planWindow.start,planWindow.end):steps;
+  const isRecordWrite=(step:ActionStep)=>['CREATERECORD','UPDATERECORD','DELETERECORD'].includes(step.name);
+  const writeStepCount=(list:readonly ActionStep[]):number=>list.reduce(
+   (total,step)=>total+(isRecordWrite(step)?1:0)+(step.body?writeStepCount(step.body):0),0);
+  const plannedRecordWrites=writeStepCount(selectedSteps);
+  let skippedRecordWrites=0;
   const countSteps=(list:readonly ActionStep[]):number=>list.reduce(
    (total,step)=>total+1+(step.body?countSteps(step.body):0),0);
   const stepCount=trace?countSteps(selectedSteps):0;
@@ -536,7 +541,8 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
       }
       if(decided.get(guard.condition)!==guard.expected){skip=true;break;}
      }
-     if(skip){if(stepTiming)stepTiming.status='skipped';continue;}
+     if(skip){if(isRecordWrite(step))skippedRecordWrites++;
+      if(stepTiming)stepTiming.status='skipped';continue;}
      const nodes=stepNodes(step);
      if(nodes.length>1&&nodes.every(parallelSafe))await Promise.all(nodes.map(resolveServer));
      else for(const node of nodes)await resolveServer(node);
@@ -696,7 +702,10 @@ export async function executeActionPlan(formula:string,record:Record<string,unkn
    const variables=Object.assign(Object.create(null) as Record<string,unknown>,planWindow?.variables??{});
    await run(selectedSteps,variables,true);
    return {changes,recordChanged,mutatedObjectApiNames:[...mutatedObjectApiNames],
-    recordChanges,...(planWindow?.includeVariables?{variables,completedActionCount:completed}:{})};
+    recordChanges,plannedRecordWrites,skippedRecordWrites,
+    ...(!recordChanged&&plannedRecordWrites>0?{noRecordWriteReason:
+      skippedRecordWrites>0?'guard-skipped-write':'no-record-write-executed'}:{}),
+    ...(planWindow?.includeVariables?{variables,completedActionCount:completed}:{})};
   }catch(error){
    status='failed';
    if(recordChanged){
