@@ -24,7 +24,7 @@ jobs:
       - name: Remove verified test-only Page Builder modules and repair stale tests
         run: |
           node scripts/frontend-retire-ribbon.mjs
-          rm scripts/frontend-retire-ribbon.mjs
+          rm scripts/frontend-retire-ribbon.mjs .github/workflows/frontend-retire-ribbon.yml
       - name: Typecheck, build and run component and binding regression tests
         run: |
           npm run audit:architecture
