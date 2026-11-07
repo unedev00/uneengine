@@ -22,24 +22,11 @@ import {seedLocationSrnForExistingTenants} from '../app-seeders/core-location-sr
 import {seedAppointmentObjectsForExistingTenants} from '../app-seeders/core-appointment-objects.js';
 import {seedCoreCashLedgerForExistingTenants} from '../app-seeders/core-cash-ledger.js';
 import {seedCommunicationObjectsForExistingTenants} from '../app-seeders/core-communication-objects.js';
-import {seedAcetillLockFlows} from '../app-seeders/acetill-lock-flow.js';
-import {backfillAcetillOperationalFlows} from '../app-seeders/acetill-operational-backfill.js';
-import {seedAcetillAppCatalog} from '../app-seeders/acetill-app-catalog.js';
-import {seedAceKioskAppCatalog} from '../app-seeders/acekiosk-app-catalog.js';
-import {seedAceKioskMenuFlows,seedAceKioskProductOptions} from '../app-seeders/acekiosk-menu-flow.js';
-import {seedAceKioskNavigationFlows} from '../app-seeders/acekiosk-navigation-flows.js';
-import {seedAceKioskPaymentFlows} from '../app-seeders/acekiosk-payment-flows.js';
-import {seedAceChatterAppCatalog} from '../app-seeders/acechatter-app-catalog.js';
-import {seedOneChatterAppCatalog} from '../app-seeders/onechatter-app-catalog.js';
-import {seedUneAceChatterCatalog} from '../app-seeders/une-acechatter-catalog.js';
 import {seedConnectorAppCatalog} from '../app-seeders/connector-apps.js';
-import {seedAceChatterFlows} from '../app-seeders/acechatter-flow.js';
-import {seedAceAssistCrudFlows} from '../app-seeders/aceassist-crud-flows.js';
 import {seedMailAdminPermissions} from '../app-seeders/mail-admin-permissions.js';
 import {seedPlatformOneEngineDeploymentPermission} from '../app-seeders/platform-oneengine-deployment.js';
 import {reconcileCoreObjectDefaults} from '../app-seeders/core-object-defaults.js';
 import {seedBundledComponentsForExistingTenants} from '../app-seeders/bundled-components.js';
-import {seedUiComponentsForExistingTenants} from '../app-seeders/ui-components.js';
 import {seedSmartComponentsForExistingTenants} from '../app-seeders/smart-components.js';
 import {applyCodextillDesktopLayout} from '../app-seeders/codextill-page-layout.js';
 import {seedProductImageFieldForExistingTenants} from '../app-seeders/product-image-field.js';
@@ -122,7 +109,6 @@ import {OpenApiExternalService,registerOpenApiExternalServiceRoutes} from './ope
 import { ComponentRuntime } from '../system-files/component-runtime.js';
 import { PageRuntime } from '../system-files/page-runtime.js';
 import {pageLayoutVariant,runtimeLayoutVariant} from '../system-files/page-layout-version-runtime.js';
-import {loadAcetillVisualStyles,saveAcetillVisualStyles} from './acetill-visual-style-service.js';
 import { FlowRuntime } from '../system-files/flow-runtime.js';
 import {flowRunHistory} from '../system-files/flow-run-history.js';
 import {FlowCustomError} from '../system-files/flow-error-runtime.js';
@@ -985,21 +971,6 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     res.json(await platformTenants.list(actor.tenant_id,actor.user_id,req.query));
   }));
-  // Action permissions control till buttons. No Flow-specific RBAC grants are required.
-  // The caller cannot request arbitrary permission resources.
-  app.get('/api/acetill/action-access',route(async(req,res)=>{
-    const actor=req.actor!;
-    const installed=await db.query(`SELECT 1 FROM md_app_installations i
-      JOIN md_apps a ON a.id=i.app_id AND a.api_name='Acetill' AND a.enabled=true
-      JOIN md_app_entitlements e ON e.tenant_id=i.tenant_id AND e.app_id=i.app_id
-      WHERE i.tenant_id=$1 AND e.active=true
-        AND (e.expires_at IS NULL OR e.expires_at>now()) LIMIT 1`,[actor.tenant_id]);
-    if(!installed.rowCount){res.status(403).json({error:'Acetill unavailable'});return;}
-    const keys=['Discount','PriceOverride','SalesReturn','QuickAddProduct','CashDrawer','HoldSale','RetrieveSale'];
-    const granted=await rbac.allowedMany(actor.tenant_id,actor.user_id,
-      keys.map(key=>({resource:'Action:Acetill'+key,action:'execute'})));
-    res.json({access:Object.fromEntries(keys.map((key,index)=>[key,granted[index]]))});
-  }));
   app.get('/api/metadata/permissions',route(async(req,res)=>{
     const actor=req.actor!;
     res.json(await rbac.describe(actor.tenant_id,actor.user_id));
@@ -1735,27 +1706,6 @@ export function createSystemServer(db:SqlPersistence) {
     const actor=req.actor!;
     await rbac.require(actor.tenant_id,actor.user_id,'ComponentDefinition','read');
     res.json({components:await components.list(actor.tenant_id)});
-  }));
-  // Acetill live-React styling pilot. SQL holds overrides, not recreated JSX.
-  app.get('/api/apps/Acetill/visual-styles',route(async(req,res)=>{
-    const actor=req.actor!;
-    const canView=await rbac.allowed(actor.tenant_id,actor.user_id,'App:Acetill','read')
-       ||await rbac.allowed(actor.tenant_id,actor.user_id,'PageDefinition','read');
-    if(!canView)throw new Error('Permission denied');
-    res.setHeader('Cache-Control','private, no-store');
-    res.json({styles:await loadAcetillVisualStyles(db,actor.tenant_id)});
-  }));
-  app.get('/api/apps/Acetill/visual-styles/draft',route(async(req,res)=>{
-    const actor=req.actor!;
-    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','read');
-    res.setHeader('Cache-Control','private, no-store');
-    res.json({styles:await loadAcetillVisualStyles(db,actor.tenant_id,'draft')});
-  }));
-  app.put('/api/apps/Acetill/visual-styles/draft',route(async(req,res)=>{
-    const actor=req.actor!;
-    await rbac.require(actor.tenant_id,actor.user_id,'PageDefinition','manage');
-    res.setHeader('Cache-Control','private, no-store');
-    res.json({styles:await saveAcetillVisualStyles(db,actor.tenant_id,req.body?.styles)});
   }));
   // New pages are created exactly once, including their first immutable draft.
   // No existing (including archived) page may be overwritten or resurrected.
@@ -2968,10 +2918,8 @@ export async function startSystemServer() {
     const deploymentPermission=await seedPlatformOneEngineDeploymentPermission(db);
     console.info('Platform OneEngine deployment policy:',deploymentPermission);
     const bundledTenants=await seedBundledComponentsForExistingTenants(db);
-    const uneTenants=await seedUiComponentsForExistingTenants(db);
     await seedSmartComponentsForExistingTenants(db);
     await applyCodextillDesktopLayout(db);
-    console.info('UNE tenant component registrations checked:',uneTenants);
     console.info('Bundled component registrations checked for tenants:',bundledTenants);
     await reconcileCoreObjectDefaults(db); const status=await reconcileBootstrapPassword(db); if(status!=='disabled')console.info('First-install credential reconciliation:',status);
     const firstLogin=await rotateFirstLoginPassword(db);

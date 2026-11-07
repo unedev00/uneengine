@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { SqlPersistence } from '../system-files/sql-persistence.js';
-import { UI_COMPONENTS } from './ui-components.js';
 import { SMART_COMPONENTS } from './smart-components.js';
 
 /** Versioned snapshot of the legacy registrations retired from the public catalog.
@@ -26,7 +25,7 @@ export async function seedFreshBundledComponents(client: PoolClient, tenantId: s
 export async function deactivateUnavailableBundledComponents(
   client: Pick<PoolClient,'query'>, tenantId: string
 ): Promise<void> {
-  const reviewed: string[] = [...UI_COMPONENTS,...SMART_COMPONENTS];
+  const reviewed: string[] = [...SMART_COMPONENTS];
   await client.query(`
     UPDATE md_component_definitions AS d SET enabled=false
     WHERE d.tenant_id=$1 AND d.enabled=true

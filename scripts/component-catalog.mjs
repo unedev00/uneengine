@@ -29,19 +29,15 @@ export async function loadComponentCatalog() {
   }));
   const core = await readJson(path.join(webSourceRoot, 'core/components/BundledCatalog/manifest.json'));
   // Shared appearance is a declarative UNE mixin, not a second rendering engine.
-  const {appearanceProperties:uneAppearance}=await import(pathToFileURL(path.join(oneRoot,'ui-runtime/shared/appearance-properties.mjs')).href);
-  const merged=one.map(definition=>{
-    if(!definition.apiName.startsWith('ui_'))return definition;
-    const own=definition.propertyDefinitions??[],keys=new Set(own.map(p=>p.propertyKey));
-    return {...definition,propertyDefinitions:[...uneAppearance.filter(p=>!keys.has(p.propertyKey)),...own]};
-  });
+  // Smart components own their contracts; legacy UI appearance mixins are retired.
+  const merged=one;
   const components = [...core.map(item => ({ ...item, jsxFile: item.jsx, cssFile: item.css })), ...merged];
   const names = new Set();
   for (const component of components) {
     if (names.has(component.apiName)) throw Error('Duplicate bundled API name: ' + component.apiName);
     names.add(component.apiName);
   }
-  const {commonProperties}=await import(pathToFileURL(path.join(oneRoot,'common-properties.mjs')).href);
+  const commonProperties=[];
   return { schemaVersion: manifest.schemaVersion, commonProperties, components };
 }
 
