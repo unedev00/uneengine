@@ -276,6 +276,7 @@
     "apps/web/test/recordPageConsolidation.test.ts",
     "apps/web/test/registeredFieldExpressionRuntime.test.ts",
     "apps/web/test/relatedQuickLinks.test.ts",
+    "apps/web/test/retiredPageBuilderRuntime.test.mjs",
     "apps/web/test/ribbonExpressionCaret.test.ts",
     "apps/web/test/ribbonHomeReset.test.mjs",
     "apps/web/test/ribbonUiCorrections20261101.test.mjs",
