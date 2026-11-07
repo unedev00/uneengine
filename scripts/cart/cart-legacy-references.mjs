@@ -130,7 +130,7 @@ export function rewriteLegacyCartPage(page,{cartIds=new Map()}={}){
    }
   }
  }
- if(hasActiveLegacyCartReference(rewritten)
+ if(hasActiveLegacyCartReference(rewritten))
   throw Error('Legacy CartSession Page reference remains after conversion');
  return {page:rewritten,changed:JSON.stringify(page)!==JSON.stringify(rewritten)};
 }
