@@ -132,12 +132,6 @@ const pathname = basePath && window.location.pathname.startsWith(basePath + '/')
 // Browser regression and local metadata workspaces open the authenticated app at /.
 // The public marketing homepage remains the production default.
 const workspaceDevelopmentRoot = import.meta.env.DEV && Boolean(import.meta.env.VITE_API_BASE_URL);
-// Redirect old metadata workspace links to the Acetill-owned login/POS entry.
-if (pathname.toLowerCase().startsWith('/une/apps/acetill/')
-  || pathname.toLowerCase() === '/acetill') {
-  // Load the real standalone HTML document, not the admin SPA fallback.
-  window.location.replace('/acetill/');
-}
 const isMarketingHome = !workspaceDevelopmentRoot && (pathname === '/' || pathname === '/index.html' || (Boolean(basePath) && window.location.pathname === basePath));
 const isPrivacyRoute = pathname === '/privacy' || pathname === '/privacy/' || pathname === '/privacy-policy' || pathname === '/privacy-policy/';
 const isTermsRoute = pathname === '/terms' || pathname === '/terms/' || pathname === '/terms-of-service' || pathname === '/terms-of-service/';

@@ -1,6 +1,5 @@
 import type { WorkspaceId } from '../../metadata/Definitions/metadata';
 import {shortAppEntry} from './shortAppEntry';
-import {standaloneEntryForAppId} from '../Standalone/standaloneEntries';
 
 
 export const objectSettings = [
@@ -76,9 +75,7 @@ export function parseAppRoute(pathname: string, search = ''): AppRoute {
   const pathSegments = pathname.split('/').filter(Boolean);
   const segments = pathSegments[0] === 'une' ? pathSegments.slice(1) : [];
   const appId = new URLSearchParams(search).get('appId') || 'Records';
-  // Generic single-segment application entrypoints: /acetill resolves the published
-  // Acetill app, without a second login or app-specific routing branch.
-  // The authenticated app runtime still enforces tenant licence, installation and RBAC.
+  // Single-segment entries resolve through the tenant application router.
   const shortEntry=shortAppEntry(pathname);
   if(shortEntry)return {kind:'app-home',appId:shortEntry};
   try {
@@ -178,13 +175,10 @@ export function appRoutePathWithoutBase(route: AppRoute): string {
     return segments.join('/');
   }
   if (route.kind === 'app-home') {
-    const standalone=standaloneEntryForAppId(route.appId);
-    return standalone?`/${standalone.slug}`:`/une/apps/${encodeURIComponent(route.appId)}/home`;
+    return `/une/apps/${encodeURIComponent(route.appId)}/home`;
   }
   if (route.kind === 'app-page') {
-    const standalone=standaloneEntryForAppId(route.appId);
-    return standalone?`/${standalone.slug}?page=${encodeURIComponent(route.pageApiName)}`:
-      `/une/apps/${encodeURIComponent(route.appId)}/pages/${encodeURIComponent(route.pageApiName)}`;
+    return `/une/apps/${encodeURIComponent(route.appId)}/pages/${encodeURIComponent(route.pageApiName)}`;
   }
   if (route.kind === 'route-alias') return `/une/apps/${encodeURIComponent(route.appId)}/routes/${encodeURIComponent(route.slug)}`;
   if (route.kind === 'record-list') {

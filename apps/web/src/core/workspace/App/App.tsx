@@ -6,7 +6,6 @@ import { apiBase, getAccessToken, setAccessToken, apiRequest, ApiRequestError, i
 
 
 import { parseAppRoute, appRoutePath } from '../Navigation/appRouting';
-import {resolveStandaloneEntry,standaloneCanonicalPath,standaloneEntryForAppId} from '../Standalone/standaloneEntries';
 
 
 
@@ -71,28 +70,7 @@ type NewFieldLookupFilterDraft = {
 
 
 const LazyOAuthConsent=React.lazy(()=>import('../../authentication/Login/OAuthConsent'));
-const LazyStandaloneRuntime=React.lazy(()=>import('../Standalone/StandaloneRuntime'));
-const LazyAceKiosk=React.lazy(()=>import('../../../../../acekiosk/src/AceKiosk'));
 const LazyMailboxAdmin=React.lazy(()=>import('../../mail/MailboxAdmin'));
-function AceKioskAccessGate({onLogout}:{onLogout:()=>void}){
- type AppAccess={installed:boolean;licensed:boolean;enabled:boolean;permitted:boolean};
- const [access,setAccess]=React.useState<AppAccess|null>(null);
- const [failure,setFailure]=React.useState('');
- React.useEffect(()=>{
-  let mounted=true;
-  void apiRequest<AppAccess>('/metadata/apps/AceKiosk/access')
-   .then(value=>{if(mounted)setAccess(value);})
-   .catch(error=>{if(mounted)setFailure(error instanceof Error?error.message:'Unable to verify app access');});
-  return()=>{mounted=false;};
- },[]);
- if(!access&&!failure)return <main role="status">Checking AceKiosk access…</main>;
- if(!access)return <main role="alert">AceKiosk access check failed: {failure}. Please sign in again or contact your tenant administrator.</main>;
- if(!access.installed)return <main role="alert">AceKiosk is not installed for this tenant. Install AceKiosk from AppExchange.</main>;
- if(!access.licensed)return <main role="alert">AceKiosk licence is missing, inactive or expired for this tenant. Activate its entitlement in AppExchange.</main>;
- if(!access.enabled)return <main role="alert">AceKiosk is disabled in the app catalogue. Contact your platform administrator.</main>;
- if(!access.permitted)return <main role="alert">AceKiosk is installed and licensed, but your user lacks App:AceKiosk → read permission. Assign that permission through OneEngine RBAC. Setting Default landing page does not grant access.</main>;
- return <React.Suspense fallback={<main role="status">Opening AceKiosk…</main>}><LazyAceKiosk onLogout={onLogout}/></React.Suspense>;
-}
 function MailboxAdminAccessGate({onLogout}:{onLogout:()=>void}){
  const [access,setAccess]=React.useState<'checking'|'allowed'|'denied'|'error'>('checking');
  React.useEffect(()=>{
@@ -130,13 +108,6 @@ type EntryTiming = { kind: 'login' | 'restore'; startedAt: number; authenticated
 
 function App() {
   useEffect(()=>installMobileAdminSheets(),[]);
-  // Handle bookmarked UNE app routes before the generic Setup shell initialises.
-  const legacyStandalonePath=standaloneCanonicalPath(window.location.pathname,window.location.search,import.meta.env.BASE_URL);
-  const entryPath=legacyStandalonePath?legacyStandalonePath.split('?')[0]:window.location.pathname;
-  const standaloneEntry=resolveStandaloneEntry(entryPath,import.meta.env.BASE_URL);
-  React.useLayoutEffect(()=>{
-    if(legacyStandalonePath)window.history.replaceState({},'',legacyStandalonePath);
-  },[legacyStandalonePath]);
   const [authState, setAuthState] = useState<AuthState>('restoring');
   const [authError, setAuthError] = useState('');
   const [entryTiming, setEntryTiming] = useState<EntryTiming | null>(null);
@@ -236,7 +207,7 @@ function App() {
   const entryIsHome=!isMailboxAdminRoute&&(window.location.pathname==='/login'
     ||(route.kind==='setup'&&route.workspace==='home'));
   const landingApp=entryTiming?.landingAppApi??entryTiming?.landing?.user?.landingAppApi??'Setup';
-  const needsLandingRedirect=authState==='authenticated'&&!standaloneEntry&&entryIsHome
+  const needsLandingRedirect=authState==='authenticated'&&entryIsHome
     &&(landingApp.toLowerCase()!=='setup'||window.location.pathname==='/login');
   useEffect(()=>{
     if(!needsLandingRedirect)return;
@@ -245,19 +216,18 @@ function App() {
       if(window.location.pathname==='/login')window.location.replace(appRoutePath({kind:'setup',workspace:'home'}));
       return;
     }
-    const standalone=standaloneEntryForAppId(landingApp);
-    const destination=standalone?'/'+standalone.slug:appRoutePath({kind:'app-home',appId:landingApp});
+    const destination=appRoutePath({kind:'app-home',appId:landingApp});
     window.location.replace(destination);
   },[needsLandingRedirect,landingApp]);
 
   useEffect(()=>{
-    if(authState==='anonymous'&&!standaloneEntry&&window.location.pathname!=='/login'&&window.location.pathname!=='/oauth/authorize'){
+    if(authState==='anonymous'&&window.location.pathname!=='/login'&&window.location.pathname!=='/oauth/authorize'){
       if(window.location.pathname==='/mail-admin'||window.location.pathname==='/mail-admin/'){
         try{sessionStorage.setItem('md_auth_return_to','/mail-admin');}catch{/* The normal landing route remains available if storage is disabled. */}
       }
       window.location.replace('/login');
     }
-  },[authState,standaloneEntry]);
+  },[authState]);
   const loginSuccess = (timing: EntryTiming) => {
     sessionGeneration.current += 1;
     try {
@@ -271,9 +241,9 @@ function App() {
   };
   const cancelRestore = () => { sessionGeneration.current += 1; };
   if (authState === 'restoring') return <div className="auth-loading" role="status">Restoring session…</div>;
-  if (authState === 'anonymous' && !standaloneEntry && window.location.pathname!=='/login') return <div role="status">Opening login…</div>;
-  if (authState === 'anonymous') return <Login branding={standaloneEntry??undefined} onStart={cancelRestore} onSuccess={loginSuccess} />;
-  if (authState === 'error') return <Login branding={standaloneEntry??undefined} error={authError} onStart={cancelRestore} onSuccess={loginSuccess} onRetry={() => { setAuthError(''); setAuthState('anonymous'); void restoreSession(); }} />;
+  if (authState === 'anonymous' && window.location.pathname!=='/login') return <div role="status">Opening login…</div>;
+  if (authState === 'anonymous') return <Login onStart={cancelRestore} onSuccess={loginSuccess} />;
+  if (authState === 'error') return <Login error={authError} onStart={cancelRestore} onSuccess={loginSuccess} onRetry={() => { setAuthError(''); setAuthState('anonymous'); void restoreSession(); }} />;
   if(window.location.pathname==='/oauth/authorize')return <React.Suspense fallback={<div role="status">Loading consent…</div>}><LazyOAuthConsent/></React.Suspense>;
   const onLogout=()=>{
     sessionGeneration.current += 1;
@@ -288,7 +258,6 @@ function App() {
     setAuthState('anonymous');
   };
   if(needsLandingRedirect)return <div className="auth-loading" role="status">Opening assigned application…</div>;
-  if(standaloneEntry)return <React.Suspense fallback={<div className="auth-loading" role="status">Opening application…</div>}>{standaloneEntry.slug==='acekiosk'?<AceKioskAccessGate onLogout={onLogout}/>:<LazyStandaloneRuntime entry={standaloneEntry} onLogout={onLogout}/>}</React.Suspense>;
   if(isMailboxAdminRoute)return <MailboxAdminAccessGate onLogout={onLogout}/>;
   return <SetupApp entryTiming={entryTiming} onLogout={onLogout} />;
 }

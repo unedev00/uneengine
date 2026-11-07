@@ -11,7 +11,6 @@ import { relatedLookupFilterOperators } from '../../records/RecordWorkspace/reco
 
 
 import { objectSettings, parseAppRoute, appRoutePath, type AppRoute } from '../Navigation/appRouting';
-import {standaloneEntryForAppId} from '../Standalone/standaloneEntries';
 import { NavigationLoadTime, resolveCurrentAppNavigation } from '../Navigation/appNavigationView';
 import { isStandalonePagePresentation } from '../../pages/PageRuntime/pageRuntimePresentation';
 import { insertFlowElementAtPath } from '../../builders/FlowBuilder/flowInsertElement.mjs';
@@ -579,19 +578,6 @@ function SetupApp({ onLogout, entryTiming }: { onLogout: () => void; entryTiming
   const navigateRoute = (nextRoute: AppRoute, skipFlowConfirmation = false) => {
     if (!skipFlowConfirmation && !confirmFlowNavigation(nextRoute)) return false;
     const routeWithApp = nextRoute.kind === 'setup' ? nextRoute : { ...nextRoute, appId: nextRoute.appId ?? currentAppId };
-    // Standalone frontends must replace the workspace document; pushState alone
-    // leaves SetupApp mounted and renders the wrong (admin) application shell.
-    if (routeWithApp.kind === 'app-home' || routeWithApp.kind === 'app-page' || routeWithApp.kind === 'route-alias') {
-      const standalone=standaloneEntryForAppId(routeWithApp.appId);
-      if (standalone) {
-        const path=routeWithApp.kind==='route-alias' ? `/${standalone.slug}` : appRoutePath(routeWithApp);
-        // Canonical directory URL loads the standalone HTML document directly.
-        const target=new URL(path,window.location.origin);
-        if(target.pathname.endsWith('/'+standalone.slug))target.pathname+='/';
-        window.location.assign(target.pathname+target.search);
-        return true;
-      }
-    }
     const path = appRoutePath(routeWithApp);
     if (`${window.location.pathname}${window.location.search}` !== path) {
       setRouteTiming({ routeKey: path, startedAt: performance.now(), kind: 'navigation', authMs: null });

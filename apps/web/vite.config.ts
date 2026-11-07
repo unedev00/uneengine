@@ -45,13 +45,11 @@ export default defineConfig({
     __METADRIVE_WEB_RELEASE__: JSON.stringify(frontendBuild)
   },
   build: {
-    // Multi-page build gives /acetill/ its own real document and JS entry,
-    // independent of MetaDrive admin router and GitHub Pages SPA fallback.
+    // Publish the main and login entrypoints.
     rollupOptions: {
       input: {
         main: resolve(process.cwd(), 'index.html'),
-        login: resolve(process.cwd(), 'login/index.html'),
-        acetill: resolve(process.cwd(), 'acetill/index.html')
+        login: resolve(process.cwd(), 'login/index.html')
       }
     }
   },
