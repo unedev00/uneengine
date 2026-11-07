@@ -79,11 +79,18 @@ try {
   unrelatedCartRendersBefore:unrelatedBefore,unrelatedCartRendersAfter:unrelatedAfter,
   finalText:'59'};
  const reads=await page.evaluate(()=>window.__runtimeStress.readTest());
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-cart-total]')].length===3&&
+   [...document.querySelectorAll('[data-cart-total]')].every(node=>node.textContent?.trim()==='1'),
+   null,{timeout:10000});
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const postWriteToPaintMs=await page.evaluate(at=>performance.now()-at,reads.postWriteAt);
+ assert.ok(postWriteToPaintMs>=0&&postWriteToPaintMs<10000,
+  'Successful writes must reach all three visible Cart subscribers without a 10-second freeze');
  assert.deepEqual(reads.before.map(page=>page.total),[0,0,0]);
  assert.deepEqual(reads.after.map(page=>page.total),[1,1]);
  assert.equal(cartWrites,1);
  assert.equal(cartReads,2,'Three Cart subscribers plus post-write refresh should issue exactly two GET requests');
- report.results.records={cartReads,cartWrites,...reads};
+ report.results.records={cartReads,cartWrites,postWriteToPaintMs,...reads};
  const actions=await page.evaluate(()=>window.__runtimeStress.tenActions());
  assert.equal(actions.writes,10,'No rapid action may be silently dropped');
  assert.equal(counterWrites,10);
