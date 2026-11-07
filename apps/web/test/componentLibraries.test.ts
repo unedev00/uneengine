@@ -411,3 +411,14 @@ test('rejected shared media request is retryable',async()=>{
  await assert.rejects(requestPageMediaAsset(req,asset,'actor'),/Access denied/);
  assert.equal(calls,2);
 });
+
+
+test('shared Smart renderer is emitted by default and retains fallback assets',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const build=await readFile(new URL('../build-component-library.mjs',import.meta.url),'utf8');
+ const renderer=await readFile(new URL('../src/core/components/RegisteredComponent/RegisteredComponent.tsx',import.meta.url),'utf8');
+ assert.match(build,/METADRIVE_SHARED_SMART_RUNTIME!=='0'/);
+ assert.match(build,/const asset=JSON\.stringify\(/,'standalone renderer must remain part of the build');
+ assert.match(renderer,/loadPath\(selectedPath\)/);
+ assert.match(renderer,/loadPath\(configuredPath\)/,'shared runtime must fall back to standalone');
+});
