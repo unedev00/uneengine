@@ -226,14 +226,22 @@ export default function MetadataBoundPageComponent({
         setSelectedCategories({});
         setSelectedFilterRecords({});
       }
-      let fastPath=false;
-      try{fastPath=window.sessionStorage.getItem('metadrive:mutation-record-fastpath')==='1';}
-      catch{/* Disabled private session. */}
-      if(fastPath&&detail?.sessionId===sessionId&&recordOffset===0&&
+      // A confirmed full-record UPDATE can change an already visible row
+      // without another GET if the entire authorised page is loaded and
+      // neither filter membership nor any secondary formula source changed.
+      // Creates, deletes, partial projections and unknown Flow writes refetch.
+      const ownOnly=detail?.objectApiNames?.length===1
+        &&detail.objectApiNames[0]===objectApiName;
+      const stableFilterFields=[
+        relatedQuery.filter?.field,recordQuery.filter?.field,
+        ...(recordQuery.filters??[]).map(item=>item.field),
+        properties.sortFieldApiName,properties.sortBy,properties.orderBy
+      ].filter((name):name is string=>typeof name==='string'&&name.length>0);
+      if(ownOnly&&detail.sessionId===sessionId&&recordOffset===0&&
         recordsForRequest===recordRequestKey&&recordTotal===records.length&&
-        !properties.collectionFormula&&!properties.recordPresenterApiName&&
-        !relatedQuery.filter&&!recordQuery.filter&&!recordQuery.filters?.length){
-        const updated=applyCompleteRecordMutation(records,objectApiName,detail);
+        !combinedRecordFormula&&recordQuery.serverFilterable&&
+        !properties.collectionFormula&&!properties.recordPresenterApiName){
+        const updated=applyCompleteRecordMutation(records,objectApiName,detail,stableFilterFields);
         if(updated){setRecords(updated);return;}
       }
       setRevision(value => value + 1);
