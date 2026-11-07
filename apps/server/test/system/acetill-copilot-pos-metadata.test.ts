@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {readFileSync} from 'node:fs';
 import type {PoolClient} from 'pg';
 import {copilotPosGraphs,seedAcetillCopilotPosFlows} from '../../src/app-seeders/acetill-copilot-pos-flows.js';
 import {copilotTillLayout} from '../../src/app-seeders/acetill-copilot-pos-page.js';

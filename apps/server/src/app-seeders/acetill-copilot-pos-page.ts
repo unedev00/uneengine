@@ -75,7 +75,7 @@ export const copilotTillLayout=[
  box('new','smart_button','New sale','header',606,28,158,52,{
   label:'New sale',backgroundColor:'#1A6AD2',labelColor:'#FFFFFF',
   textSize:14,radius:8,actionFlows:{click:{
-   ...flow('AcetillCopilotNewCart',{sessionKey:'$session'}, {cartId:'activeCartId'}),mutatesData:true
+   ...flow('AcetillCopilotNewCart',{sessionKey:'$session'}, totals),mutatesData:true
   }}
  }),
  box('lock','smart_button','Verify till PIN','header',1214,28,168,52,{
@@ -100,8 +100,8 @@ export const copilotTillLayout=[
    ...flow('AcetillHoldCart',{cartId:'$session.cartId',requestId:'$session',label:'Till held sale',
     cartItems:{source:'ProjectRecords',value:'$state.cartItems',
      fields:['Product','Quantity','OriginalUnitPrice']}},
-    {holdReference:'holdReference',cartId:'activeCartId'}),
-   resetSessionOnSuccess:true
+    {holdReference:'holdReference'}),
+   successState:{activeCartId:null,subtotal:0,total:0},mutatesData:true
   }}
  }),
  box('held','smart_button','List held sales','sidebar',1022,750,176,48,{

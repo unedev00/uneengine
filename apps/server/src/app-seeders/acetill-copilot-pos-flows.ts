@@ -127,8 +127,11 @@ export const copilotNewCart=graph('AcetillCopilotNewCart','Till: open a new inde
  n(2,'Create Records','Open cart',{object:'Cart',recordSource:'fields',resultVariable:'cartId',
   fieldValues:[{field:'Name',value:'Till basket'},{field:'UserId',value:'{!$User.Id}'},
    {field:'SessionKey',value:'{!sessionKey}'},{field:'Status',value:'Open'}]}),
- n(3,'End','Cart ready')
-],[e(1,2),e(2,3)]);
+ basket(3),
+ n(4,'Assignment','Clear subtotal',{variable:'subtotal',operator:'Assign',value:0}),
+ n(5,'Assignment','Clear total',{variable:'total',operator:'Assign',value:0}),
+ n(6,'End','Cart ready')
+],[e(1,2),e(2,3),e(3,4),e(4,5),e(5,6)]);
 
 export const copilotDefaultCategory=graph('AcetillCopilotDefaultCategory','Till: choose available POS category',[
  n(1,'Start','Start'),
