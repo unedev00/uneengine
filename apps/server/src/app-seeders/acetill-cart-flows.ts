@@ -64,7 +64,7 @@ export async function seedAcetillCartFlows(client:PoolClient,tenantId:string):Pr
  WHERE tenant_id=$1 AND api_name IN ('Cart','CartLine')`,[tenantId]);
  if(!['Cart','CartLine'].every(object=>objects.rows.some(row=>row.api_name===object)))return 0;
  let count=0;
- for(const template of acetillCartGraphs{
+ for(const template of acetillCartGraphs){
   const exists=await client.query('SELECT 1 FROM md_flow_definitions WHERE tenant_id=$1 AND api_name=$2',
    [tenantId,template.apiName]);
   if(exists.rowCount)continue;
