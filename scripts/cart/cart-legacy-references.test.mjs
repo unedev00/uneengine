@@ -7,6 +7,10 @@ test('Formula GETRECORD uses selected cart, not ambiguous browser SessionKey',()
   '=GETRECORD(Cart, Id, $session.cartId, AS(cart))');
  assert.equal(rewriteLegacyCartText('=GETRECORD("CartSession", "SessionKey", $session, AS(cart))'),
   '=GETRECORD(Cart, Id, $session.cartId, AS(cart))');
+ assert.equal(rewriteLegacyCartText('=GETRECORD(CartSession, SessionKey, {!sessionKey}, AS(cart))'),
+  '=GETRECORD(Cart, Id, {!cartId}, AS(cart))');
+ assert.equal(rewriteLegacyCartText('=GETRECORD(CartSession, SessionKey, anything, AS(cart))',{page:true}),
+  '=GETRECORD(Cart, Id, $session.cartId, AS(cart))');
  assert.equal(rewriteLegacyCartText('=COUNTIFS(CartSession, Status, "Open", UserId, $session.user.id)'),
   '=COUNTIFS(Cart, Status, "Open", UserId, $session.user.id)');
  assert.equal(rewriteLegacyCartText('=$state.cartSessionId & CartLine.CartSession'),

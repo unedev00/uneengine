@@ -9,11 +9,13 @@ export const hasLegacyCartReference = value =>
 export function rewriteLegacyCartText(text,{page=false,cartIds=new Map()}={}){
  if(typeof text !== 'string')return text;
  let result=text
-  // A single-record lookup by browser session is ambiguous with several carts.
-  .replace(/\bGETRECORD\s*\(\s*(['"]?)CartSession\1\s*,\s*(['"]?)SessionKey\2\s*,\s*\$session(?:\.id)?(?=\s*,)/gi,
-    'GETRECORD(Cart, Id, $session.cartId')
-  .replace(/\bGETRECORD\s*\(\s*(['"]?)Cart\1\s*,\s*(['"]?)SessionKey\2\s*,\s*\$session(?:\.id)?(?=\s*,)/gi,
-    'GETRECORD(Cart, Id, $session.cartId')
+  // A Cart has no unique SessionKey: every single-record lookup selects Cart.Id.
+  .replace(/\bGETRECORD\s*\(\s*(['"]?)CartSession\1\s*,\s*(['"]?)SessionKey\2\s*,\s*([^,()]+)(?=\s*,)/gi,
+    (_match,value)=>'GETRECORD(Cart, Id, '+(value.includes('$session')?'$session.cartId':
+      value.includes('{!')?'{!cartId}':page?'$session.cartId':'{!cartId}'))
+  .replace(/\bGETRECORD\s*\(\s*(['"]?)Cart\1\s*,\s*(['"]?)SessionKey\2\s*,\s*([^,()]+)(?=\s*,)/gi,
+    (_match,value)=>'GETRECORD(Cart, Id, '+(value.includes('$session')?'$session.cartId':
+      value.includes('{!')?'{!cartId}':page?'$session.cartId':'{!cartId}'))
   .replace(/\$state\.cartSessionId\b/g,'$state.activeCartId')
   .replace(/\$session\.cartSessionId\b/g,'$session.cartId')
   .replace(/\bactiveCartSessionId\b/g,'activeCartId')
