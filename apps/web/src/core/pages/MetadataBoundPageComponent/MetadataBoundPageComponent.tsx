@@ -133,6 +133,7 @@ export default function MetadataBoundPageComponent({
   const recordPageSize=100;
   const [dataError, setDataError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [actionNotice,setActionNotice]=useState('');
   const [actionPending,setActionPending]=useState(0);
   const actionAttemptRef=useRef(0);
   const latestActionFailureRef=useRef(0);
@@ -519,7 +520,8 @@ export default function MetadataBoundPageComponent({
             recordChanges:result.recordChanges}
         }));
       }
-      return {updated:true,recordChanged:result.recordChanged};
+      return {updated:true,recordChanged:result.recordChanged,
+        noRecordWriteReason:result.noRecordWriteReason};
     }
     if (binding.actionType === 'AdjustNumber') {
       const payload=action.value&&typeof action.value==='object'&&!Array.isArray(action.value)
@@ -636,7 +638,13 @@ export default function MetadataBoundPageComponent({
       if(recordWrite===false&&planned?.actionType==='Formula'
         &&typeof planned.formula==='string'&&isActionPlan(planned.formula))outcome='no-record-write';
       // An earlier action completing late must not clear a newer failure.
-      if(attempt>=latestActionFailureRef.current)setActionError('');
+      if(attempt>=latestActionFailureRef.current){
+        setActionError('');
+        const reason=(result as {noRecordWriteReason?:string}|undefined)?.noRecordWriteReason;
+        setActionNotice(action.event==='start'?'':reason==='guard-skipped-write'
+          ?'No record changed: the Formula guard skipped the write.'
+          :reason==='no-record-write-executed'?'No record changed: the Formula executed no record write.':'');
+      }
       return result;
     } catch(error) {
       outcome='failed';
@@ -649,6 +657,7 @@ export default function MetadataBoundPageComponent({
        }));
       if(attempt>=latestActionFailureRef.current){
         latestActionFailureRef.current=attempt;
+        setActionNotice('');
         setActionError(error instanceof Error?error.message:'Action failed');
       }
       throw error;
@@ -688,6 +697,7 @@ export default function MetadataBoundPageComponent({
     {!objectApiName && !properties.collectionFormula && <div className="records-message" role="alert">Select a bound object to load records for this component.</div>}
     {dataError && !contextApiName && <div className="records-message" role="alert">{dataError}</div>}
      {namedSource.error && <div className="records-message" role="alert">{namedSource.error}</div>}
+    {actionNotice && <div className="records-message" role="status">{actionNotice}</div>}
     <RegisteredComponent formulaInstanceId={component.id} definition={definition} layoutTransparent={smartCanvas} editorPreview={builderPreview===true&&disableActions} props={{
       ...rowResolvedProperties, ...componentLayoutProps(properties, formFactor),
       ...(smartCanvas?{canvasFrameSized:true}:{}),
