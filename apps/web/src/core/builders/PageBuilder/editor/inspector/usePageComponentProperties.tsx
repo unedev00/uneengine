@@ -1,7 +1,3 @@
-import {
-conversationRootDefinition, conversationPartDefinition, conversationPartEditorProperties,
-updateConversationPartProperties,
-} from '../../../../../component-libraries/ui_conversation/conversationParts.mjs';
 import { availableComponentSettings } from '../../../../components/Properties/componentSettingDefinitions';
 import { componentNamePattern, canonicalComponentName, componentInstanceNames } from '../../../../../../../server/src/system-support/page-component-names';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -214,22 +210,6 @@ export function usePageComponentProperties(
     }else updateComponent(selected.id,{properties:{...selected.properties,[property]:visible}});
   };
   const selectedAppOwnedUne=Boolean(selected?.type.startsWith('Custom:une_'))&&!selectedNewUne;
-  const editingConversation=selectedCustomDefinition?.apiName==='ui_conversation';
-  // Child element selection affects the inspector only; runtime DOM is unchanged.
-  const conversationEditorDefinition=editingConversation
-    ? (selectedConversationPart==='parent'
-      ? conversationRootDefinition(selectedCustomDefinition)
-      : conversationPartDefinition(selectedConversationPart,selectedCustomDefinition,libraryComponents))
-    : undefined;
-  const conversationEditorProperties=editingConversation&&selectedConversationPart!=='parent'
-    ? conversationPartEditorProperties(selected?.properties??{},selectedConversationPart)
-    : selected?.properties??{};
-  const updateConversationEditorProperties=(properties:Record<string,unknown>)=>{
-    if(!selected)return;
-    updateComponent(selected.id,{properties:editingConversation&&selectedConversationPart!=='parent'
-      ?updateConversationPartProperties(selected.properties,selectedConversationPart,properties)
-      :properties});
-  };
   // Group positions stay fixed for every canvas selection. Metadata controls
   // availability; keys listed here are existing renderer-supported properties.
   // Disabled ribbon controls remain discoverable as icons, never blank panels.

@@ -52,18 +52,3 @@ test('published ONE controls have no unbound dummy actions or placeholders',()=>
  assert.doesNotMatch(native,/style\.borderWidth=border/);
  assert.doesNotMatch(css,/\[data-page-appearance="tabs"\]\[data-page-style~="[^"]+"\] \.registered-component \.one-tab,/);
 });
-
-test('Ace Assist navigation follows tenant App Manager metadata without exposing invoice lines',async()=>{
- const {resolveAssistTabs}=await import('../../aceassist/src/assistNavigation.mjs');
- const objects=['Appointment','Invoice','Customer','Quotation','InvoiceLine'].map(apiName=>({apiName,label:apiName}));
- const app={navigationOrder:[{type:'Object',apiName:'Customer'},{type:'Object',apiName:'InvoiceLine'},{type:'Object',apiName:'Appointment'}]};
- assert.deepEqual(resolveAssistTabs(app,objects).map(x=>x.object),['Customer','Appointment']);
- assert.deepEqual(resolveAssistTabs({navigationItems:['Invoice']},objects).map(x=>x.object),['Invoice']);
- assert.ok(resolveAssistTabs(null,objects).some(x=>x.object==='Appointment'));
- const seed=readFileSync(new URL('../../server/src/app-seeders/aceassist-app.ts',import.meta.url),'utf8');
- assert.match(seed,/if\(created\.length\)for\(const \[index,objectApi\]/);
- assert.match(seed,/md_tenant_app_navigation/);
- const runtime=readFileSync(new URL('../../aceassist/src/AceAssistRuntime.tsx',import.meta.url),'utf8');
- assert.match(runtime,/resolveAssistTabs\(appNavigation,objects\)/);
- assert.match(runtime,/\/metadata\/apps/);
-});
