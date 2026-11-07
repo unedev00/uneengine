@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import {SqlPersistence} from '../../apps/server/dist-system/system-files/sql-persistence.js';
 import {PageRuntime} from '../../apps/server/dist-system/system-files/page-runtime.js';
+import {hasActiveLegacyCartReference} from './cart-legacy-references.mjs';
 
 const conn=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!conn)throw Error('DATABASE_URL is required');
@@ -89,6 +90,9 @@ try{
    SELECT DISTINCT f.api_name FROM md_flow_definitions f JOIN md_flow_editor_values v
     ON v.tenant_id=f.tenant_id AND v.flow_id=f.id
    WHERE f.tenant_id=$1 AND f.active=true AND f.archived=false
+    AND v.property_path<>'/builder/apiName'
+    AND v.property_path NOT LIKE '%/flowApiName'
+    AND v.property_path NOT LIKE '%/subflowApiName'
     AND (v.value_text LIKE '%CartSession%' OR v.value_text LIKE '%cartSessionId%')`,[tenant]);
   if(activeFlows.rows.length)checks.push('active legacy Flows: '+
     activeFlows.rows.map(f=>f.api_name).join(','));
@@ -118,8 +122,7 @@ try{
     }
     const page=loaded?.page;
     if(!page||!Array.isArray(page.components))continue;
-    const offenders=page.components.filter(c=>JSON.stringify(c.properties??{}).includes('CartSession')
-      ||JSON.stringify(c.properties??{}).includes('cartSessionId'));
+    const offenders=page.components.filter(c=>hasActiveLegacyCartReference(c.properties??{}));
     if(offenders.length)checks.push(pageName+' '+variant+': '+offenders.length+' published legacy components');
    }
   }

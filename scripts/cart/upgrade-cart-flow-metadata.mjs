@@ -13,7 +13,7 @@ import {encodeMetadataValue,decodeMetadataValues} from '../../apps/server/dist-s
 import {copilotPosGraphs} from '../../apps/server/dist-system/app-seeders/acetill-copilot-pos-flows.js';
 import {acetillCartGraphs} from '../../apps/server/dist-system/app-seeders/acetill-cart-flows.js';
 import {SMART_TILL_ADD} from '../codextill/ensure-smart-till-cart-flows.mjs';
-import {hasLegacyCartReference,rewriteLegacyCartFlow,loadLegacyCartIdMap} from './cart-legacy-references.mjs';
+import {hasLegacyCartReference,hasActiveLegacyCartReference,rewriteLegacyCartFlow,loadLegacyCartIdMap} from './cart-legacy-references.mjs';
 
 const connectionString=process.env.DATABASE_URL??process.env.METADRIVE_DATABASE_URL;
 if(!connectionString)throw Error('DATABASE_URL is required');
@@ -41,7 +41,7 @@ const legacy=graph=>{
   case 'AcetillPaymentCash':case 'AcetillPaymentCard':
    return nodes.some(n=>n.type==='Create Records'&&n.config?.object==='Invoice')
     && !nodes.some(n=>n.type==='Update Records'&&n.config?.object==='Cart');
-  default:return related(graph)||hasLegacyCartReference(JSON.stringify(graph));
+  default:return hasActiveLegacyCartReference(graph);
  }
 };
 const knownLegacyCounts=new Map([
@@ -84,11 +84,11 @@ try{
     const graph=decodeMetadataValues(rows).builder;
     if(!graph||typeof graph!=='object'||Array.isArray(graph))throw Error(name+': active Flow metadata invalid');
     const serialized=JSON.stringify(graph);
-    if(!legacy(graph)&&!hasLegacyCartReference(serialized)&&
+    if(!legacy(graph)&&!hasActiveLegacyCartReference(graph)&&
        ![...cartIds.keys()].some(id=>serialized.includes(id)))continue;
     const canonical=Boolean(target&&legacy(graph)&&compatible(name,graph));
     const newer=canonical?structuredClone(target):rewriteLegacyCartFlow(graph,{cartIds}).graph;
-    if(hasLegacyCartReference(JSON.stringify(newer)))throw Error(name+': legacy Cart reference remains');
+    if(hasActiveLegacyCartReference(newer))throw Error(name+': legacy Cart reference remains');
     const next=await client.query(
      'SELECT COALESCE(MAX(version),0)::int+1 AS version FROM md_flow_definitions WHERE tenant_id=$1 AND api_name=$2',[tenant,name]);
     const version=Number(next.rows[0].version);

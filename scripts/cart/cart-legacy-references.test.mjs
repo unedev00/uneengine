@@ -103,3 +103,20 @@ test('all-carts Flow keeps multiple carts but filters by signed-in user',()=>{
   {field:'UserId',operator:'Equals',value:'{!$User.Id}'}
  ]);
 });
+
+test('custom Flow API names remain callable after CartSession object retirement',()=>{
+ const graph={apiName:'CartSessionResume',resources:[],elements:[
+  {id:1,type:'Get Records',config:{object:'CartSession',recordLimit:'all',conditions:[]}},
+  {id:2,type:'Subflow',config:{flowApiName:'CartSessionResume'}}]};
+ const {graph:updated}=rewriteLegacyCartFlow(graph);
+ assert.equal(updated.apiName,'CartSessionResume');
+ assert.equal(updated.elements[0].config.object,'Cart');
+ assert.equal(updated.elements[1].config.flowApiName,'CartSessionResume');
+ const page={apiName:'CartSessionPage',components:[{properties:{
+  actionFlows:{click:{flowApiName:'CartSessionResume',
+   inputs:{cartSessionId:'$session.cartSessionId'}}}}}]};
+ const result=rewriteLegacyCartPage(page);
+ assert.equal(result.page.apiName,'CartSessionPage');
+ assert.equal(result.page.components[0].properties.actionFlows.click.flowApiName,'CartSessionResume');
+ assert.equal(result.page.components[0].properties.actionFlows.click.inputs.cartId,'$session.cartId');
+});

@@ -5,6 +5,18 @@
 export const hasLegacyCartReference = value =>
   typeof value === 'string' && /CartSession|cartSessionId|activeCartSessionId/.test(value);
 
+/** Flow API names are identifiers, not references to the old data object. */
+export function hasActiveLegacyCartReference(value,root=true){
+ if(typeof value==='string')return hasLegacyCartReference(value);
+ if(Array.isArray(value))return value.some(v=>hasActiveLegacyCartReference(v,false));
+ if(!value||typeof value!=='object')return false;
+ if(Object.getPrototypeOf(value)!==Object.prototype&&Object.getPrototypeOf(value)!==null)return false;
+ return Object.entries(value).some(([key,item])=>{
+  if(key==='flowApiName'||key==='subflowApiName'||(root&&key==='apiName'))return false;
+  return hasLegacyCartReference(key)||hasActiveLegacyCartReference(item,false);
+ });
+}
+
 /** Transform an expression or a literal API-name field, not a SQL statement. */
 export function rewriteLegacyCartText(text,{page=false,cartIds=new Map()}={}){
  if(typeof text !== 'string')return text;
@@ -38,7 +50,8 @@ export function rewriteLegacyCartTree(input,{page=false,cartIds=new Map()}={}){
  for(const [key,value] of Object.entries(input)){
   const nextKey=rewriteLegacyCartText(key,{page,cartIds});
   if(Object.hasOwn(result,nextKey))throw Error('Legacy Cart key collides with existing key: '+nextKey);
-  result[nextKey]=rewriteLegacyCartTree(value,{page,cartIds});
+  result[nextKey]=key==='flowApiName'||key==='subflowApiName'?value:
+   rewriteLegacyCartTree(value,{page,cartIds});
  }
  return result;
 }
@@ -47,6 +60,7 @@ export function rewriteLegacyCartTree(input,{page=false,cartIds=new Map()}={}){
 export function rewriteLegacyCartFlow(graph,{cartIds=new Map()}={}){
  if(!graph||typeof graph!=='object'||Array.isArray(graph))throw Error('Invalid Flow graph');
  const migrated=rewriteLegacyCartTree(graph,{cartIds});
+ if(Object.hasOwn(graph,'apiName'))migrated.apiName=graph.apiName;
  const changed=JSON.stringify(graph)!==JSON.stringify(migrated);
  if(!changed)return {graph,changed:false};
  const nodes=Array.isArray(migrated.elements)?migrated.elements:[];
@@ -84,7 +98,7 @@ export function rewriteLegacyCartFlow(graph,{cartIds=new Map()}={}){
    migrated.resources.push(selected);
   }else selected.availableForInput=true;
  }
- if(hasLegacyCartReference(JSON.stringify(migrated)))
+ if(hasActiveLegacyCartReference(migrated))
   throw Error('Legacy CartSession Flow reference remains after conversion');
  return {graph:migrated,changed:true};
 }
@@ -93,6 +107,7 @@ export function rewriteLegacyCartFlow(graph,{cartIds=new Map()}={}){
 export function rewriteLegacyCartPage(page,{cartIds=new Map()}={}){
  if(!page||typeof page!=='object'||Array.isArray(page))throw Error('Invalid Page metadata');
  const rewritten=rewriteLegacyCartTree(page,{page:true,cartIds});
+ if(Object.hasOwn(page,'apiName'))rewritten.apiName=page.apiName;
  const components=rewritten.components;
  if(Array.isArray(components)){
   for(const c of components){
@@ -115,7 +130,7 @@ export function rewriteLegacyCartPage(page,{cartIds=new Map()}={}){
    }
   }
  }
- if(hasLegacyCartReference(JSON.stringify(rewritten)))
+ if(hasActiveLegacyCartReference(rewritten)
   throw Error('Legacy CartSession Page reference remains after conversion');
  return {page:rewritten,changed:JSON.stringify(page)!==JSON.stringify(rewritten)};
 }
